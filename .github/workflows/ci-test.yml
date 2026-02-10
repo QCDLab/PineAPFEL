@@ -27,7 +27,7 @@ jobs:
       # ---- Build APFEL++ from source ----
       - name: Build and install APFEL++
         run: |
-          git clone https://github.com/vbertone/apfelxx.git /tmp/apfelxx
+          git clone --branch QED https://github.com/vbertone/apfelxx.git /tmp/apfelxx
           cd /tmp/apfelxx
           mkdir build && cd build
           cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/.local
