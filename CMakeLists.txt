@@ -9,8 +9,14 @@ pkg_check_modules(PINEAPPL REQUIRED pineappl_capi)
 pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
 
 # APFEL++ via apfelxx-config
-execute_process(COMMAND apfelxx-config --cflags OUTPUT_VARIABLE APFELXX_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process(COMMAND apfelxx-config --ldflags OUTPUT_VARIABLE APFELXX_LDFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+find_program(APFELXX_CONFIG apfelxx-config REQUIRED)
+execute_process(COMMAND ${APFELXX_CONFIG} --cflags OUTPUT_VARIABLE APFELXX_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE RESULT_VARIABLE _apfel_cflags_rc)
+execute_process(COMMAND ${APFELXX_CONFIG} --ldflags OUTPUT_VARIABLE APFELXX_LDFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE RESULT_VARIABLE _apfel_ldflags_rc)
+if(NOT _apfel_cflags_rc EQUAL 0 OR NOT _apfel_ldflags_rc EQUAL 0)
+    message(FATAL_ERROR "apfelxx-config failed (cflags rc=${_apfel_cflags_rc}, ldflags rc=${_apfel_ldflags_rc})")
+endif()
+message(STATUS "APFEL++ cflags: ${APFELXX_CFLAGS}")
+message(STATUS "APFEL++ ldflags: ${APFELXX_LDFLAGS}")
 
 # Parse APFEL++ flags
 separate_arguments(APFELXX_CFLAGS_LIST UNIX_COMMAND "${APFELXX_CFLAGS}")
