@@ -22,14 +22,21 @@ message(STATUS "APFEL++ ldflags: ${APFELXX_LDFLAGS}")
 separate_arguments(APFELXX_CFLAGS_LIST UNIX_COMMAND "${APFELXX_CFLAGS}")
 separate_arguments(APFELXX_LDFLAGS_LIST UNIX_COMMAND "${APFELXX_LDFLAGS}")
 
-# Extract APFEL++ include dirs and libraries
+# Extract APFEL++ include dirs from -I flags
 set(APFELXX_INCLUDE_DIRS "")
-set(APFELXX_LINK_FLAGS "")
 foreach(flag ${APFELXX_CFLAGS_LIST})
     if(flag MATCHES "^-I(.*)")
         list(APPEND APFELXX_INCLUDE_DIRS "${CMAKE_MATCH_1}")
     endif()
 endforeach()
+
+# Fallback: if cflags produced no -I flags, derive include dir from apfelxx-config location
+if(NOT APFELXX_INCLUDE_DIRS)
+    get_filename_component(_apfelxx_bindir "${APFELXX_CONFIG}" DIRECTORY)
+    get_filename_component(_apfelxx_prefix "${_apfelxx_bindir}" DIRECTORY)
+    set(APFELXX_INCLUDE_DIRS "${_apfelxx_prefix}/include")
+endif()
+message(STATUS "APFEL++ include dirs: ${APFELXX_INCLUDE_DIRS}")
 
 # Library
 add_library(pineapfel
