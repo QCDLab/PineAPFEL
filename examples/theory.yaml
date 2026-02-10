@@ -1,0 +1,24 @@
+# Initial evolution scale in GeV
+mu0: 1.0
+
+# QCD perturbative order (0=LO, 1=NLO, 2=NNLO)
+PerturbativeOrder: 2
+
+# Reference scale for alpha_s in GeV
+QRef: 91.1876
+
+# alpha_s at the reference scale
+AlphaQCDRef: 0.118
+
+# Quark mass thresholds in GeV (up through bottom; length determines nf_max)
+QuarkThresholds: [0.0, 0.0, 0.0, 1.4, 4.75]
+
+# Output flavor PIDs (defines pids_out for the FK table)
+Flavors: [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 21]
+
+# Enable QCD+QED evolution (default: false)
+QED: false
+
+# QED-specific fields (only used when QED: true)
+AlphaQEDRef: 0.00729927
+LeptonThresholds: []

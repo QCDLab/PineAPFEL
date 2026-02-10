@@ -1,0 +1,20 @@
+# x-space interpolation grid: list of sub-grids
+# Each entry: {n_knots, x_min, poly_degree}
+xgrid:
+  - n_knots: 80
+    x_min: 1.0e-5
+    poly_degree: 3
+  - n_knots: 40
+    x_min: 1.0e-1
+    poly_degree: 3
+
+# Tabulation parameters for alpha_s (and alpha_em)
+# Used in apfel::TabulateObject constructor
+tabulation:
+  n_points: 200
+  q_min: 0.9
+  n_steps: 13001
+  interp_degree: 3
+
+# Scale variation factors: [xir, xif, xia]
+xi: [1.0, 1.0, 1.0]
