@@ -61,7 +61,7 @@ target_link_libraries(pineapfel PUBLIC
 target_compile_options(pineapfel PRIVATE -Wall -Wextra -O3)
 
 # CLI executable
-add_executable(pineapfel-evolve cli/main.cpp)
+add_executable(pineapfel-evolve pineapfel_cli/main.cpp)
 target_link_libraries(pineapfel-evolve PRIVATE pineapfel)
 target_compile_options(pineapfel-evolve PRIVATE -Wall -Wextra -O3)
 
