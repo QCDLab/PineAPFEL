@@ -1,37 +1,73 @@
-# pineapfel
+<h1 align="center">pineapfel</h1>
 
-A C++ library and CLI tool for evolving [PineAPPL](https://github.com/NNPDF/pineappl)
-interpolation grids into FK tables using [APFEL++](https://github.com/vbertone/apfelxx)
-DGLAP evolution.
+<p align="justify">
+  A C++ library and CLI tool for evolving <a href="https://github.com/NNPDF/pineappl">PineAPPL</a>
+  interpolation grids into FK tables using <a href="https://github.com/vbertone/apfelxx">APFEL++</a>
+  DGLAP evolution.
+</p>
 
-All physics parameters (coupling constants, thresholds, perturbative order, etc.)
-are specified through two YAML configuration files — a **theory card** and an
-**operator card** — rather than being hardcoded.
+<p align="justify">
+  All physics parameters (coupling constants, thresholds, perturbative order, etc.)
+  are specified through two YAML configuration files — a <b>theory card</b> and an
+  <b>operator card</b> — rather than being hardcoded.
+</p>
 
-## Table of Contents
+<h2>Table of Contents</h2>
 
-- [Dependencies](#dependencies)
-- [Building](#building)
-- [Quick Start](#quick-start)
-- [Writing Configuration Cards](#writing-configuration-cards)
-  - [Theory Card](#theory-card)
-  - [Operator Card](#operator-card)
-- [Using the CLI](#using-the-cli)
-- [Using the Library](#using-the-library)
-- [QCD vs QCD+QED Evolution](#qcd-vs-qcdqed-evolution)
-- [File Structure](#file-structure)
+<ul>
+  <li><a href="#dependencies">Dependencies</a></li>
+  <li><a href="#building">Building</a></li>
+  <li><a href="#quick-start">Quick Start</a></li>
+  <li><a href="#writing-configuration-cards">Writing Configuration Cards</a>
+    <ul>
+      <li><a href="#theory-card">Theory Card</a></li>
+      <li><a href="#operator-card">Operator Card</a></li>
+    </ul>
+  </li>
+  <li><a href="#using-the-cli">Using the CLI</a></li>
+  <li><a href="#using-the-library">Using the Library</a></li>
+  <li><a href="#qcd-vs-qcdqed-evolution">QCD vs QCD+QED Evolution</a></li>
+  <li><a href="#file-structure">File Structure</a></li>
+</ul>
 
-## Dependencies
+<h2>Dependencies</h2>
 
-| Library | Purpose | Discovery |
-|---------|---------|-----------|
-| [APFEL++](https://github.com/vbertone/apfelxx) | DGLAP evolution kernels | `apfelxx-config` |
-| [PineAPPL C API](https://github.com/NNPDF/pineappl) | Grid I/O and evolution interface | `pkg-config` |
-| [yaml-cpp](https://github.com/jbeder/yaml-cpp) | YAML card parsing | `pkg-config` |
-| CMake >= 3.14 | Build system | — |
-| C++20 compiler | — | — |
+<div align="center">
+<table>
+  <tr>
+    <th>Library</th>
+    <th>Purpose</th>
+    <th>Discovery</th>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/vbertone/apfelxx">APFEL++</a></td>
+    <td>DGLAP evolution kernels</td>
+    <td><code>apfelxx-config</code></td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/NNPDF/pineappl">PineAPPL C API</a></td>
+    <td>Grid I/O and evolution interface</td>
+    <td><code>pkg-config</code></td>
+  </tr>
+  <tr>
+    <td><a href="https://github.com/jbeder/yaml-cpp">yaml-cpp</a></td>
+    <td>YAML card parsing</td>
+    <td><code>pkg-config</code></td>
+  </tr>
+  <tr>
+    <td>CMake >= 3.14</td>
+    <td>Build system</td>
+    <td>—</td>
+  </tr>
+  <tr>
+    <td>C++20 compiler</td>
+    <td>—</td>
+    <td>—</td>
+  </tr>
+</table>
+</div>
 
-## Building
+<h2>Building</h2>
 
 ```bash
 cd pineapfel
@@ -40,40 +76,60 @@ cmake ..
 make -j$(nproc)
 ```
 
-This produces:
-- `libpineapfel.a` — the static library
-- `pineapfel-evolve` — the CLI executable
+<p align="justify">
+  This produces:
+</p>
 
-To install system-wide:
+<ul>
+  <li><code>libpineapfel.a</code> — the static library</li>
+  <li><code>pineapfel-evolve</code> — the CLI executable</li>
+</ul>
+
+<p align="justify">
+  To install system-wide:
+</p>
 
 ```bash
 make install
 ```
 
-> **Note:** If APFEL++ is installed in a non-standard location (e.g. `/usr/local/lib`),
-> you may need to set `LD_LIBRARY_PATH` at runtime:
-> ```bash
-> export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-> ```
+<blockquote>
+<p align="justify">
+  <b>Note:</b> If APFEL++ is installed in a non-standard location (e.g. <code>/usr/local/lib</code>),
+  you may need to set <code>LD_LIBRARY_PATH</code> at runtime:
+</p>
 
-## Quick Start
+```bash
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+```
+</blockquote>
 
-Evolve a PineAPPL grid using the example configuration files:
+<h2>Quick Start</h2>
+
+<p align="justify">
+  Evolve a PineAPPL grid using the example configuration files:
+</p>
 
 ```bash
 ./build/pineapfel-evolve /path/to/grid.pineappl.lz4 examples/theory.yaml examples/operator.yaml
 ```
 
-This writes the FK table to `grid.fk.pineappl.lz4` (same directory as the input grid).
+<p align="justify">
+  This writes the FK table to <code>grid.fk.pineappl.lz4</code> (same directory as the input grid).
+</p>
 
-## Writing Configuration Cards
+<h2>Writing Configuration Cards</h2>
 
-All physics and numerical parameters are split between two YAML files.
+<p align="justify">
+  All physics and numerical parameters are split between two YAML files.
+</p>
 
-### Theory Card
+<h3>Theory Card</h3>
 
-The theory card specifies the physics of the DGLAP evolution. Here is a complete example with all
-fields explained:
+<p align="justify">
+  The theory card specifies the physics of the DGLAP evolution. Here is a complete example with all
+  fields explained:
+</p>
 
 ```yaml
 # Initial evolution scale in GeV.
@@ -116,9 +172,11 @@ AlphaQEDRef: 0.00729927
 LeptonThresholds: []
 ```
 
-#### Common configurations
+<h4>Common configurations</h4>
 
-**NNLO QCD with 5 flavors:**
+<p align="justify">
+  <b>NNLO QCD with 5 flavors:</b>
+</p>
 
 ```yaml
 mu0: 1.0
@@ -130,7 +188,9 @@ Flavors: [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 21]
 QED: false
 ```
 
-**NLO QCD+QED with photon in the output basis:**
+<p align="justify">
+  <b>NLO QCD+QED with photon in the output basis:</b>
+</p>
 
 ```yaml
 mu0: 1.0
@@ -144,10 +204,12 @@ AlphaQEDRef: 0.00729927
 LeptonThresholds: []
 ```
 
-### Operator Card
+<h3>Operator Card</h3>
 
-The operator card controls numerical aspects of the evolution: the x-space interpolation grid,
-the tabulation of running couplings, and scale-variation factors.
+<p align="justify">
+  The operator card controls numerical aspects of the evolution: the x-space interpolation grid,
+  the tabulation of running couplings, and scale-variation factors.
+</p>
 
 ```yaml
 # x-space interpolation grid.
@@ -186,20 +248,40 @@ tabulation:
 xi: [1.0, 1.0, 1.0]
 ```
 
-## Using the CLI
+<h2>Using the CLI</h2>
 
 ```
 pineapfel-evolve <grid.pineappl.lz4> <theory.yaml> <operator.yaml> [-o output.pineappl.lz4]
 ```
 
-| Argument | Description |
-|----------|-------------|
-| `grid.pineappl.lz4` | Input PineAPPL interpolation grid |
-| `theory.yaml` | Theory card (physics parameters) |
-| `operator.yaml` | Operator card (numerical parameters) |
-| `-o output` | *(Optional)* Output path. Default: `<grid-name>.fk.pineappl.lz4` |
+<div align="center">
+<table>
+  <tr>
+    <th>Argument</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td><code>grid.pineappl.lz4</code></td>
+    <td>Input PineAPPL interpolation grid</td>
+  </tr>
+  <tr>
+    <td><code>theory.yaml</code></td>
+    <td>Theory card (physics parameters)</td>
+  </tr>
+  <tr>
+    <td><code>operator.yaml</code></td>
+    <td>Operator card (numerical parameters)</td>
+  </tr>
+  <tr>
+    <td><code>-o output</code></td>
+    <td><em>(Optional)</em> Output path. Default: <code>&lt;grid-name&gt;.fk.pineappl.lz4</code></td>
+  </tr>
+</table>
+</div>
 
-**Examples:**
+<p align="justify">
+  <b>Examples:</b>
+</p>
 
 ```bash
 # Default output name
@@ -209,15 +291,17 @@ pineapfel-evolve grid.pineappl.lz4 theory.yaml operator.yaml
 pineapfel-evolve grid.pineappl.lz4 theory.yaml operator.yaml -o my_fktable.pineappl.lz4
 ```
 
-## Using the Library
+<h2>Using the Library</h2>
 
-Include the single convenience header to access the full API:
+<p align="justify">
+  Include the single convenience header to access the full API:
+</p>
 
 ```cpp
 #include <pineapfel/pineapfel.h>
 ```
 
-### Minimal example
+<h3>Minimal example</h3>
 
 ```cpp
 #include <pineapfel/pineapfel.h>
@@ -246,9 +330,11 @@ int main() {
 }
 ```
 
-### Building your own program against `pineapfel`
+<h3>Building your own program against <code>pineapfel</code></h3>
 
-If `pineapfel` is installed, you can link against it in your `CMakeLists.txt`:
+<p align="justify">
+  If <code>pineapfel</code> is installed, you can link against it in your <code>CMakeLists.txt</code>:
+</p>
 
 ```cmake
 find_library(PINEAPFEL_LIB pineapfel)
@@ -256,16 +342,20 @@ target_link_libraries(my_program PRIVATE ${PINEAPFEL_LIB})
 target_include_directories(my_program PRIVATE /path/to/pineapfel/include)
 ```
 
-Or compile directly with the source tree:
+<p align="justify">
+  Or compile directly with the source tree:
+</p>
 
 ```cmake
 add_subdirectory(pineapfel)
 target_link_libraries(my_program PRIVATE pineapfel)
 ```
 
-### Constructing cards programmatically
+<h3>Constructing cards programmatically</h3>
 
-You do not need YAML files — the structs can be filled directly in C++:
+<p align="justify">
+  You do not need YAML files — the structs can be filled directly in C++:
+</p>
 
 ```cpp
 #include <pineapfel/pineapfel.h>
@@ -303,22 +393,57 @@ int main() {
 }
 ```
 
-## QCD vs QCD+QED Evolution
+<h2>QCD vs QCD+QED Evolution</h2>
 
-The evolution mode is controlled by the `QED` field in the theory card:
+<p align="justify">
+  The evolution mode is controlled by the <code>QED</code> field in the theory card:
+</p>
 
-| Mode | `QED` | Basis size | DGLAP objects | Coupling |
-|------|-------|-----------|---------------|----------|
-| Pure QCD | `false` | 13 x 13 | `apfel::DglapObjects` | `apfel::AlphaQCD` |
-| QCD+QED | `true` | 20 x 20 | `apfel::DglapObjectsQCDQED` | `apfel::AlphaQCDQED` |
+<div align="center">
+<table>
+  <tr>
+    <th>Mode</th>
+    <th><code>QED</code></th>
+    <th>Basis size</th>
+    <th>DGLAP objects</th>
+    <th>Coupling</th>
+  </tr>
+  <tr>
+    <td>Pure QCD</td>
+    <td><code>false</code></td>
+    <td>13 x 13</td>
+    <td><code>apfel::DglapObjects</code></td>
+    <td><code>apfel::AlphaQCD</code></td>
+  </tr>
+  <tr>
+    <td>QCD+QED</td>
+    <td><code>true</code></td>
+    <td>20 x 20</td>
+    <td><code>apfel::DglapObjectsQCDQED</code></td>
+    <td><code>apfel::AlphaQCDQED</code></td>
+  </tr>
+</table>
+</div>
 
-**QCD mode** supports three convolution types (determined automatically from the grid):
-- `UNPOL_PDF` — unpolarised PDFs
-- `POL_PDF` — longitudinally polarised PDFs
-- `UNPOL_FF` — unpolarised fragmentation functions
+<p align="justify">
+  <b>QCD mode</b> supports three convolution types (determined automatically from the grid):
+</p>
 
-**QCD+QED mode** currently supports:
-- `UNPOL_PDF` — unpolarised PDFs with QED corrections
+<ul>
+  <li><code>UNPOL_PDF</code> — unpolarised PDFs</li>
+  <li><code>POL_PDF</code> — longitudinally polarised PDFs</li>
+  <li><code>UNPOL_FF</code> — unpolarised fragmentation functions</li>
+</ul>
 
-The library reads the convolution types from the grid metadata and initializes the appropriate
-DGLAP objects automatically.
+<p align="justify">
+  <b>QCD+QED mode</b> currently supports:
+</p>
+
+<ul>
+  <li><code>UNPOL_PDF</code> — unpolarised PDFs with QED corrections</li>
+</ul>
+
+<p align="justify">
+  The library reads the convolution types from the grid metadata and initializes the appropriate
+  DGLAP objects automatically.
+</p>
