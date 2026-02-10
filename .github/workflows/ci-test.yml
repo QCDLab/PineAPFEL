@@ -14,14 +14,12 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            build-essential cmake pkg-config \
-            libyaml-cpp-dev
+          sudo apt-get install -y build-essential cmake pkg-config libyaml-cpp-dev
 
       # ---- Install PineAPPL C API ----
       - name: Install PineAPPL C API
         run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://nnpdf.github.io/pineappl/install-capi.sh | sh
+          curl --proto '=https' --tlsv1.2 -sSf https://nnpdf.github.io/pineappl/install-capi.sh | sh -s -- --prefix "$HOME/.local/bin"
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           echo "PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=$HOME/.local/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
@@ -56,10 +54,6 @@ jobs:
       - name: Test grid evolution
         run: |
           ./build/pineapfel-evolve \
-            tests/data/LHCB_WP_7TEV_opt.pineappl.lz4 \
-            examples/theory.yaml \
-            examples/operator.yaml \
-            -o /tmp/test_fktable.pineappl.lz4
-          test -f /tmp/test_fktable.pineappl.lz4 || \
-            (echo "FK table was not produced" && exit 1)
+            tests/data/LHCB_WP_7TEV_opt.pineappl.lz4 examples/theory.yaml examples/operator.yaml -o /tmp/test_fktable.pineappl.lz4
+          test -f /tmp/test_fktable.pineappl.lz4 || (echo "FK table was not produced" && exit 1)
           echo "Grid evolution test passed"
