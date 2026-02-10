@@ -77,13 +77,8 @@ make -j$(nproc)
 ```
 
 <p align="justify">
-  This produces:
+  This produces a static library (<li><code>libpineapfel.a</code>) and a CLI executable (<li><code>pineapfel-evolve</code>).
 </p>
-
-<ul>
-  <li><code>libpineapfel.a</code> — the static library</li>
-  <li><code>pineapfel-evolve</code> — the CLI executable</li>
-</ul>
 
 <p align="justify">
   To install system-wide:
@@ -95,12 +90,12 @@ make install
 
 <blockquote>
 <p align="justify">
-  <b>Note:</b> If APFEL++ is installed in a non-standard location (e.g. <code>/usr/local/lib</code>),
-  you may need to set <code>LD_LIBRARY_PATH</code> at runtime:
+  <b>Note:</b> If APFEL++ is installed in a non-standard location, you may need to set <code>LD_LIBRARY_PATH</code> at
+  runtime:
 </p>
 
 ```bash
-export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/path/to/lib:$LD_LIBRARY_PATH
 ```
 </blockquote>
 
