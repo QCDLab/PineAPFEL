@@ -46,14 +46,10 @@ jobs:
       # ---- Test: CLI usage message ----
       - name: Test CLI usage
         run: |
-          ./build/pineapfel-evolve 2>&1 | grep -q "Usage:" || \
-            (echo "CLI usage message not found" && exit 1)
-          echo "CLI usage test passed"
+          ./build/pineapfel-evolve 2>&1 | grep -q "Usage:" || (echo "CLI usage message not found" && exit 1)
 
       # ---- Test: Evolve a grid ----
       - name: Test grid evolution
         run: |
-          ./build/pineapfel-evolve \
-            tests/data/LHCB_WP_7TEV_opt.pineappl.lz4 examples/theory.yaml examples/operator.yaml -o /tmp/test_fktable.pineappl.lz4
+          ./build/pineapfel-evolve test-data/LHCB_WP_7TEV_opt.pineappl.lz4 examples/theory.yaml examples/operator.yaml -o /tmp/test_fktable.pineappl.lz4
           test -f /tmp/test_fktable.pineappl.lz4 || (echo "FK table was not produced" && exit 1)
-          echo "Grid evolution test passed"
