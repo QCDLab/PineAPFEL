@@ -1,0 +1,65 @@
+name: CI Tests
+
+on:
+  push:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- Install system packages ----
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake pkg-config \
+            libyaml-cpp-dev
+
+      # ---- Install PineAPPL C API ----
+      - name: Install PineAPPL C API
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://nnpdf.github.io/pineappl/install-capi.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$HOME/.local/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+
+      # ---- Build APFEL++ from source ----
+      - name: Build and install APFEL++
+        run: |
+          git clone https://github.com/vbertone/apfelxx.git /tmp/apfelxx
+          cd /tmp/apfelxx
+          mkdir build && cd build
+          cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/.local
+          make -j$(nproc)
+          make install
+          echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$HOME/.local/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+
+      # ---- Build pineapfel ----
+      - name: Build pineapfel
+        run: |
+          mkdir build && cd build
+          cmake ..
+          make -j$(nproc)
+
+      # ---- Test: CLI usage message ----
+      - name: Test CLI usage
+        run: |
+          ./build/pineapfel-evolve 2>&1 | grep -q "Usage:" || \
+            (echo "CLI usage message not found" && exit 1)
+          echo "CLI usage test passed"
+
+      # ---- Test: Evolve a grid ----
+      - name: Test grid evolution
+        run: |
+          ./build/pineapfel-evolve \
+            tests/data/LHCB_WP_7TEV_opt.pineappl.lz4 \
+            examples/theory.yaml \
+            examples/operator.yaml \
+            -o /tmp/test_fktable.pineappl.lz4
+          test -f /tmp/test_fktable.pineappl.lz4 || \
+            (echo "FK table was not produced" && exit 1)
+          echo "Grid evolution test passed"
