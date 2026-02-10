@@ -19,7 +19,7 @@ jobs:
       # ---- Install PineAPPL C API ----
       - name: Install PineAPPL C API
         run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://nnpdf.github.io/pineappl/install-capi.sh | sh -s -- --prefix "$HOME/.local/bin"
+          curl --proto '=https' --tlsv1.2 -sSf https://nnpdf.github.io/pineappl/install-capi.sh | sh -s -- --prefix "$HOME/.local"
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           echo "PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=$HOME/.local/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
