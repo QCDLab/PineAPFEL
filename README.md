@@ -1,4 +1,4 @@
-<h1 align="center">pineapfel</h1>
+<h1 align="center">PineAPFEL</h1>
 
 <p align="justify">
   A C++ library and CLI tool for evolving <a href="https://github.com/NNPDF/pineappl">PineAPPL</a>
@@ -77,7 +77,7 @@ make -j$(nproc)
 ```
 
 <p align="justify">
-  This produces a static library (<li><code>libpineapfel.a</code>) and a CLI executable (<li><code>pineapfel-evolve</code>).
+  This produces a static library (<code>libpineapfel.a</code>) and a CLI executable (<code>pineapfel-evolve</code>).
 </p>
 
 <p align="justify">
@@ -237,8 +237,8 @@ tabulation:
 
 # Scale variation factors: [xi_R, xi_F, xi_A]
 #   xi_R: renormalization scale ratio (mu_R / Q)
-#   xi_F: factorization scale ratio  (mu_F / Q)
-#   xi_A: fragmentation scale ratio  (mu_A / Q)
+#   xi_F: factorization scale ratio   (mu_F / Q)
+#   xi_A: fragmentation scale ratio   (mu_A / Q)
 # Use [1.0, 1.0, 1.0] for central predictions.
 xi: [1.0, 1.0, 1.0]
 ```
@@ -269,7 +269,7 @@ pineapfel-evolve <grid.pineappl.lz4> <theory.yaml> <operator.yaml> [-o output.pi
   </tr>
   <tr>
     <td><code>-o output</code></td>
-    <td><em>(Optional)</em> Output path. Default: <code>&lt;grid-name&gt;.fk.pineappl.lz4</code></td>
+    <td>(Optional) Output path. Default: <code>&lt;grid-name&gt;.fk.pineappl.lz4</code></td>
   </tr>
 </table>
 </div>
