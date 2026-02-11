@@ -11,7 +11,7 @@ including the evolution basis, interpolation settings.
 
 The program can be run as:
 ```bash
-./build/pineapfel-evolve /path/to/grid.pineappl.lz4 examples/theory.yaml examples/operator.yaml
+./build/pineapfel-evolve /path/to/grid.pineappl.lz4 runcards/theory.yaml runcards/operator.yaml
 ```
 
 Upon successful execution, an FK table is produced in the same directory as the input grid. This FK
