@@ -10,7 +10,7 @@ int main() {
     // ---------------------------------------------------------------
     // Option A: Load the grid definition from a YAML file
     // ---------------------------------------------------------------
-    //   auto def = pineapfel::load_grid_def("examples/grid_dis.yaml");
+    //   auto def = pineapfel::load_grid_def("runcards/grid_dis.yaml");
 
     // ---------------------------------------------------------------
     // Option B: Build the grid definition programmatically
