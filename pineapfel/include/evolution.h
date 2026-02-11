@@ -1,6 +1,6 @@
 #pragma once
 
-#include <pineapfel/cards.h>
+#include <cards.h>
 #include <pineappl_capi.h>
 
 namespace pineapfel {

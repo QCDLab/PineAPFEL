@@ -46,15 +46,15 @@ apfelxx_dep = declare_dependency(
 )
 
 pineapfel_lib = static_library('pineapfel',
-  'src/cards.cpp',
-  'src/evolution.cpp',
-  include_directories : include_directories('include'),
+  'pineapfel/src/cards.cpp',
+  'pineapfel/src/evolution.cpp',
+  include_directories : include_directories('pineapfel/include'),
   dependencies : [pineappl_dep, yaml_cpp_dep, apfelxx_dep],
   install : true,
 )
 
 pineapfel_dep = declare_dependency(
-  include_directories : include_directories('include'),
+  include_directories : include_directories('pineapfel/include'),
   link_with : pineapfel_lib,
   dependencies : [pineappl_dep, yaml_cpp_dep, apfelxx_dep],
 )
@@ -65,4 +65,9 @@ executable('pineapfel-evolve',
   install : true,
 )
 
-install_subdir('include/pineapfel', install_dir : get_option('includedir'))
+install_headers(
+  'pineapfel/include/cards.h',
+  'pineapfel/include/evolution.h',
+  'pineapfel/include/pineapfel.h',
+  install_dir : get_option('includedir'),
+)

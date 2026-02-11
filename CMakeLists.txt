@@ -40,11 +40,11 @@ message(STATUS "APFEL++ include dirs: ${APFELXX_INCLUDE_DIRS}")
 
 # Library
 add_library(pineapfel
-    src/cards.cpp
-    src/evolution.cpp
+    pineapfel/src/cards.cpp
+    pineapfel/src/evolution.cpp
 )
 target_include_directories(pineapfel PUBLIC
-    include
+    pineapfel/include
     ${PINEAPPL_INCLUDE_DIRS}
     ${YAML_CPP_INCLUDE_DIRS}
     ${APFELXX_INCLUDE_DIRS}
@@ -71,4 +71,4 @@ install(TARGETS pineapfel pineapfel-evolve
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
 )
-install(DIRECTORY include/pineapfel DESTINATION include)
+install(DIRECTORY pineapfel/include/ DESTINATION include)

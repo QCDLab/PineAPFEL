@@ -88,6 +88,24 @@ make -j$(nproc)
 make install
 ```
 
+<p align="justify">
+  Alternatively, you can build with <b>Meson</b>:
+</p>
+
+```bash
+cd pineapfel
+meson setup build-meson
+meson compile -C build-meson
+```
+
+<p align="justify">
+  To install system-wide:
+</p>
+
+```bash
+meson install -C build-meson
+```
+
 <blockquote>
 <p align="justify">
   <b>Note:</b> If APFEL++ is installed in a non-standard location, you may need to set <code>LD_LIBRARY_PATH</code> at
@@ -293,13 +311,13 @@ pineapfel-evolve grid.pineappl.lz4 theory.yaml operator.yaml -o my_fktable.pinea
 </p>
 
 ```cpp
-#include <pineapfel/pineapfel.h>
+#include <pineapfel.h>
 ```
 
 <h3>Minimal example</h3>
 
 ```cpp
-#include <pineapfel/pineapfel.h>
+#include <pineapfel.h>
 #include <pineappl_capi.h>
 #include <iostream>
 
@@ -353,7 +371,7 @@ target_link_libraries(my_program PRIVATE pineapfel)
 </p>
 
 ```cpp
-#include <pineapfel/pineapfel.h>
+#include <pineapfel.h>
 #include <pineappl_capi.h>
 
 int main() {

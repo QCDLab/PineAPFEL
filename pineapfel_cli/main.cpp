@@ -1,4 +1,4 @@
-#include <pineapfel/pineapfel.h>
+#include <pineapfel.h>
 #include <pineappl_capi.h>
 #include <apfel/apfelxx.h>
 

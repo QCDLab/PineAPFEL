@@ -1,4 +1,4 @@
-#include <pineapfel/cards.h>
+#include <cards.h>
 #include <yaml-cpp/yaml.h>
 #include <stdexcept>
 
