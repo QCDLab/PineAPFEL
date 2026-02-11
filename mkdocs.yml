@@ -1,0 +1,64 @@
+site_name: PineAPFEL
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  logo: assets/pineapfel.svg
+  favicon: assets/pineapfel.svg
+  palette:
+    scheme: slate
+    primary: custom
+    accent: custom
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.annotation
+    - content.code.copy
+
+extra_css:
+  - custom.css
+  - assets/stylesheets/notebooks.css
+  - https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Building: building.md
+      - Quick start: quick-start.md
+  - Usage:
+      - Configuration cards: configuration-cards.md
+      - CLI: cli.md
+      - Library: library.md
+      - QCD vs QCD⊗QED: evolution-modes.md
+
+plugins:
+  - search
+  - mermaid2
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+  - attr_list
+  - admonition
+  - def_list
+  - pymdownx.tasklist:
+      custom_checkbox: true
