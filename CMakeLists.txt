@@ -42,6 +42,7 @@ message(STATUS "APFEL++ include dirs: ${APFELXX_INCLUDE_DIRS}")
 add_library(pineapfel
     pineapfel/src/cards.cpp
     pineapfel/src/evolution.cpp
+    pineapfel/src/grid_gen.cpp
 )
 target_include_directories(pineapfel PUBLIC
     pineapfel/include
