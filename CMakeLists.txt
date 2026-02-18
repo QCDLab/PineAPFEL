@@ -71,6 +71,14 @@ add_executable(pineapfel-build pineapfel_cli/build.cpp)
 target_link_libraries(pineapfel-build PRIVATE pineapfel)
 target_compile_options(pineapfel-build PRIVATE -Wall -Wextra -O3)
 
+# Tests
+enable_testing()
+add_executable(test_grid_vs_apfelxx tests/test_grid_vs_apfelxx.cpp)
+target_link_libraries(test_grid_vs_apfelxx PRIVATE pineapfel)
+target_compile_options(test_grid_vs_apfelxx PRIVATE -Wall -Wextra -O3)
+add_test(NAME grid_vs_apfelxx COMMAND test_grid_vs_apfelxx
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 # Install targets
 install(TARGETS pineapfel pineapfel-evolve pineapfel-build
     ARCHIVE DESTINATION lib

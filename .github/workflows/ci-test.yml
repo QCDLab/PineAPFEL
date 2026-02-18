@@ -43,6 +43,11 @@ jobs:
           cmake ..
           make -j$(nproc)
 
+      # ---- Test: Grid vs APFEL++ comparison ----
+      - name: Test grid vs APFEL++ comparison
+        run: |
+          cd build && ctest --output-on-failure
+
       # ---- Test: CLI usage message ----
       - name: Test CLI usage
         run: |
