@@ -6,6 +6,8 @@ HadronPids: [2212]
 ConvolutionTypes: [UNPOL_PDF]
 
 Orders:
+  - [0, 0, 0, 0, 0]
+  - [1, 0, 0, 0, 0]
   - [2, 0, 0, 0, 0]
 
 Channels:

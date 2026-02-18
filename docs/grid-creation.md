@@ -3,7 +3,7 @@
 PineAPFEL can create PineAPPL interpolation grids pre-filled with analytically computed
 coefficient functions from APFEL++. This is useful for structure function computations
 where the hard-scattering kernels are known analytically and only the non-perturbative
-input (PDFs or fragmentation functions) needs to be provided at convolution time.
+input (PDFs or Fragmentation Functions) needs to be provided at convolution time.
 
 The grid creation workflow requires three YAML configuration files:
 
@@ -63,9 +63,13 @@ The coefficient functions are available at the following perturbative orders:
 | 1 | NLO | \(C_{2,\mathrm{NS}}^{(1)}\), \(C_{2,g}^{(1)}\) | \(C_{3,\mathrm{NS}}^{(1)}\), no gluon |
 | 2 | NNLO | \(C_{2,\mathrm{NS}}^{(2)}\), \(C_{2,\mathrm{PS}}^{(2)}\), \(C_{2,g}^{(2)}\) | \(C_{3,\mathrm{NS}}^{(2)}\), no gluon |
 
-The order is specified in the grid card via the `Orders` field. Each order entry is a
+The orders are specified in the grid card via the `Orders` field. Each order entry is a
 5-element array `[alpha_s, alpha, log_xir, log_xif, log_xia]`. For pure QCD coefficient
 functions, only the `alpha_s` power matters; the remaining entries should be set to 0.
+
+Each entry stores the coefficient function at that **specific** power of \(\alpha_s\),
+not the cumulative sum. For a complete NNLO prediction, all three orders (LO, NLO, NNLO)
+must be listed so that the grid contains separate subgrids for each perturbative contribution.
 
 !!! warning
     Orders beyond NNLO (`alpha_s > 2`) are silently skipped during grid filling, even
@@ -151,6 +155,8 @@ ConvolutionTypes: [UNPOL_PDF]
 # [alpha_s, alpha, log(xi_R), log(xi_F), log(xi_A)]
 # For QCD-only coefficient functions, set all but alpha_s to 0.
 Orders:
+  - [0, 0, 0, 0, 0]   # O(alpha_s^0) = LO
+  - [1, 0, 0, 0, 0]   # O(alpha_s^1) = NLO
   - [2, 0, 0, 0, 0]   # O(alpha_s^2) = NNLO
 
 # Partonic channels. Each channel is a list of PID combinations
@@ -181,7 +187,7 @@ Normalizations: [1.0, 1.0]
 
 #### DIS example
 
-A DIS \(F_2\) grid at NNLO with two \((Q^2, x)\) bins and three channels
+A DIS \(F_2\) grid up to NNLO with two \((Q^2, x)\) bins and three channels
 (u+ubar, d+dbar, gluon):
 
 ```yaml
@@ -193,6 +199,8 @@ HadronPids: [2212]
 ConvolutionTypes: [UNPOL_PDF]
 
 Orders:
+  - [0, 0, 0, 0, 0]
+  - [1, 0, 0, 0, 0]
   - [2, 0, 0, 0, 0]
 
 Channels:
@@ -214,7 +222,7 @@ Normalizations: [1.0, 1.0]
 
 #### SIA example
 
-An SIA \(F_2\) grid for pion production. Note that the second kinematic
+An SIA \(F_2\) grid for pion production up to NNLO. Note that the second kinematic
 dimension is the hadron momentum fraction \(z\) instead of Bjorken \(x\),
 and the convolution type is `UNPOL_FF`:
 
@@ -227,6 +235,8 @@ HadronPids: [211]
 ConvolutionTypes: [UNPOL_FF]
 
 Orders:
+  - [0, 0, 0, 0, 0]
+  - [1, 0, 0, 0, 0]
   - [2, 0, 0, 0, 0]
 
 Channels:
@@ -351,11 +361,11 @@ def.pid_basis  = PINEAPPL_PID_BASIS_PDG;
 def.hadron_pids        = {2212};
 def.convolution_types  = {PINEAPPL_CONV_TYPE_UNPOL_PDF};
 
-def.orders   = {{2, 0, 0, 0, 0}};  // NNLO
+def.orders   = {{0, 0, 0, 0, 0}, {1, 0, 0, 0, 0}, {2, 0, 0, 0, 0}};  // LO + NLO + NNLO
 def.channels = {
     {{{2}, {-2}},  {1.0, 1.0}},   // u + ubar
     {{{1}, {-1}},  {1.0, 1.0}},   // d + dbar
-    {{{21}},       {1.0}},         // gluon
+    {{{21}},       {1.0}},        // gluon
 };
 def.bins = {
     {{10.0, 0.001}, {100.0, 0.01}},
