@@ -17,6 +17,23 @@ GridDef load_grid_def(const std::string& path) {
     else if (proc == "SIA")   def.process = ProcessType::SIA;
     else throw std::runtime_error("Unknown process type: " + proc);
 
+    // Observable (optional, defaults to F2)
+    if (config["Observable"]) {
+        std::string obs = config["Observable"].as<std::string>();
+        if (obs == "F2")       def.observable = Observable::F2;
+        else if (obs == "FL")  def.observable = Observable::FL;
+        else if (obs == "F3")  def.observable = Observable::F3;
+        else throw std::runtime_error("Unknown observable: " + obs);
+    }
+
+    // Current (optional, defaults to NC)
+    if (config["Current"]) {
+        std::string cur = config["Current"].as<std::string>();
+        if (cur == "NC")       def.current = Current::NC;
+        else if (cur == "CC")  def.current = Current::CC;
+        else throw std::runtime_error("Unknown current: " + cur);
+    }
+
     // PID basis
     std::string basis = config["PidBasis"].as<std::string>();
     if (basis == "PDG")       def.pid_basis = PINEAPPL_PID_BASIS_PDG;

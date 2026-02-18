@@ -1,6 +1,9 @@
 ## Writing configuration cards
 
-All physics and numerical parameters are split between two YAML files: a **theory card** and an **operator card**.
+PineAPFEL uses YAML configuration files to specify all physics and numerical parameters.
+The **theory card** and **operator card** are required for both grid creation and evolution.
+An additional **grid card** is needed when creating grids with `build_grid()` or
+`pineapfel-build` (see [Grid creation](grid-creation.md) for the full grid card reference).
 
 ### Theory card
 

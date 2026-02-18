@@ -1,4 +1,6 @@
 Process: DIS
+Observable: F2
+Current: NC
 PidBasis: PDG
 HadronPids: [2212]
 ConvolutionTypes: [UNPOL_PDF]

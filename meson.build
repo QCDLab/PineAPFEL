@@ -48,6 +48,7 @@ apfelxx_dep = declare_dependency(
 pineapfel_lib = static_library('pineapfel',
   'pineapfel/src/cards.cpp',
   'pineapfel/src/evolution.cpp',
+  'pineapfel/src/fill.cpp',
   'pineapfel/src/grid_gen.cpp',
   include_directories : include_directories('pineapfel/include'),
   dependencies : [pineappl_dep, yaml_cpp_dep, apfelxx_dep],
@@ -66,6 +67,12 @@ executable('pineapfel-evolve',
   install : true,
 )
 
+executable('pineapfel-build',
+  'pineapfel_cli/build.cpp',
+  dependencies : pineapfel_dep,
+  install : true,
+)
+
 executable('create-grid-example',
   'examples/create_grid.cpp',
   dependencies : pineapfel_dep,
@@ -75,6 +82,7 @@ executable('create-grid-example',
 install_headers(
   'pineapfel/include/cards.h',
   'pineapfel/include/evolution.h',
+  'pineapfel/include/fill.h',
   'pineapfel/include/grid_gen.h',
   'pineapfel/include/pineapfel.h',
   install_dir : get_option('includedir'),

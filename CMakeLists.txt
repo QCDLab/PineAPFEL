@@ -42,6 +42,7 @@ message(STATUS "APFEL++ include dirs: ${APFELXX_INCLUDE_DIRS}")
 add_library(pineapfel
     pineapfel/src/cards.cpp
     pineapfel/src/evolution.cpp
+    pineapfel/src/fill.cpp
     pineapfel/src/grid_gen.cpp
 )
 target_include_directories(pineapfel PUBLIC
@@ -61,13 +62,17 @@ target_link_libraries(pineapfel PUBLIC
 )
 target_compile_options(pineapfel PRIVATE -Wall -Wextra -O3)
 
-# CLI executable
+# CLI executables
 add_executable(pineapfel-evolve pineapfel_cli/main.cpp)
 target_link_libraries(pineapfel-evolve PRIVATE pineapfel)
 target_compile_options(pineapfel-evolve PRIVATE -Wall -Wextra -O3)
 
+add_executable(pineapfel-build pineapfel_cli/build.cpp)
+target_link_libraries(pineapfel-build PRIVATE pineapfel)
+target_compile_options(pineapfel-build PRIVATE -Wall -Wextra -O3)
+
 # Install targets
-install(TARGETS pineapfel pineapfel-evolve
+install(TARGETS pineapfel pineapfel-evolve pineapfel-build
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin

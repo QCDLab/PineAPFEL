@@ -33,6 +33,7 @@ nav:
       - Quick start: quick-start.md
   - Usage:
       - Configuration cards: configuration-cards.md
+      - Grid creation: grid-creation.md
       - CLI: cli.md
       - Library: library.md
       - QCD vs QCD⊗QED: evolution-modes.md

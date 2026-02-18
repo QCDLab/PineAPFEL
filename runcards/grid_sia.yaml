@@ -1,4 +1,6 @@
 Process: SIA
+Observable: F2
+Current: NC
 PidBasis: PDG
 HadronPids: [211]
 ConvolutionTypes: [UNPOL_FF]

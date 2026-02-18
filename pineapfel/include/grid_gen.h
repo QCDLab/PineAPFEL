@@ -9,6 +9,8 @@
 namespace pineapfel {
 
 enum class ProcessType { DIS, SIDIS, SIA };
+enum class Observable  { F2, FL, F3 };
+enum class Current     { NC, CC };
 
 struct OrderDef {
     uint8_t alpha_s, alpha, log_xir, log_xif, log_xia;
@@ -26,6 +28,8 @@ struct BinDef {
 
 struct GridDef {
     ProcessType process;
+    Observable observable = Observable::F2;
+    Current    current    = Current::NC;
     pineappl_pid_basis pid_basis;
     std::vector<int> hadron_pids;
     std::vector<pineappl_conv_type> convolution_types;
