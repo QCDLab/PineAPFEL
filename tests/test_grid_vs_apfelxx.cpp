@@ -1,6 +1,6 @@
+#include <apfel/apfelxx.h>
 #include <pineapfel.h>
 #include <pineappl_capi.h>
-#include <apfel/apfelxx.h>
 
 #include <cmath>
 #include <cstddef>
@@ -17,8 +17,7 @@
 // Toy PDF: returns f(x), NOT x*f(x)
 // ----------------------------------------------------------------
 static double toy_f(int pid, double x) {
-    if (pid == 21)
-        return std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
+    if (pid == 21) return std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
     int apid = std::abs(pid);
     if (apid >= 1 && apid <= 5)
         return std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
@@ -26,13 +25,14 @@ static double toy_f(int pid, double x) {
 }
 
 // PineAPPL callback: returns x*f(x)
-extern "C" double xfx_callback(int32_t pid, double x, double /*q2*/, void* /*state*/) {
+extern "C" double
+xfx_callback(int32_t pid, double x, double /*q2*/, void * /*state*/) {
     return x * toy_f(pid, x);
 }
 
 // Alpha_s callback
-extern "C" double alphas_callback(double q2, void* state) {
-    auto* as_tab = static_cast<apfel::TabulateObject<double>*>(state);
+extern "C" double alphas_callback(double q2, void *state) {
+    auto *as_tab = static_cast<apfel::TabulateObject<double> *>(state);
     return as_tab->Evaluate(std::sqrt(q2));
 }
 
@@ -40,23 +40,26 @@ extern "C" double alphas_callback(double q2, void* state) {
 // Reproduce build_channel_operator from fill.cpp
 // ----------------------------------------------------------------
 static apfel::Operator build_channel_operator(
-    const pineapfel::ChannelDef& channel,
-    const std::map<int, apfel::Operator>& ops,
-    const std::vector<double>& charges,
-    int nf, bool f3,
-    const apfel::Operator& zero_op
-) {
-    const apfel::Operator& CNS = ops.at(apfel::DISNCBasis::CNS);
-    const apfel::Operator& CS  = ops.at(apfel::DISNCBasis::CS);
-    const apfel::Operator& CG  = ops.at(apfel::DISNCBasis::CG);
+    const pineapfel::ChannelDef          &channel,
+    const std::map<int, apfel::Operator> &ops,
+    const std::vector<double>            &charges,
+    int                                   nf,
+    bool                                  f3,
+    const apfel::Operator                &zero_op) {
+    const apfel::Operator &CNS    = ops.at(apfel::DISNCBasis::CNS);
+    const apfel::Operator &CS     = ops.at(apfel::DISNCBasis::CS);
+    const apfel::Operator &CG     = ops.at(apfel::DISNCBasis::CG);
 
-    double sum_ch = 0;
+    double                 sum_ch = 0;
     for (int i = 0; i < nf && i < static_cast<int>(charges.size()); i++)
         sum_ch += charges[i];
 
     bool is_gluon = false;
-    for (const auto& combo : channel.pid_combinations) {
-        if (combo.size() == 1 && combo[0] == 21) { is_gluon = true; break; }
+    for (const auto &combo : channel.pid_combinations) {
+        if (combo.size() == 1 && combo[0] == 21) {
+            is_gluon = true;
+            break;
+        }
     }
 
     if (is_gluon) {
@@ -65,18 +68,25 @@ static apfel::Operator build_channel_operator(
     }
 
     int quark_pid = 0;
-    for (const auto& combo : channel.pid_combinations) {
-        if (combo.size() == 1 && combo[0] > 0) { quark_pid = combo[0]; break; }
+    for (const auto &combo : channel.pid_combinations) {
+        if (combo.size() == 1 && combo[0] > 0) {
+            quark_pid = combo[0];
+            break;
+        }
     }
     if (quark_pid == 0) {
-        for (const auto& combo : channel.pid_combinations) {
-            if (combo.size() == 1 && combo[0] < 0) { quark_pid = -combo[0]; break; }
+        for (const auto &combo : channel.pid_combinations) {
+            if (combo.size() == 1 && combo[0] < 0) {
+                quark_pid = -combo[0];
+                break;
+            }
         }
     }
 
-    int q_idx = quark_pid - 1;
+    int    q_idx  = quark_pid - 1;
     double e_q_sq = (q_idx >= 0 && q_idx < static_cast<int>(charges.size()))
-                    ? charges[q_idx] : 0.0;
+                        ? charges[q_idx]
+                        : 0.0;
 
     if (f3) return e_q_sq * CNS;
     return e_q_sq * CNS + (sum_ch / 6.0) * (CS - CNS);
@@ -86,12 +96,11 @@ static apfel::Operator build_channel_operator(
 // Reproduce derive_q2_nodes from fill.cpp
 // ----------------------------------------------------------------
 static std::vector<double> derive_q2_nodes(
-    const std::vector<pineapfel::BinDef>& bins,
-    const std::vector<double>& thresholds,
-    int n_intermediate = 3
-) {
+    const std::vector<pineapfel::BinDef> &bins,
+    const std::vector<double>            &thresholds,
+    int                                   n_intermediate = 3) {
     std::set<double> q2_set;
-    for (const auto& bin : bins) {
+    for (const auto &bin : bins) {
         double q2_lo = bin.lower[0], q2_hi = bin.upper[0];
         q2_set.insert(q2_lo);
         q2_set.insert(q2_hi);
@@ -106,8 +115,7 @@ static std::vector<double> derive_q2_nodes(
     double q2_min = *q2_set.begin(), q2_max = *q2_set.rbegin();
     for (double thr : thresholds) {
         double q2_thr = thr * thr;
-        if (q2_thr > q2_min && q2_thr < q2_max)
-            q2_set.insert(q2_thr);
+        if (q2_thr > q2_min && q2_thr < q2_max) q2_set.insert(q2_thr);
     }
     return std::vector<double>(q2_set.begin(), q2_set.end());
 }
@@ -120,48 +128,54 @@ int main() {
     auto theory   = pineapfel::load_theory_card("runcards/theory.yaml");
     auto op_card  = pineapfel::load_operator_card("runcards/operator.yaml");
 
-    // Derive channels (same logic as build_grid) so the test reference can use them
+    // Derive channels (same logic as build_grid) so the test reference
+    // can use them
     {
         double q2_max = 0;
-        for (const auto& bin : grid_def.bins)
+        for (const auto &bin : grid_def.bins)
             q2_max = std::max(q2_max, bin.upper[0]);
         int nf_max = apfel::NF(std::sqrt(q2_max), theory.quark_thresholds);
-        grid_def.channels = pineapfel::derive_channels(grid_def.observable, nf_max);
+        grid_def.channels =
+            pineapfel::derive_channels(grid_def.observable, nf_max);
     }
 
-    pineappl_grid* grid = pineapfel::build_grid(grid_def, theory, op_card);
-    std::size_t nbins = pineappl_grid_bin_count(grid);
-    std::size_t nords = pineappl_grid_order_count(grid);
-    std::size_t nchan = grid_def.channels.size();
+    pineappl_grid *grid  = pineapfel::build_grid(grid_def, theory, op_card);
+    std::size_t    nbins = pineappl_grid_bin_count(grid);
+    std::size_t    nords = pineappl_grid_order_count(grid);
+    std::size_t    nchan = grid_def.channels.size();
 
     // Build independent APFEL++ objects
     std::vector<apfel::SubGrid> sgs;
-    for (const auto& sg : op_card.xgrid)
+    for (const auto &sg : op_card.xgrid)
         sgs.emplace_back(sg.n_knots, sg.x_min, sg.poly_degree);
     const apfel::Grid g{sgs};
 
     auto sf_init = apfel::InitializeF2NCObjectsZM(g, theory.quark_thresholds);
 
-    apfel::AlphaQCD a{theory.alpha_qcd_ref, theory.q_ref,
-                      theory.quark_thresholds, theory.pert_ord};
-    const auto& tabp = op_card.tabulation;
-    apfel::TabulateObject<double> as_tab{
-        a, tabp.n_points, tabp.q_min,
-        static_cast<double>(tabp.n_steps), tabp.interp_degree};
+    apfel::AlphaQCD               a{theory.alpha_qcd_ref,
+        theory.q_ref,
+        theory.quark_thresholds,
+        theory.pert_ord};
+    const auto                   &tabp = op_card.tabulation;
+    apfel::TabulateObject<double> as_tab{a,
+        tabp.n_points,
+        tabp.q_min,
+        static_cast<double>(tabp.n_steps),
+        tabp.interp_degree};
 
     auto q2_nodes = derive_q2_nodes(grid_def.bins, theory.quark_thresholds);
     const apfel::Operator ZeroOp{g, apfel::Null{}, apfel::eps5};
-    bool f3 = (grid_def.observable == pineapfel::Observable::F3);
-    bool timelike = (grid_def.process == pineapfel::ProcessType::SIA);
+    bool   f3        = (grid_def.observable == pineapfel::Observable::F3);
+    bool   timelike  = (grid_def.process == pineapfel::ProcessType::SIA);
 
-    int failures = 0;
-    double tolerance = 1e-6; // tight tolerance since both use the same APFEL++ grid
+    int    failures  = 0;
+    double tolerance = 1e-6;
 
     // ============================================================
     // TEST 1: PineAPPL LO convolution vs APFEL++ operator convolution
     //
     // Convolve the PineAPPL grid (LO only) with a toy PDF and compare
-    // against independently computing the same observable by:
+    // against independently computing the same observable:
     //   - For each Q² node: build coefficient function operators,
     //     convolve with the toy PDF distributions, sum over channels
     //   - Sum the per-Q²-node results (matching PineAPPL's sum)
@@ -172,51 +186,71 @@ int main() {
         for (std::size_t i = 0; i < nords; i++) lo_mask[i] = (i == 0);
 
         std::vector<double> pineappl_lo(nbins, 0.0);
-        pineappl_grid_convolve_with_one(
-            grid, 2212, xfx_callback, alphas_callback,
-            static_cast<void*>(&as_tab),
-            lo_mask.get(), nullptr, 1.0, 1.0,
+        pineappl_grid_convolve_with_one(grid,
+            2212,
+            xfx_callback,
+            alphas_callback,
+            static_cast<void *>(&as_tab),
+            lo_mask.get(),
+            nullptr,
+            1.0,
+            1.0,
             pineappl_lo.data());
 
         for (std::size_t ibin = 0; ibin < nbins; ibin++) {
             double x_center = std::sqrt(grid_def.bins[ibin].lower.back() *
                                         grid_def.bins[ibin].upper.back());
-            double ref = 0;
+            double ref      = 0;
 
             for (double q2 : q2_nodes) {
-                double Q = std::sqrt(q2);
-                int nf = apfel::NF(Q, theory.quark_thresholds);
-                auto charges = apfel::ElectroWeakCharges(Q, timelike);
-                auto FObjQ = sf_init(Q, charges);
+                double Q       = std::sqrt(q2);
+                int    nf      = apfel::NF(Q, theory.quark_thresholds);
+                auto   charges = apfel::ElectroWeakCharges(Q, timelike);
+                auto   FObjQ   = sf_init(Q, charges);
                 if (FObjQ.C0.count(1) == 0) continue;
                 auto ops = FObjQ.C0.at(1).GetObjects();
 
                 for (std::size_t ich = 0; ich < nchan; ich++) {
-                    apfel::Operator C_ch = build_channel_operator(
-                        grid_def.channels[ich], ops, charges, nf, f3, ZeroOp);
+                    apfel::Operator C_ch =
+                        build_channel_operator(grid_def.channels[ich],
+                            ops,
+                            charges,
+                            nf,
+                            f3,
+                            ZeroOp);
 
-                    const auto& ch = grid_def.channels[ich];
-                    apfel::Distribution pdf_ch(g, [&](double const& z) -> double {
-                        double sum = 0;
-                        for (std::size_t ic = 0; ic < ch.pid_combinations.size(); ic++) {
-                            double f_val = 1.0;
-                            for (int pid : ch.pid_combinations[ic])
-                                f_val *= toy_f(pid, z);
-                            sum += ch.factors[ic] * f_val;
-                        }
-                        return sum;
-                    });
+                    const auto         &ch = grid_def.channels[ich];
+                    apfel::Distribution pdf_ch(g,
+                        [&](double const &z) -> double {
+                            double sum = 0;
+                            for (std::size_t ic = 0;
+                                 ic < ch.pid_combinations.size();
+                                 ic++) {
+                                double f_val = 1.0;
+                                for (int pid : ch.pid_combinations[ic])
+                                    f_val *= toy_f(pid, z);
+                                sum += ch.factors[ic] * f_val;
+                            }
+                            return sum;
+                        });
 
                     ref += (C_ch * pdf_ch).Evaluate(x_center);
                 }
             }
 
-            double rel_diff = std::abs(ref) > 1e-30
-                ? std::abs(pineappl_lo[ibin] - ref) / std::abs(ref) : 0.0;
+            double rel_diff =
+                std::abs(ref) > 1e-30
+                    ? std::abs(pineappl_lo[ibin] - ref) / std::abs(ref)
+                    : 0.0;
 
             bool ok = (rel_diff < tolerance);
-            std::printf("  bin %zu: pineappl=%.6e  apfel++=%.6e  rel_diff=%.2e %s\n",
-                        ibin, pineappl_lo[ibin], ref, rel_diff, ok ? "OK" : "FAIL");
+            std::printf(
+                "  bin %zu: pineappl=%.6e  apfel++=%.6e  rel_diff=%.2e %s\n",
+                ibin,
+                pineappl_lo[ibin],
+                ref,
+                rel_diff,
+                ok ? "OK" : "FAIL");
             if (!ok) failures++;
         }
     }
@@ -225,7 +259,7 @@ int main() {
     // TEST 2: PineAPPL NLO convolution vs APFEL++ operator convolution
     //
     // Same as TEST 1 but including both LO and NLO contributions.
-    // PineAPPL multiplies NLO subgrids by alpha_s(mu_r²).
+    // PineAPPL multiplies NLO subgrids.
     // ============================================================
     std::printf("\n--- TEST 2: PineAPPL LO+NLO convolution vs APFEL++ ---\n");
     {
@@ -233,41 +267,54 @@ int main() {
         for (std::size_t i = 0; i < nords; i++) nlo_mask[i] = (i <= 1);
 
         std::vector<double> pineappl_nlo(nbins, 0.0);
-        pineappl_grid_convolve_with_one(
-            grid, 2212, xfx_callback, alphas_callback,
-            static_cast<void*>(&as_tab),
-            nlo_mask.get(), nullptr, 1.0, 1.0,
+        pineappl_grid_convolve_with_one(grid,
+            2212,
+            xfx_callback,
+            alphas_callback,
+            static_cast<void *>(&as_tab),
+            nlo_mask.get(),
+            nullptr,
+            1.0,
+            1.0,
             pineappl_nlo.data());
 
         for (std::size_t ibin = 0; ibin < nbins; ibin++) {
             double x_center = std::sqrt(grid_def.bins[ibin].lower.back() *
                                         grid_def.bins[ibin].upper.back());
-            double ref = 0;
+            double ref      = 0;
 
             for (double q2 : q2_nodes) {
-                double Q = std::sqrt(q2);
-                int nf = apfel::NF(Q, theory.quark_thresholds);
-                auto charges = apfel::ElectroWeakCharges(Q, timelike);
-                auto FObjQ = sf_init(Q, charges);
-                double as_val = as_tab.Evaluate(Q);
+                double Q       = std::sqrt(q2);
+                int    nf      = apfel::NF(Q, theory.quark_thresholds);
+                auto   charges = apfel::ElectroWeakCharges(Q, timelike);
+                auto   FObjQ   = sf_init(Q, charges);
+                double as_val  = as_tab.Evaluate(Q);
 
                 // LO contribution
                 if (FObjQ.C0.count(1)) {
                     auto ops0 = FObjQ.C0.at(1).GetObjects();
                     for (std::size_t ich = 0; ich < nchan; ich++) {
-                        apfel::Operator C_ch = build_channel_operator(
-                            grid_def.channels[ich], ops0, charges, nf, f3, ZeroOp);
-                        const auto& ch = grid_def.channels[ich];
-                        apfel::Distribution pdf_ch(g, [&](double const& z) -> double {
-                            double sum = 0;
-                            for (std::size_t ic = 0; ic < ch.pid_combinations.size(); ic++) {
-                                double f_val = 1.0;
-                                for (int pid : ch.pid_combinations[ic])
-                                    f_val *= toy_f(pid, z);
-                                sum += ch.factors[ic] * f_val;
-                            }
-                            return sum;
-                        });
+                        apfel::Operator C_ch =
+                            build_channel_operator(grid_def.channels[ich],
+                                ops0,
+                                charges,
+                                nf,
+                                f3,
+                                ZeroOp);
+                        const auto         &ch = grid_def.channels[ich];
+                        apfel::Distribution pdf_ch(g,
+                            [&](double const &z) -> double {
+                                double sum = 0;
+                                for (std::size_t ic = 0;
+                                     ic < ch.pid_combinations.size();
+                                     ic++) {
+                                    double f_val = 1.0;
+                                    for (int pid : ch.pid_combinations[ic])
+                                        f_val *= toy_f(pid, z);
+                                    sum += ch.factors[ic] * f_val;
+                                }
+                                return sum;
+                            });
                         ref += (C_ch * pdf_ch).Evaluate(x_center);
                     }
                 }
@@ -276,30 +323,45 @@ int main() {
                 if (FObjQ.C1.count(1)) {
                     auto ops1 = FObjQ.C1.at(1).GetObjects();
                     for (std::size_t ich = 0; ich < nchan; ich++) {
-                        apfel::Operator C_ch = build_channel_operator(
-                            grid_def.channels[ich], ops1, charges, nf, f3, ZeroOp);
-                        const auto& ch = grid_def.channels[ich];
-                        apfel::Distribution pdf_ch(g, [&](double const& z) -> double {
-                            double sum = 0;
-                            for (std::size_t ic = 0; ic < ch.pid_combinations.size(); ic++) {
-                                double f_val = 1.0;
-                                for (int pid : ch.pid_combinations[ic])
-                                    f_val *= toy_f(pid, z);
-                                sum += ch.factors[ic] * f_val;
-                            }
-                            return sum;
-                        });
+                        apfel::Operator C_ch =
+                            build_channel_operator(grid_def.channels[ich],
+                                ops1,
+                                charges,
+                                nf,
+                                f3,
+                                ZeroOp);
+                        const auto         &ch = grid_def.channels[ich];
+                        apfel::Distribution pdf_ch(g,
+                            [&](double const &z) -> double {
+                                double sum = 0;
+                                for (std::size_t ic = 0;
+                                     ic < ch.pid_combinations.size();
+                                     ic++) {
+                                    double f_val = 1.0;
+                                    for (int pid : ch.pid_combinations[ic])
+                                        f_val *= toy_f(pid, z);
+                                    sum += ch.factors[ic] * f_val;
+                                }
+                                return sum;
+                            });
                         ref += as_val * (C_ch * pdf_ch).Evaluate(x_center);
                     }
                 }
             }
 
-            double rel_diff = std::abs(ref) > 1e-30
-                ? std::abs(pineappl_nlo[ibin] - ref) / std::abs(ref) : 0.0;
+            double rel_diff =
+                std::abs(ref) > 1e-30
+                    ? std::abs(pineappl_nlo[ibin] - ref) / std::abs(ref)
+                    : 0.0;
 
             bool ok = (rel_diff < tolerance);
-            std::printf("  bin %zu: pineappl=%.6e  apfel++=%.6e  rel_diff=%.2e %s\n",
-                        ibin, pineappl_nlo[ibin], ref, rel_diff, ok ? "OK" : "FAIL");
+            std::printf(
+                "  bin %zu: pineappl=%.6e  apfel++=%.6e  rel_diff=%.2e %s\n",
+                ibin,
+                pineappl_nlo[ibin],
+                ref,
+                rel_diff,
+                ok ? "OK" : "FAIL");
             if (!ok) failures++;
         }
     }
@@ -307,30 +369,39 @@ int main() {
     // ============================================================
     // TEST 3: Full NNLO convolution (all orders)
     // ============================================================
-    std::printf("\n--- TEST 3: PineAPPL full NNLO convolution vs APFEL++ ---\n");
+    std::printf(
+        "\n--- TEST 3: PineAPPL full NNLO convolution vs APFEL++ ---\n");
     {
         std::vector<double> pineappl_full(nbins, 0.0);
-        pineappl_grid_convolve_with_one(
-            grid, 2212, xfx_callback, alphas_callback,
-            static_cast<void*>(&as_tab),
-            nullptr, nullptr, 1.0, 1.0,
+        pineappl_grid_convolve_with_one(grid,
+            2212,
+            xfx_callback,
+            alphas_callback,
+            static_cast<void *>(&as_tab),
+            nullptr,
+            nullptr,
+            1.0,
+            1.0,
             pineappl_full.data());
 
         for (std::size_t ibin = 0; ibin < nbins; ibin++) {
             double x_center = std::sqrt(grid_def.bins[ibin].lower.back() *
                                         grid_def.bins[ibin].upper.back());
-            double ref = 0;
+            double ref      = 0;
 
             for (double q2 : q2_nodes) {
-                double Q = std::sqrt(q2);
-                int nf = apfel::NF(Q, theory.quark_thresholds);
-                auto charges = apfel::ElectroWeakCharges(Q, timelike);
-                auto FObjQ = sf_init(Q, charges);
-                double as_val = as_tab.Evaluate(Q);
+                double Q       = std::sqrt(q2);
+                int    nf      = apfel::NF(Q, theory.quark_thresholds);
+                auto   charges = apfel::ElectroWeakCharges(Q, timelike);
+                auto   FObjQ   = sf_init(Q, charges);
+                double as_val  = as_tab.Evaluate(Q);
 
                 // Order 0 (LO), 1 (NLO), 2 (NNLO) with alpha_s^n factors
-                struct { int order; double factor;
-                    std::map<int, apfel::Set<apfel::Operator>>* Cn; } order_info[3];
+                struct {
+                    int                                         order;
+                    double                                      factor;
+                    std::map<int, apfel::Set<apfel::Operator>> *Cn;
+                } order_info[3];
 
                 // We need to handle the maps carefully
                 for (int iord = 0; iord < 3; iord++) {
@@ -343,34 +414,48 @@ int main() {
                         ops_map = FObjQ.C1.at(1).GetObjects();
                     else if (iord == 2 && FObjQ.C2.count(1))
                         ops_map = FObjQ.C2.at(1).GetObjects();
-                    else
-                        continue;
+                    else continue;
 
                     for (std::size_t ich = 0; ich < nchan; ich++) {
-                        apfel::Operator C_ch = build_channel_operator(
-                            grid_def.channels[ich], ops_map, charges, nf, f3, ZeroOp);
-                        const auto& ch = grid_def.channels[ich];
-                        apfel::Distribution pdf_ch(g, [&](double const& z) -> double {
-                            double sum = 0;
-                            for (std::size_t ic = 0; ic < ch.pid_combinations.size(); ic++) {
-                                double f_val = 1.0;
-                                for (int pid : ch.pid_combinations[ic])
-                                    f_val *= toy_f(pid, z);
-                                sum += ch.factors[ic] * f_val;
-                            }
-                            return sum;
-                        });
+                        apfel::Operator C_ch =
+                            build_channel_operator(grid_def.channels[ich],
+                                ops_map,
+                                charges,
+                                nf,
+                                f3,
+                                ZeroOp);
+                        const auto         &ch = grid_def.channels[ich];
+                        apfel::Distribution pdf_ch(g,
+                            [&](double const &z) -> double {
+                                double sum = 0;
+                                for (std::size_t ic = 0;
+                                     ic < ch.pid_combinations.size();
+                                     ic++) {
+                                    double f_val = 1.0;
+                                    for (int pid : ch.pid_combinations[ic])
+                                        f_val *= toy_f(pid, z);
+                                    sum += ch.factors[ic] * f_val;
+                                }
+                                return sum;
+                            });
                         ref += as_power * (C_ch * pdf_ch).Evaluate(x_center);
                     }
                 }
             }
 
-            double rel_diff = std::abs(ref) > 1e-30
-                ? std::abs(pineappl_full[ibin] - ref) / std::abs(ref) : 0.0;
+            double rel_diff =
+                std::abs(ref) > 1e-30
+                    ? std::abs(pineappl_full[ibin] - ref) / std::abs(ref)
+                    : 0.0;
 
             bool ok = (rel_diff < tolerance);
-            std::printf("  bin %zu: pineappl=%.6e  apfel++=%.6e  rel_diff=%.2e %s\n",
-                        ibin, pineappl_full[ibin], ref, rel_diff, ok ? "OK" : "FAIL");
+            std::printf(
+                "  bin %zu: pineappl=%.6e  apfel++=%.6e  rel_diff=%.2e %s\n",
+                ibin,
+                pineappl_full[ibin],
+                ref,
+                rel_diff,
+                ok ? "OK" : "FAIL");
             if (!ok) failures++;
         }
     }
@@ -395,58 +480,74 @@ int main() {
         //   SIGMA(1)  = 2*5*f(x) = 10*f(x)
         //   T35(11)   = 10*f(x)  (5 equal flavors minus 0 top)
         //   all others = 0
-        auto dist_func = [](int const& i, double const& x, double const& /*Q*/) -> double {
-            double f = std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
+        auto dist_func =
+            [](int const &i, double const &x, double const & /*Q*/) -> double {
+            double f     = std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
             double g_val = std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
-            if (i == 0) return g_val;                           // gluon
-            if (i == 1) return 10.0 * f;                        // Sigma
-            if (i == 11) return 10.0 * f;                       // T35
+            if (i == 0) return g_val;     // gluon
+            if (i == 1) return 10.0 * f;  // Sigma
+            if (i == 11) return 10.0 * f; // T35
             return 0.0;
         };
 
         // Alphas function: pass 4*pi*alpha_s to match PineAPPL convention
         // (BuildStructureFunctions divides by 4*pi internally)
-        auto alphas_func = [&](double const& Q) -> double {
+        auto alphas_func = [&](double const &Q) -> double {
             return apfel::FourPi * as_tab.Evaluate(Q);
         };
 
-        auto couplings_func = [&](double const& Q) -> std::vector<double> {
+        auto couplings_func = [&](double const &Q) -> std::vector<double> {
             return apfel::ElectroWeakCharges(Q, timelike);
         };
 
-        auto F2_map = apfel::BuildStructureFunctions(
-            sf_init, dist_func, theory.pert_ord, alphas_func, couplings_func);
+        auto                F2_map   = apfel::BuildStructureFunctions(sf_init,
+            dist_func,
+            theory.pert_ord,
+            alphas_func,
+            couplings_func);
 
         // F2_map[0] is the total structure function Observable
-        auto& F2_total = F2_map.at(0);
+        auto               &F2_total = F2_map.at(0);
 
         // PineAPPL full convolution (all orders)
         std::vector<double> pineappl_full(nbins, 0.0);
-        pineappl_grid_convolve_with_one(
-            grid, 2212, xfx_callback, alphas_callback,
-            static_cast<void*>(&as_tab),
-            nullptr, nullptr, 1.0, 1.0,
+        pineappl_grid_convolve_with_one(grid,
+            2212,
+            xfx_callback,
+            alphas_callback,
+            static_cast<void *>(&as_tab),
+            nullptr,
+            nullptr,
+            1.0,
+            1.0,
             pineappl_full.data());
 
         for (std::size_t ibin = 0; ibin < nbins; ibin++) {
             double x_center = std::sqrt(grid_def.bins[ibin].lower.back() *
                                         grid_def.bins[ibin].upper.back());
-            double ref = 0;
+            double ref      = 0;
 
             for (double q2 : q2_nodes) {
-                double Q = std::sqrt(q2);
-                ref += F2_total.Evaluate(x_center, Q);
+                double Q  = std::sqrt(q2);
+                ref      += F2_total.Evaluate(x_center, Q);
             }
 
-            double rel_diff = std::abs(ref) > 1e-30
-                ? std::abs(pineappl_full[ibin] - ref) / std::abs(ref) : 0.0;
+            double rel_diff =
+                std::abs(ref) > 1e-30
+                    ? std::abs(pineappl_full[ibin] - ref) / std::abs(ref)
+                    : 0.0;
 
             // Looser tolerance: PineAPPL uses interpolated subgrids while
             // BuildStructureFunctions computes exact convolutions
             double bsf_tol = 1e-2;
-            bool ok = (rel_diff < bsf_tol);
-            std::printf("  bin %zu: pineappl=%.6e  BSF=%.6e  rel_diff=%.2e %s\n",
-                        ibin, pineappl_full[ibin], ref, rel_diff, ok ? "OK" : "FAIL");
+            bool   ok      = (rel_diff < bsf_tol);
+            std::printf(
+                "  bin %zu: pineappl=%.6e  BSF=%.6e  rel_diff=%.2e %s\n",
+                ibin,
+                pineappl_full[ibin],
+                ref,
+                rel_diff,
+                ok ? "OK" : "FAIL");
             if (!ok) failures++;
         }
     }

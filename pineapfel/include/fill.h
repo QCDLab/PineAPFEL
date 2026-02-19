@@ -8,10 +8,8 @@ namespace pineapfel {
 
 // Build and fill a PineAPPL grid with APFEL++ coefficient functions.
 // Supports DIS and SIA processes with NC current in the zero-mass scheme.
-pineappl_grid* build_grid(
-    const GridDef&      grid_def,
-    const TheoryCard&   theory,
-    const OperatorCard& op_card
-);
+pineappl_grid *build_grid(const GridDef &grid_def,
+    const TheoryCard                    &theory,
+    const OperatorCard                  &op_card);
 
 } // namespace pineapfel

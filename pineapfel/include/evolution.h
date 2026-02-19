@@ -6,6 +6,8 @@
 namespace pineapfel {
 
 // Evolve a PineAPPL grid into an FK table.
-pineappl_grid* evolve(pineappl_grid* grid, const TheoryCard& theory, const OperatorCard& op_card);
+pineappl_grid *evolve(pineappl_grid *grid,
+    const TheoryCard                &theory,
+    const OperatorCard              &op_card);
 
 } // namespace pineapfel

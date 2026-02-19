@@ -1,5 +1,5 @@
-#include <fill.h>
 #include <apfel/apfelxx.h>
+#include <fill.h>
 
 #include <cmath>
 #include <cstddef>
@@ -14,43 +14,48 @@
 namespace pineapfel {
 
 // Select the appropriate APFEL++ structure function initializer.
-static auto select_initializer(
-    ProcessType process,
-    Observable  observable,
-    Current     current,
-    const apfel::Grid& g,
-    const std::vector<double>& thresholds
-) -> std::function<apfel::StructureFunctionObjects(double const&, std::vector<double> const&)>
-{
+static auto select_initializer(ProcessType process,
+    Observable                             observable,
+    Current                                current,
+    const apfel::Grid                     &g,
+    const std::vector<double>             &thresholds)
+    -> std::function<apfel::StructureFunctionObjects(double const &,
+        std::vector<double> const &)> {
     if (current != Current::NC)
-        throw std::runtime_error("build_grid: only NC current is currently supported");
+        throw std::runtime_error(
+            "build_grid: only NC current is currently supported");
 
     if (process == ProcessType::DIS) {
         switch (observable) {
-            case Observable::F2: return apfel::InitializeF2NCObjectsZM(g, thresholds);
-            case Observable::FL: return apfel::InitializeFLNCObjectsZM(g, thresholds);
-            case Observable::F3: return apfel::InitializeF3NCObjectsZM(g, thresholds);
+        case Observable::F2:
+            return apfel::InitializeF2NCObjectsZM(g, thresholds);
+        case Observable::FL:
+            return apfel::InitializeFLNCObjectsZM(g, thresholds);
+        case Observable::F3:
+            return apfel::InitializeF3NCObjectsZM(g, thresholds);
         }
     } else if (process == ProcessType::SIA) {
         switch (observable) {
-            case Observable::F2: return apfel::InitializeF2NCObjectsZMT(g, thresholds);
-            case Observable::FL: return apfel::InitializeFLNCObjectsZMT(g, thresholds);
-            case Observable::F3: return apfel::InitializeF3NCObjectsZMT(g, thresholds);
+        case Observable::F2:
+            return apfel::InitializeF2NCObjectsZMT(g, thresholds);
+        case Observable::FL:
+            return apfel::InitializeFLNCObjectsZMT(g, thresholds);
+        case Observable::F3:
+            return apfel::InitializeF3NCObjectsZMT(g, thresholds);
         }
     }
 
-    throw std::runtime_error("build_grid: unsupported process/observable combination");
+    throw std::runtime_error(
+        "build_grid: unsupported process/observable combination");
 }
 
 // Collect unique Q^2 nodes from bin edges with geometric intermediate points.
-static std::vector<double> derive_q2_nodes(
-    const std::vector<BinDef>& bins,
-    const std::vector<double>& thresholds,
-    int n_intermediate = 3
-) {
+static std::vector<double> derive_q2_nodes(const std::vector<BinDef> &bins,
+    const std::vector<double> &thresholds,
+    int                        n_intermediate = 3) {
     std::set<double> q2_set;
 
-    for (const auto& bin : bins) {
+    for (const auto &bin : bins) {
         double q2_lo = bin.lower[0];
         double q2_hi = bin.upper[0];
         q2_set.insert(q2_lo);
@@ -70,8 +75,7 @@ static std::vector<double> derive_q2_nodes(
     double q2_max = *q2_set.rbegin();
     for (double thr : thresholds) {
         double q2_thr = thr * thr;
-        if (q2_thr > q2_min && q2_thr < q2_max)
-            q2_set.insert(q2_thr);
+        if (q2_thr > q2_min && q2_thr < q2_max) q2_set.insert(q2_thr);
     }
 
     return std::vector<double>(q2_set.begin(), q2_set.end());
@@ -90,25 +94,23 @@ static std::vector<double> derive_q2_nodes(
 // For F3 (valence-type):
 //   C_q = e_q^2 * CNS   (no singlet/gluon)
 //   C_g = 0
-static apfel::Operator build_channel_operator(
-    const ChannelDef& channel,
-    const std::map<int, apfel::Operator>& ops,
-    const std::vector<double>& charges,
-    int nf,
-    bool f3,
-    const apfel::Operator& zero_op
-) {
-    const apfel::Operator& CNS = ops.at(apfel::DISNCBasis::CNS);
-    const apfel::Operator& CS  = ops.at(apfel::DISNCBasis::CS);
-    const apfel::Operator& CG  = ops.at(apfel::DISNCBasis::CG);
+static apfel::Operator build_channel_operator(const ChannelDef &channel,
+    const std::map<int, apfel::Operator>                       &ops,
+    const std::vector<double>                                  &charges,
+    int                                                         nf,
+    bool                                                        f3,
+    const apfel::Operator                                      &zero_op) {
+    const apfel::Operator &CNS    = ops.at(apfel::DISNCBasis::CNS);
+    const apfel::Operator &CS     = ops.at(apfel::DISNCBasis::CS);
+    const apfel::Operator &CG     = ops.at(apfel::DISNCBasis::CG);
 
-    double sum_ch = 0;
+    double                 sum_ch = 0;
     for (int i = 0; i < nf && i < static_cast<int>(charges.size()); i++)
         sum_ch += charges[i];
 
     // Detect gluon channel: any PID combination containing only PID 21
     bool is_gluon = false;
-    for (const auto& combo : channel.pid_combinations) {
+    for (const auto &combo : channel.pid_combinations) {
         if (combo.size() == 1 && combo[0] == 21) {
             is_gluon = true;
             break;
@@ -122,14 +124,14 @@ static apfel::Operator build_channel_operator(
 
     // Quark channel: extract the quark PID
     int quark_pid = 0;
-    for (const auto& combo : channel.pid_combinations) {
+    for (const auto &combo : channel.pid_combinations) {
         if (combo.size() == 1 && combo[0] > 0) {
             quark_pid = combo[0];
             break;
         }
     }
     if (quark_pid == 0) {
-        for (const auto& combo : channel.pid_combinations) {
+        for (const auto &combo : channel.pid_combinations) {
             if (combo.size() == 1 && combo[0] < 0) {
                 quark_pid = -combo[0];
                 break;
@@ -137,23 +139,20 @@ static apfel::Operator build_channel_operator(
         }
     }
 
-    int q_idx = quark_pid - 1;
+    int    q_idx  = quark_pid - 1;
     double e_q_sq = (q_idx >= 0 && q_idx < static_cast<int>(charges.size()))
-                    ? charges[q_idx] : 0.0;
+                        ? charges[q_idx]
+                        : 0.0;
 
-    if (f3) {
-        return e_q_sq * CNS;
-    }
+    if (f3) { return e_q_sq * CNS; }
 
     // C_q = e_q^2 * CNS + (SumCh / 6) * (CS - CNS)
     return e_q_sq * CNS + (sum_ch / 6.0) * (CS - CNS);
 }
 
-pineappl_grid* build_grid(
-    const GridDef&      grid_def_in,
-    const TheoryCard&   theory,
-    const OperatorCard& op_card
-) {
+pineappl_grid *build_grid(const GridDef &grid_def_in,
+    const TheoryCard                    &theory,
+    const OperatorCard                  &op_card) {
     if (grid_def_in.process == ProcessType::SIDIS)
         throw std::runtime_error("build_grid: SIDIS is not supported");
 
@@ -161,39 +160,41 @@ pineappl_grid* build_grid(
 
     // Auto-derive channels from observable and number of active flavors
     GridDef grid_def = grid_def_in;
-    double q2_max = 0;
-    for (const auto& bin : grid_def.bins)
+    double  q2_max   = 0;
+    for (const auto &bin : grid_def.bins)
         q2_max = std::max(q2_max, bin.upper[0]);
-    int nf_max = apfel::NF(std::sqrt(q2_max), theory.quark_thresholds);
+    int nf_max        = apfel::NF(std::sqrt(q2_max), theory.quark_thresholds);
     grid_def.channels = derive_channels(grid_def.observable, nf_max);
     std::cout << "  Auto-derived " << grid_def.channels.size()
               << " channels for nf_max=" << nf_max << std::endl;
 
     // 1. Build APFEL++ x-space grid
     std::vector<apfel::SubGrid> subgrids;
-    for (const auto& sg : op_card.xgrid)
+    for (const auto &sg : op_card.xgrid)
         subgrids.emplace_back(sg.n_knots, sg.x_min, sg.poly_degree);
-    const apfel::Grid g{subgrids};
+    const apfel::Grid   g{subgrids};
 
     // 2. Initialize structure function objects
-    auto sf_init = select_initializer(
-        grid_def.process, grid_def.observable, grid_def.current,
-        g, theory.quark_thresholds
-    );
+    auto                sf_init        = select_initializer(grid_def.process,
+        grid_def.observable,
+        grid_def.current,
+        g,
+        theory.quark_thresholds);
 
     // 3. Create empty PineAPPL grid
-    pineappl_grid* grid = create_grid(grid_def);
+    pineappl_grid      *grid           = create_grid(grid_def);
 
     // 4. Determine grid nodes
-    const auto& joint_grid_vec = g.GetJointGrid().GetGrid();
+    const auto         &joint_grid_vec = g.GetJointGrid().GetGrid();
     std::vector<double> x_nodes(joint_grid_vec.begin(), joint_grid_vec.end());
-    const std::size_t nx = x_nodes.size();
+    const std::size_t   nx = x_nodes.size();
 
-    std::vector<double> q2_nodes = derive_q2_nodes(
-        grid_def.bins, theory.quark_thresholds);
+    std::vector<double> q2_nodes =
+        derive_q2_nodes(grid_def.bins, theory.quark_thresholds);
     const std::size_t nq = q2_nodes.size();
 
-    std::cout << "  Grid nodes: " << nq << " Q^2 x " << nx << " x/z points" << std::endl;
+    std::cout << "  Grid nodes: " << nq << " Q^2 x " << nx << " x/z points"
+              << std::endl;
 
     // Concatenated node_values: [q2_0..q2_{nq-1}, x_0..x_{nx-1}]
     std::vector<double> node_values;
@@ -201,37 +202,41 @@ pineappl_grid* build_grid(
     node_values.insert(node_values.end(), q2_nodes.begin(), q2_nodes.end());
     node_values.insert(node_values.end(), x_nodes.begin(), x_nodes.end());
 
-    std::vector<std::size_t> shape = {nq, nx};
+    std::vector<std::size_t> shape    = {nq, nx};
 
-    bool timelike = (grid_def.process == ProcessType::SIA);
-    bool f3 = (grid_def.observable == Observable::F3);
+    bool                     timelike = (grid_def.process == ProcessType::SIA);
+    bool                     f3       = (grid_def.observable == Observable::F3);
 
     // Zero operator for this grid
-    const apfel::Operator ZeroOp{g, apfel::Null{}, apfel::eps5};
+    const apfel::Operator    ZeroOp{g, apfel::Null{}, apfel::eps5};
 
     // 5. Precompute structure function objects and operators for each Q^2 node.
     //    Structure: sf_data[iq] = { order -> {CNS, CS, CG} operators }
     //    Also store nf and charges per Q^2 node.
     struct Q2Data {
-        int nf;
+        int                 nf;
         std::vector<double> charges;
-        std::map<int, std::map<int, apfel::Operator>> order_ops;  // order -> operator map
+        std::map<int, std::map<int, apfel::Operator>>
+            order_ops; // order -> operator map
     };
 
     std::vector<Q2Data> q2_data(nq);
 
     for (std::size_t iq = 0; iq < nq; iq++) {
-        double Q = std::sqrt(q2_nodes[iq]);
-        q2_data[iq].nf = apfel::NF(Q, theory.quark_thresholds);
+        double Q            = std::sqrt(q2_nodes[iq]);
+        q2_data[iq].nf      = apfel::NF(Q, theory.quark_thresholds);
         q2_data[iq].charges = apfel::ElectroWeakCharges(Q, timelike);
 
-        auto FObjQ = sf_init(Q, q2_data[iq].charges);
+        auto FObjQ          = sf_init(Q, q2_data[iq].charges);
 
         // Extract operators at each perturbative order using k=1
         // (operators are the same for any k; only ConvBasis differs)
-        if (FObjQ.C0.count(1)) q2_data[iq].order_ops[0] = FObjQ.C0.at(1).GetObjects();
-        if (FObjQ.C1.count(1)) q2_data[iq].order_ops[1] = FObjQ.C1.at(1).GetObjects();
-        if (FObjQ.C2.count(1)) q2_data[iq].order_ops[2] = FObjQ.C2.at(1).GetObjects();
+        if (FObjQ.C0.count(1))
+            q2_data[iq].order_ops[0] = FObjQ.C0.at(1).GetObjects();
+        if (FObjQ.C1.count(1))
+            q2_data[iq].order_ops[1] = FObjQ.C1.at(1).GetObjects();
+        if (FObjQ.C2.count(1))
+            q2_data[iq].order_ops[2] = FObjQ.C2.at(1).GetObjects();
     }
 
     // 6. Fill subgrids for each (bin, order, channel)
@@ -246,9 +251,9 @@ pineappl_grid* build_grid(
         for (std::size_t ich = 0; ich < grid_def.channels.size(); ich++) {
             for (std::size_t ibin = 0; ibin < grid_def.bins.size(); ibin++) {
                 // Bin center in x/z dimension (last dimension, geometric mean)
-                double x_lo = grid_def.bins[ibin].lower.back();
-                double x_hi = grid_def.bins[ibin].upper.back();
-                double x_center = std::sqrt(x_lo * x_hi);
+                double              x_lo     = grid_def.bins[ibin].lower.back();
+                double              x_hi     = grid_def.bins[ibin].upper.back();
+                double              x_center = std::sqrt(x_lo * x_hi);
 
                 // Build the full [nq, nx] subgrid
                 std::vector<double> subgrid(nq * nx, 0.0);
@@ -256,17 +261,19 @@ pineappl_grid* build_grid(
                 for (std::size_t iq = 0; iq < nq; iq++) {
                     if (q2_data[iq].order_ops.count(alpha_s) == 0) continue;
 
-                    apfel::Operator C_channel = build_channel_operator(
-                        grid_def.channels[ich],
-                        q2_data[iq].order_ops[alpha_s],
-                        q2_data[iq].charges,
-                        q2_data[iq].nf,
-                        f3, ZeroOp
-                    );
+                    apfel::Operator C_channel =
+                        build_channel_operator(grid_def.channels[ich],
+                            q2_data[iq].order_ops[alpha_s],
+                            q2_data[iq].charges,
+                            q2_data[iq].nf,
+                            f3,
+                            ZeroOp);
 
-                    // Evaluate operator at x_center -> Distribution on joint grid
+                    // Evaluate operator at x_center -> Distribution on joint
+                    // grid
                     apfel::Distribution dist = C_channel.Evaluate(x_center);
-                    const std::vector<double>& vals = dist.GetDistributionJointGrid();
+                    const std::vector<double> &vals =
+                        dist.GetDistributionJointGrid();
 
                     for (std::size_t ix = 0; ix < nx && ix < vals.size(); ix++)
                         subgrid[iq * nx + ix] = vals[ix];

@@ -1,17 +1,18 @@
+#include <apfel/apfelxx.h>
 #include <pineapfel.h>
 #include <pineappl_capi.h>
-#include <apfel/apfelxx.h>
 
 #include <iostream>
 #include <string>
 
-void print_usage(const char* prog) {
-    std::cerr << "Usage: " << prog
-              << " <grid.yaml> <theory.yaml> <operator.yaml> [-o output.pineappl.lz4]"
-              << std::endl;
+void print_usage(const char *prog) {
+    std::cerr
+        << "Usage: " << prog
+        << " <grid.yaml> <theory.yaml> <operator.yaml> [-o output.pineappl.lz4]"
+        << std::endl;
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     if (argc < 4) {
         print_usage(argv[0]);
         return 1;
@@ -50,11 +51,11 @@ int main(int argc, char* argv[]) {
 
     apfel::Timer t;
 
-    auto grid_def = pineapfel::load_grid_def(grid_path);
-    auto theory   = pineapfel::load_theory_card(theory_path);
-    auto op_card  = pineapfel::load_operator_card(op_path);
+    auto         grid_def = pineapfel::load_grid_def(grid_path);
+    auto         theory   = pineapfel::load_theory_card(theory_path);
+    auto         op_card  = pineapfel::load_operator_card(op_path);
 
-    auto* grid = pineapfel::build_grid(grid_def, theory, op_card);
+    auto        *grid     = pineapfel::build_grid(grid_def, theory, op_card);
     pineappl_grid_write(grid, output_path.c_str());
     std::cout << "Grid written to: " << output_path << std::endl;
 

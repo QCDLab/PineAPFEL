@@ -1,18 +1,19 @@
+#include <apfel/apfelxx.h>
 #include <pineapfel.h>
 #include <pineappl_capi.h>
-#include <apfel/apfelxx.h>
 
 #include <iostream>
 #include <string>
 #include <vector>
 
-void print_usage(const char* prog) {
+void print_usage(const char *prog) {
     std::cerr << "Usage: " << prog
-              << " <grid.pineappl.lz4> <theory.yaml> <operator.yaml> [-o output.pineappl.lz4]"
+              << " <grid.pineappl.lz4> <theory.yaml> <operator.yaml> [-o "
+                 "output.pineappl.lz4]"
               << std::endl;
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     if (argc < 4) {
         print_usage(argv[0]);
         return 1;
@@ -51,11 +52,11 @@ int main(int argc, char* argv[]) {
     std::cout << "Output:   " << output_path << std::endl;
 
     apfel::Timer t;
-    auto theory  = pineapfel::load_theory_card(theory_path);
-    auto op_card = pineapfel::load_operator_card(op_path);
-    auto* grid = pineappl_grid_read(grid_path.c_str());
+    auto         theory  = pineapfel::load_theory_card(theory_path);
+    auto         op_card = pineapfel::load_operator_card(op_path);
+    auto        *grid    = pineappl_grid_read(grid_path.c_str());
 
-    auto* fktable = pineapfel::evolve(grid, theory, op_card);
+    auto        *fktable = pineapfel::evolve(grid, theory, op_card);
     pineappl_grid_write(fktable, output_path.c_str());
     std::cout << "FK table written to: " << output_path << std::endl;
 
