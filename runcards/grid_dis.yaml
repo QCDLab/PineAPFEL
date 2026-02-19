@@ -10,14 +10,6 @@ Orders:
   - [1, 0, 0, 0, 0]
   - [2, 0, 0, 0, 0]
 
-Channels:
-  - pids: [[2], [-2]]
-    factors: [1.0, 1.0]
-  - pids: [[1], [-1]]
-    factors: [1.0, 1.0]
-  - pids: [[21]]
-    factors: [1.0]
-
 Bins:
   - lower: [10.0, 0.001]
     upper: [100.0, 0.01]

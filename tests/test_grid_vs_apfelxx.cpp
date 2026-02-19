@@ -120,6 +120,15 @@ int main() {
     auto theory   = pineapfel::load_theory_card("runcards/theory.yaml");
     auto op_card  = pineapfel::load_operator_card("runcards/operator.yaml");
 
+    // Derive channels (same logic as build_grid) so the test reference can use them
+    {
+        double q2_max = 0;
+        for (const auto& bin : grid_def.bins)
+            q2_max = std::max(q2_max, bin.upper[0]);
+        int nf_max = apfel::NF(std::sqrt(q2_max), theory.quark_thresholds);
+        grid_def.channels = pineapfel::derive_channels(grid_def.observable, nf_max);
+    }
+
     pineappl_grid* grid = pineapfel::build_grid(grid_def, theory, op_card);
     std::size_t nbins = pineappl_grid_bin_count(grid);
     std::size_t nords = pineappl_grid_order_count(grid);
@@ -361,6 +370,82 @@ int main() {
 
             bool ok = (rel_diff < tolerance);
             std::printf("  bin %zu: pineappl=%.6e  apfel++=%.6e  rel_diff=%.2e %s\n",
+                        ibin, pineappl_full[ibin], ref, rel_diff, ok ? "OK" : "FAIL");
+            if (!ok) failures++;
+        }
+    }
+
+    // ============================================================
+    // TEST 4: PineAPPL full convolution vs APFEL++ BuildStructureFunctions
+    //
+    // Use APFEL++'s BuildStructureFunctions to compute the total F2
+    // via the evolution basis, and compare against PineAPPL grid
+    // convolution with auto-derived channels (all flavors + gluon).
+    //
+    // Note: PineAPPL multiplies coefficient functions by alpha_s^n,
+    // while BuildStructureFunctions uses alpha_s/(4*pi) internally.
+    // We pass 4*pi*alpha_s as the coupling to compensate.
+    // ============================================================
+    std::printf("\n--- TEST 4: PineAPPL vs BuildStructureFunctions ---\n");
+    {
+        // Build the structure function Observable via APFEL++
+        // InDistFunc: evolution-basis distributions (i=0..12)
+        // For our toy PDF (all quarks equal, no top):
+        //   GLUON(0)  = g(x)
+        //   SIGMA(1)  = 2*5*f(x) = 10*f(x)
+        //   T35(11)   = 10*f(x)  (5 equal flavors minus 0 top)
+        //   all others = 0
+        auto dist_func = [](int const& i, double const& x, double const& /*Q*/) -> double {
+            double f = std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
+            double g_val = std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
+            if (i == 0) return g_val;                           // gluon
+            if (i == 1) return 10.0 * f;                        // Sigma
+            if (i == 11) return 10.0 * f;                       // T35
+            return 0.0;
+        };
+
+        // Alphas function: pass 4*pi*alpha_s to match PineAPPL convention
+        // (BuildStructureFunctions divides by 4*pi internally)
+        auto alphas_func = [&](double const& Q) -> double {
+            return apfel::FourPi * as_tab.Evaluate(Q);
+        };
+
+        auto couplings_func = [&](double const& Q) -> std::vector<double> {
+            return apfel::ElectroWeakCharges(Q, timelike);
+        };
+
+        auto F2_map = apfel::BuildStructureFunctions(
+            sf_init, dist_func, theory.pert_ord, alphas_func, couplings_func);
+
+        // F2_map[0] is the total structure function Observable
+        auto& F2_total = F2_map.at(0);
+
+        // PineAPPL full convolution (all orders)
+        std::vector<double> pineappl_full(nbins, 0.0);
+        pineappl_grid_convolve_with_one(
+            grid, 2212, xfx_callback, alphas_callback,
+            static_cast<void*>(&as_tab),
+            nullptr, nullptr, 1.0, 1.0,
+            pineappl_full.data());
+
+        for (std::size_t ibin = 0; ibin < nbins; ibin++) {
+            double x_center = std::sqrt(grid_def.bins[ibin].lower.back() *
+                                        grid_def.bins[ibin].upper.back());
+            double ref = 0;
+
+            for (double q2 : q2_nodes) {
+                double Q = std::sqrt(q2);
+                ref += F2_total.Evaluate(x_center, Q);
+            }
+
+            double rel_diff = std::abs(ref) > 1e-30
+                ? std::abs(pineappl_full[ibin] - ref) / std::abs(ref) : 0.0;
+
+            // Looser tolerance: PineAPPL uses interpolated subgrids while
+            // BuildStructureFunctions computes exact convolutions
+            double bsf_tol = 1e-2;
+            bool ok = (rel_diff < bsf_tol);
+            std::printf("  bin %zu: pineappl=%.6e  BSF=%.6e  rel_diff=%.2e %s\n",
                         ibin, pineappl_full[ibin], ref, rel_diff, ok ? "OK" : "FAIL");
             if (!ok) failures++;
         }

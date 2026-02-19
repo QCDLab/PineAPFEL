@@ -6,6 +6,31 @@
 
 namespace pineapfel {
 
+std::vector<ChannelDef> derive_channels(Observable observable, int nf_max) {
+    std::vector<ChannelDef> channels;
+
+    bool is_f3 = (observable == Observable::F3);
+
+    // One channel per active quark flavor: (q + qbar) for F2/FL, (q - qbar) for F3
+    for (int q = 1; q <= nf_max; q++) {
+        ChannelDef ch;
+        ch.pid_combinations = {{q}, {-q}};
+        ch.factors = is_f3 ? std::vector<double>{1.0, -1.0}
+                           : std::vector<double>{1.0, 1.0};
+        channels.push_back(std::move(ch));
+    }
+
+    // Gluon channel only for F2/FL (CG=0 for F3 at all orders)
+    if (!is_f3) {
+        ChannelDef gch;
+        gch.pid_combinations = {{21}};
+        gch.factors = {1.0};
+        channels.push_back(std::move(gch));
+    }
+
+    return channels;
+}
+
 GridDef load_grid_def(const std::string& path) {
     YAML::Node config = YAML::LoadFile(path);
     GridDef def;
@@ -65,14 +90,16 @@ GridDef load_grid_def(const std::string& path) {
                               static_cast<uint8_t>(v[4])});
     }
 
-    // Channels
-    for (const auto& ch : config["Channels"]) {
-        ChannelDef cdef;
-        for (const auto& pids : ch["pids"]) {
-            cdef.pid_combinations.push_back(pids.as<std::vector<int>>());
+    // Channels (optional — will be auto-derived in build_grid if absent)
+    if (config["Channels"]) {
+        for (const auto& ch : config["Channels"]) {
+            ChannelDef cdef;
+            for (const auto& pids : ch["pids"]) {
+                cdef.pid_combinations.push_back(pids.as<std::vector<int>>());
+            }
+            cdef.factors = ch["factors"].as<std::vector<double>>();
+            def.channels.push_back(std::move(cdef));
         }
-        cdef.factors = ch["factors"].as<std::vector<double>>();
-        def.channels.push_back(std::move(cdef));
     }
 
     // Bins

@@ -7,7 +7,7 @@ input (PDFs or Fragmentation Functions) needs to be provided at convolution time
 
 The grid creation workflow requires three YAML configuration files:
 
-1. A **grid card** that defines the process, observable, binning, channels, and perturbative orders
+1. A **grid card** that defines the process, observable, binning, and perturbative orders
 2. A **theory card** that specifies the QCD parameters (coupling, thresholds, perturbative order)
 3. An **operator card** that defines the x-space interpolation grid and tabulation parameters
 
@@ -78,39 +78,53 @@ must be listed so that the grid contains separate subgrids for each perturbative
 
 ### Channel decomposition
 
-The coefficient functions are decomposed in the **physical (PDG) basis**. Each channel in
-the grid card maps to a combination of parton-level coefficient functions according to the
-structure function decomposition.
+Channels are **automatically derived** by `build_grid()` from the observable and the number
+of active flavours. You do not need to specify them in the grid card. The number of active
+flavours \(n_{f,\mathrm{max}}\) is determined from the maximum \(Q^2\) across all bins
+using the quark thresholds from the theory card.
 
-For **F2** and **FL** (neutral current), the structure function is:
+The `derive_channels()` function generates channels in the **physical (PDG) basis**
+according to the following rules:
 
-\[
-F(x, Q^2) = \sum_{q} \mathcal{C}_q \otimes (q + \bar{q}) \;+\; \mathcal{C}_g \otimes g
-\]
+For **F2** and **FL** (C-even, neutral current):
+
+- One quark channel per active flavour \(q = 1, \ldots, n_{f,\mathrm{max}}\):
+  `pids: [[q], [-q]]`, `factors: [1.0, 1.0]` (i.e. \(q + \bar{q}\))
+- One gluon channel: `pids: [[21]]`, `factors: [1.0]`
+
+For **F3** (C-odd, neutral current):
+
+- One quark channel per active flavour \(q = 1, \ldots, n_{f,\mathrm{max}}\):
+  `pids: [[q], [-q]]`, `factors: [1.0, -1.0]` (i.e. \(q - \bar{q}\))
+- **No gluon channel** (\(C_\mathrm{G} = 0\) at all perturbative orders)
+
+For example, with 5 active flavours and observable F2, the auto-derived channels are:
+
+| Channel | PIDs | Factors |
+|---------|------|---------|
+| \(d + \bar{d}\) | `[[1], [-1]]` | `[1.0, 1.0]` |
+| \(u + \bar{u}\) | `[[2], [-2]]` | `[1.0, 1.0]` |
+| \(s + \bar{s}\) | `[[3], [-3]]` | `[1.0, 1.0]` |
+| \(c + \bar{c}\) | `[[4], [-4]]` | `[1.0, 1.0]` |
+| \(b + \bar{b}\) | `[[5], [-5]]` | `[1.0, 1.0]` |
+| gluon | `[[21]]` | `[1.0]` |
 
 The per-channel coefficient functions are constructed from the APFEL++ operators
 \(C_\mathrm{NS}\), \(C_\mathrm{S}\), and \(C_\mathrm{G}\) as follows:
 
-| Channel | PIDs | Coefficient function |
-|---------|------|---------------------|
-| Quark \(q + \bar{q}\) | `[[q], [-q]]` | \(\mathcal{C}_q = e_q^2 \, C_\mathrm{NS} + \frac{\Sigma_\mathrm{ch}}{6}\,(C_\mathrm{S} - C_\mathrm{NS})\) |
-| Gluon | `[[21]]` | \(\mathcal{C}_g = \Sigma_\mathrm{ch} \, C_\mathrm{G}\) |
+| Channel | Coefficient function (F2/FL) | Coefficient function (F3) |
+|---------|---------------------|---------------------|
+| Quark \(q\) | \(\mathcal{C}_q = e_q^2 \, C_\mathrm{NS} + \frac{\Sigma_\mathrm{ch}}{6}\,(C_\mathrm{S} - C_\mathrm{NS})\) | \(\mathcal{C}_q = e_q^2 \, C_\mathrm{NS}\) |
+| Gluon | \(\mathcal{C}_g = \Sigma_\mathrm{ch} \, C_\mathrm{G}\) | \(\mathcal{C}_g = 0\) |
 
 where \(\Sigma_\mathrm{ch} = \sum_{i=1}^{n_f} e_i^2\) is the sum of electroweak charges
 for the \(n_f\) active quark flavours at the given \(Q^2\), and the factor of 6 matches
 the internal normalisation convention used in APFEL++'s `DISNCBasis`.
 
-For **F3** (neutral current, parity-violating), only the non-singlet contributes:
-
-| Channel | PIDs | Coefficient function |
-|---------|------|---------------------|
-| Quark \(q + \bar{q}\) | `[[q], [-q]]` | \(\mathcal{C}_q = e_q^2 \, C_\mathrm{NS}\) |
-| Gluon | `[[21]]` | \(\mathcal{C}_g = 0\) |
-
 !!! note
-    F3 is a valence-type structure function. When using F3, the grid channels should use
-    factors `[1.0, -1.0]` for quark channels (`[[q], [-q]]`) to produce the combination
-    \(q - \bar{q}\), rather than `[1.0, 1.0]` which gives \(q + \bar{q}\).
+    The `Channels` field in the grid card is still accepted for backward compatibility,
+    but it is **always overridden** by the auto-derived channels in `build_grid()`.
+    It is recommended to omit `Channels` from the grid card entirely.
 
 ---
 
@@ -159,16 +173,18 @@ Orders:
   - [1, 0, 0, 0, 0]   # O(alpha_s^1) = NLO
   - [2, 0, 0, 0, 0]   # O(alpha_s^2) = NNLO
 
-# Partonic channels. Each channel is a list of PID combinations
-# with associated numerical factors.
-# For DIS/SIA with one convolution, each combination has one PID.
-Channels:
-  - pids: [[2], [-2]]     # u + ubar
-    factors: [1.0, 1.0]
-  - pids: [[1], [-1]]     # d + dbar
-    factors: [1.0, 1.0]
-  - pids: [[21]]          # gluon
-    factors: [1.0]
+# Partonic channels (optional).
+# Channels are automatically derived by build_grid() from the observable
+# and the number of active flavours. You do not need to specify this field.
+# If present, it will be overridden during grid building.
+#
+# Channels:
+#   - pids: [[2], [-2]]     # u + ubar
+#     factors: [1.0, 1.0]
+#   - pids: [[1], [-1]]     # d + dbar
+#     factors: [1.0, 1.0]
+#   - pids: [[21]]          # gluon
+#     factors: [1.0]
 
 # Kinematic bins. Each bin is defined by lower and upper edges
 # in each dimension:
@@ -187,8 +203,8 @@ Normalizations: [1.0, 1.0]
 
 #### DIS example
 
-A DIS \(F_2\) grid up to NNLO with two \((Q^2, x)\) bins and three channels
-(u+ubar, d+dbar, gluon):
+A DIS \(F_2\) grid up to NNLO with two \((Q^2, x)\) bins. Channels are auto-derived
+(5 quark flavours + gluon, determined from the maximum \(Q^2\) and the theory thresholds):
 
 ```yaml
 Process: DIS
@@ -203,14 +219,6 @@ Orders:
   - [1, 0, 0, 0, 0]
   - [2, 0, 0, 0, 0]
 
-Channels:
-  - pids: [[2], [-2]]
-    factors: [1.0, 1.0]
-  - pids: [[1], [-1]]
-    factors: [1.0, 1.0]
-  - pids: [[21]]
-    factors: [1.0]
-
 Bins:
   - lower: [10.0, 0.001]
     upper: [100.0, 0.01]
@@ -224,7 +232,7 @@ Normalizations: [1.0, 1.0]
 
 An SIA \(F_2\) grid for pion production up to NNLO. Note that the second kinematic
 dimension is the hadron momentum fraction \(z\) instead of Bjorken \(x\),
-and the convolution type is `UNPOL_FF`:
+and the convolution type is `UNPOL_FF`. Channels are auto-derived as for DIS:
 
 ```yaml
 Process: SIA
@@ -238,14 +246,6 @@ Orders:
   - [0, 0, 0, 0, 0]
   - [1, 0, 0, 0, 0]
   - [2, 0, 0, 0, 0]
-
-Channels:
-  - pids: [[2], [-2]]
-    factors: [1.0, 1.0]
-  - pids: [[1], [-1]]
-    factors: [1.0, 1.0]
-  - pids: [[21]]
-    factors: [1.0]
 
 Bins:
   - lower: [10.0, 0.2]
@@ -350,7 +350,8 @@ APFEL++ joint grid, which populates one row of the subgrid.
 
 ### Programmatic grid definition
 
-In addition to loading from YAML, you can construct a `GridDef` programmatically:
+In addition to loading from YAML, you can construct a `GridDef` programmatically.
+Note that `channels` can be left empty — `build_grid()` will auto-derive them:
 
 ```cpp
 pineapfel::GridDef def;
@@ -361,12 +362,8 @@ def.pid_basis  = PINEAPPL_PID_BASIS_PDG;
 def.hadron_pids        = {2212};
 def.convolution_types  = {PINEAPPL_CONV_TYPE_UNPOL_PDF};
 
-def.orders   = {{0, 0, 0, 0, 0}, {1, 0, 0, 0, 0}, {2, 0, 0, 0, 0}};  // LO + NLO + NNLO
-def.channels = {
-    {{{2}, {-2}},  {1.0, 1.0}},   // u + ubar
-    {{{1}, {-1}},  {1.0, 1.0}},   // d + dbar
-    {{{21}},       {1.0}},        // gluon
-};
+def.orders = {{0, 0, 0, 0, 0}, {1, 0, 0, 0, 0}, {2, 0, 0, 0, 0}};  // LO + NLO + NNLO
+// channels are auto-derived by build_grid() — no need to set them
 def.bins = {
     {{10.0, 0.001}, {100.0, 0.01}},
     {{100.0, 0.01}, {1000.0, 0.1}},
@@ -374,4 +371,13 @@ def.bins = {
 def.normalizations = {1.0, 1.0};
 
 auto* grid = pineapfel::build_grid(def, theory, op_card);
+```
+
+You can also call `derive_channels()` directly if you need the channels before
+calling `build_grid()`:
+
+```cpp
+// Derive channels for F2 with 5 active flavours
+auto channels = pineapfel::derive_channels(pineapfel::Observable::F2, 5);
+// Returns 6 channels: d+dbar, u+ubar, s+sbar, c+cbar, b+bbar, gluon
 ```

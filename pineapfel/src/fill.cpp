@@ -150,14 +150,24 @@ static apfel::Operator build_channel_operator(
 }
 
 pineappl_grid* build_grid(
-    const GridDef&      grid_def,
+    const GridDef&      grid_def_in,
     const TheoryCard&   theory,
     const OperatorCard& op_card
 ) {
-    if (grid_def.process == ProcessType::SIDIS)
+    if (grid_def_in.process == ProcessType::SIDIS)
         throw std::runtime_error("build_grid: SIDIS is not supported");
 
     std::cout << "Building APFEL++ coefficient function grid..." << std::endl;
+
+    // Auto-derive channels from observable and number of active flavors
+    GridDef grid_def = grid_def_in;
+    double q2_max = 0;
+    for (const auto& bin : grid_def.bins)
+        q2_max = std::max(q2_max, bin.upper[0]);
+    int nf_max = apfel::NF(std::sqrt(q2_max), theory.quark_thresholds);
+    grid_def.channels = derive_channels(grid_def.observable, nf_max);
+    std::cout << "  Auto-derived " << grid_def.channels.size()
+              << " channels for nf_max=" << nf_max << std::endl;
 
     // 1. Build APFEL++ x-space grid
     std::vector<apfel::SubGrid> subgrids;

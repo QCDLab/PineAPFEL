@@ -40,6 +40,7 @@ struct GridDef {
 };
 
 GridDef load_grid_def(const std::string& path);
+std::vector<ChannelDef> derive_channels(Observable observable, int nf_max);
 pineappl_grid* create_grid(const GridDef& def);
 void set_subgrid(pineappl_grid* grid, std::size_t bin, std::size_t order,
                  std::size_t channel, std::vector<double>& node_values,

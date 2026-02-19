@@ -13,7 +13,7 @@ PineAPFEL exposes three main modules:
 | Module | Header | Functions |
 |--------|--------|-----------|
 | Cards | `cards.h` | `load_theory_card()`, `load_operator_card()` |
-| Grid creation | `grid_gen.h`, `fill.h` | `load_grid_def()`, `create_grid()`, `build_grid()` |
+| Grid creation | `grid_gen.h`, `fill.h` | `load_grid_def()`, `derive_channels()`, `create_grid()`, `build_grid()` |
 | Evolution | `evolution.h` | `evolve()` |
 
 ### Grid creation example
