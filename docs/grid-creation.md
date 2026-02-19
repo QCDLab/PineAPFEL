@@ -80,7 +80,7 @@ must be listed so that the grid contains separate subgrids for each perturbative
 
 Channels are **automatically derived** by `build_grid()` from the observable and the number
 of active flavours. You do not need to specify them in the grid card. The number of active
-flavours \(n_{f,\mathrm{max}}\) is determined from the maximum \(Q^2\) across all bins
+flavours \(n_{f}^{\mathrm{max}}\) is determined from the maximum \(Q^2\) across all bins
 using the quark thresholds from the theory card.
 
 The `derive_channels()` function generates channels in the **physical (PDG) basis**
@@ -88,13 +88,13 @@ according to the following rules:
 
 For **F2** and **FL** (C-even, neutral current):
 
-- One quark channel per active flavour \(q = 1, \ldots, n_{f,\mathrm{max}}\):
+- One quark channel per active flavour \(q = 1, \ldots, n_{f}^{\mathrm{max}}\):
   `pids: [[q], [-q]]`, `factors: [1.0, 1.0]` (i.e. \(q + \bar{q}\))
 - One gluon channel: `pids: [[21]]`, `factors: [1.0]`
 
 For **F3** (C-odd, neutral current):
 
-- One quark channel per active flavour \(q = 1, \ldots, n_{f,\mathrm{max}}\):
+- One quark channel per active flavour \(q = 1, \ldots, n_{f}^{\mathrm{max}}\):
   `pids: [[q], [-q]]`, `factors: [1.0, -1.0]` (i.e. \(q - \bar{q}\))
 - **No gluon channel** (\(C_\mathrm{G} = 0\) at all perturbative orders)
 
@@ -323,22 +323,23 @@ for writing custom grid-filling code.
 
 #### Node selection
 
-The grid nodes are chosen automatically:
+The grid nodes are defined automatically:
 
-- **x/z nodes**: Taken from the APFEL++ joint interpolation grid, which is built from
+- **\(x/z\) nodes**: Taken from the APFEL++ joint interpolation grid, which is built from
   the `xgrid` definition in the operator card. This ensures consistency between the
   coefficient function grid and any subsequent evolution step.
 
-- **Q^2 nodes**: Derived from the bin edges in the grid card. The bin boundaries in the
-  first dimension (Q^2) are collected, and geometrically spaced intermediate points are
+- **\(Q^2\) nodes**: Derived from the bin edges in the grid card. The bin boundaries in the
+  first dimension (\(Q^2\)) are collected, and geometrically spaced intermediate points are
   added within each bin. Additionally, quark threshold values (\(m_q^2\)) that fall within
-  the overall Q^2 range are included to capture flavour-threshold effects.
+  the overall \(Q^2\) range are included to capture flavour-threshold effects.
 
 #### Subgrid layout
 
-Each subgrid (one per combination of bin, perturbative order, and channel) is a
-two-dimensional array of shape `[n_Q2, n_x]`, stored in row-major order. The
-`node_values` vector concatenates the Q^2 nodes followed by the x/z nodes:
+Each subgrid (one per combination of bin, perturbative order, and channel) is a two-dimensional
+array (in the case of one hadron such as in DIS or SIA) of shape `[n_Q2, n_x]`, stored in
+row-major order. The `node_values` vector concatenates the \(Q^2\) nodes followed by the x/z
+nodes:
 
 ```
 node_values = [Q^2_0, Q^2_1, ..., Q^2_{nq-1}, x_0, x_1, ..., x_{nx-1}]
