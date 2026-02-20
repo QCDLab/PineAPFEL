@@ -43,9 +43,7 @@ static apfel::Operator build_channel_operator(
     const pineapfel::ChannelDef          &channel,
     const std::map<int, apfel::Operator> &ops,
     const std::vector<double>            &charges,
-    int                                   nf,
-    bool                                  f3,
-    const apfel::Operator                &zero_op) {
+    int                                   nf) {
     const apfel::Operator &CNS    = ops.at(apfel::DISNCBasis::CNS);
     const apfel::Operator &CS     = ops.at(apfel::DISNCBasis::CS);
     const apfel::Operator &CG     = ops.at(apfel::DISNCBasis::CG);
@@ -62,10 +60,7 @@ static apfel::Operator build_channel_operator(
         }
     }
 
-    if (is_gluon) {
-        if (f3) return zero_op;
-        return sum_ch * CG;
-    }
+    if (is_gluon) { return sum_ch * CG; }
 
     int quark_pid = 0;
     for (const auto &combo : channel.pid_combinations) {
@@ -88,7 +83,6 @@ static apfel::Operator build_channel_operator(
                         ? charges[q_idx]
                         : 0.0;
 
-    if (f3) return e_q_sq * CNS;
     return e_q_sq * CNS + (sum_ch / 6.0) * (CS - CNS);
 }
 
@@ -135,8 +129,10 @@ int main() {
         for (const auto &bin : grid_def.bins)
             q2_max = std::max(q2_max, bin.upper[0]);
         int nf_max = apfel::NF(std::sqrt(q2_max), theory.quark_thresholds);
-        grid_def.channels =
-            pineapfel::derive_channels(grid_def.observable, nf_max);
+        grid_def.channels = pineapfel::derive_channels(grid_def.observable,
+            grid_def.current,
+            grid_def.cc_sign,
+            nf_max);
     }
 
     pineappl_grid *grid  = pineapfel::build_grid(grid_def, theory, op_card);
@@ -164,8 +160,6 @@ int main() {
         tabp.interp_degree};
 
     auto q2_nodes = derive_q2_nodes(grid_def.bins, theory.quark_thresholds);
-    const apfel::Operator ZeroOp{g, apfel::Null{}, apfel::eps5};
-    bool   f3        = (grid_def.observable == pineapfel::Observable::F3);
     bool   timelike  = (grid_def.process == pineapfel::ProcessType::SIA);
 
     int    failures  = 0;
@@ -215,9 +209,7 @@ int main() {
                         build_channel_operator(grid_def.channels[ich],
                             ops,
                             charges,
-                            nf,
-                            f3,
-                            ZeroOp);
+                            nf);
 
                     const auto         &ch = grid_def.channels[ich];
                     apfel::Distribution pdf_ch(g,
@@ -298,9 +290,7 @@ int main() {
                             build_channel_operator(grid_def.channels[ich],
                                 ops0,
                                 charges,
-                                nf,
-                                f3,
-                                ZeroOp);
+                                nf);
                         const auto         &ch = grid_def.channels[ich];
                         apfel::Distribution pdf_ch(g,
                             [&](double const &z) -> double {
@@ -327,9 +317,7 @@ int main() {
                             build_channel_operator(grid_def.channels[ich],
                                 ops1,
                                 charges,
-                                nf,
-                                f3,
-                                ZeroOp);
+                                nf);
                         const auto         &ch = grid_def.channels[ich];
                         apfel::Distribution pdf_ch(g,
                             [&](double const &z) -> double {
@@ -421,9 +409,7 @@ int main() {
                             build_channel_operator(grid_def.channels[ich],
                                 ops_map,
                                 charges,
-                                nf,
-                                f3,
-                                ZeroOp);
+                                nf);
                         const auto         &ch = grid_def.channels[ich];
                         apfel::Distribution pdf_ch(g,
                             [&](double const &z) -> double {
@@ -550,6 +536,116 @@ int main() {
                 ok ? "OK" : "FAIL");
             if (!ok) failures++;
         }
+    }
+
+    // ============================================================
+    // TEST 5: CC F2 Plus — PineAPPL vs BuildStructureFunctions
+    //
+    // Build a CC grid and compare against APFEL++ BuildStructureFunctions
+    // using the CC Plus initializer and CKM weights.
+    // ============================================================
+    std::printf(
+        "\n--- TEST 5: CC F2 Plus PineAPPL vs BuildStructureFunctions ---\n");
+    {
+        auto cc_grid_def =
+            pineapfel::load_grid_def("runcards/grid_dis_cc.yaml");
+        auto cc_theory = pineapfel::load_theory_card("runcards/theory.yaml");
+
+        pineappl_grid *cc_grid =
+            pineapfel::build_grid(cc_grid_def, cc_theory, op_card);
+        std::size_t cc_nbins = pineappl_grid_bin_count(cc_grid);
+
+        // Build CC structure function via APFEL++ BuildStructureFunctions
+        auto cc_sf_init = apfel::InitializeF2CCPlusObjectsZM(g,
+            cc_theory.quark_thresholds);
+
+        auto cc_dist_func = [](int const &i,
+                                double const &x,
+                                double const & /*Q*/) -> double {
+            double f     = std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
+            double g_val = std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
+            if (i == 0) return g_val;     // gluon
+            if (i == 1) return 10.0 * f;  // Sigma
+            if (i == 11) return 10.0 * f; // T35
+            return 0.0;
+        };
+
+        auto cc_alphas_func = [&](double const &Q) -> double {
+            return apfel::FourPi * as_tab.Evaluate(Q);
+        };
+
+        auto cc_couplings_func =
+            [&](double const &Q) -> std::vector<double> {
+            (void) Q;
+            return cc_theory.ckm;
+        };
+
+        auto F2CC_map = apfel::BuildStructureFunctions(cc_sf_init,
+            cc_dist_func,
+            cc_theory.pert_ord,
+            cc_alphas_func,
+            cc_couplings_func);
+
+        auto &F2CC_total = F2CC_map.at(0);
+
+        // Derive Q2 nodes and channels for the CC grid
+        {
+            double q2max = 0;
+            for (const auto &bin : cc_grid_def.bins)
+                q2max = std::max(q2max, bin.upper[0]);
+            int nfm = apfel::NF(std::sqrt(q2max),
+                cc_theory.quark_thresholds);
+            cc_grid_def.channels = pineapfel::derive_channels(
+                cc_grid_def.observable,
+                cc_grid_def.current,
+                cc_grid_def.cc_sign,
+                nfm);
+        }
+
+        auto cc_q2_nodes = derive_q2_nodes(cc_grid_def.bins,
+            cc_theory.quark_thresholds);
+
+        std::vector<double> pineappl_cc(cc_nbins, 0.0);
+        pineappl_grid_convolve_with_one(cc_grid,
+            2212,
+            xfx_callback,
+            alphas_callback,
+            static_cast<void *>(&as_tab),
+            nullptr,
+            nullptr,
+            1.0,
+            1.0,
+            pineappl_cc.data());
+
+        for (std::size_t ibin = 0; ibin < cc_nbins; ibin++) {
+            double x_center =
+                std::sqrt(cc_grid_def.bins[ibin].lower.back() *
+                          cc_grid_def.bins[ibin].upper.back());
+            double ref = 0;
+
+            for (double q2 : cc_q2_nodes) {
+                double Q = std::sqrt(q2);
+                ref     += F2CC_total.Evaluate(x_center, Q);
+            }
+
+            double rel_diff =
+                std::abs(ref) > 1e-30
+                    ? std::abs(pineappl_cc[ibin] - ref) / std::abs(ref)
+                    : 0.0;
+
+            double bsf_tol = 1e-2;
+            bool   ok      = (rel_diff < bsf_tol);
+            std::printf(
+                "  bin %zu: pineappl=%.6e  BSF=%.6e  rel_diff=%.2e %s\n",
+                ibin,
+                pineappl_cc[ibin],
+                ref,
+                rel_diff,
+                ok ? "OK" : "FAIL");
+            if (!ok) failures++;
+        }
+
+        pineappl_grid_delete(cc_grid);
     }
 
     // ============================================================

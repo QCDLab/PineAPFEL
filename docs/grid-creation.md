@@ -20,19 +20,24 @@ The `build_grid()` function currently supports the following combinations:
 | DIS | F2 | NC | `InitializeF2NCObjectsZM` | Zero-mass |
 | DIS | FL | NC | `InitializeFLNCObjectsZM` | Zero-mass |
 | DIS | F3 | NC | `InitializeF3NCObjectsZM` | Zero-mass |
+| DIS | F2 | CC Plus | `InitializeF2CCPlusObjectsZM` | Zero-mass |
+| DIS | FL | CC Plus | `InitializeFLCCPlusObjectsZM` | Zero-mass |
+| DIS | F3 | CC Plus | `InitializeF3CCPlusObjectsZM` | Zero-mass |
+| DIS | F2 | CC Minus | `InitializeF2CCMinusObjectsZM` | Zero-mass |
+| DIS | FL | CC Minus | `InitializeFLCCMinusObjectsZM` | Zero-mass |
+| DIS | F3 | CC Minus | `InitializeF3CCMinusObjectsZM` | Zero-mass |
 | SIA | F2 | NC | `InitializeF2NCObjectsZMT` | Zero-mass |
 | SIA | FL | NC | `InitializeFLNCObjectsZMT` | Zero-mass |
 | SIA | F3 | NC | `InitializeF3NCObjectsZMT` | Zero-mass |
 
-All six combinations use the **zero-mass variable-flavour-number scheme** (ZM-VFNS), where
+All combinations use the **zero-mass variable-flavour-number scheme** (ZM-VFNS), where
 quarks are treated as massless above their respective thresholds.
 
 !!! info "What is not yet supported"
-    - **Charged-current (CC)** processes are not yet implemented. Setting `Current: CC`
-      in the grid card will raise an error.
     - **SIDIS** (semi-inclusive DIS) grid filling is not supported. SIDIS grids can still
       be created with `create_grid()` and filled manually, but `build_grid()` does not
       handle the two-convolution structure.
+    - **SIA + CC** is not supported (APFEL++ only provides CC initializers for DIS).
     - **Massive coefficient functions** (FONLL, ACOT, S-ACOT) are not available.
     - **Polarised structure functions** (\(g_1\), \(g_4\), \(g_L\)) are not exposed
       through `build_grid()`, although APFEL++ does provide initializers for them.
@@ -98,6 +103,19 @@ For **F3** (C-odd, neutral current):
   `pids: [[q], [-q]]`, `factors: [1.0, -1.0]` (i.e. \(q - \bar{q}\))
 - **No gluon channel** (\(C_\mathrm{G} = 0\) at all perturbative orders)
 
+For **charged-current (CC)** processes, the channel structure depends on both the
+observable and the CC sign variant. The C-parity of the observable determines the
+quark combination:
+
+- **C-even** (factors \([1, 1]\), i.e. \(q + \bar{q}\)):
+  F2/FL CC Plus, F3 CC Minus
+- **C-odd** (factors \([1, -1]\), i.e. \(q - \bar{q}\)):
+  F2/FL CC Minus, F3 CC Plus
+
+A gluon channel is present only for F2/FL with NC or CC Plus. For CC, the per-quark
+weights \(w_q\) are the sum of CKM² elements where quark \(q\) participates
+(filtered by active partner flavours), replacing the electroweak charges used in NC.
+
 For example, with 5 active flavours and observable F2, the auto-derived channels are:
 
 | Channel | PIDs | Factors |
@@ -110,16 +128,18 @@ For example, with 5 active flavours and observable F2, the auto-derived channels
 | gluon | `[[21]]` | `[1.0]` |
 
 The per-channel coefficient functions are constructed from the APFEL++ operators
-\(C_\mathrm{NS}\), \(C_\mathrm{S}\), and \(C_\mathrm{G}\) as follows:
+\(C_\mathrm{NS}\), \(C_\mathrm{S}\), and \(C_\mathrm{G}\) using the general formula:
 
-| Channel | Coefficient function (F2/FL) | Coefficient function (F3) |
-|---------|---------------------|---------------------|
-| Quark \(q\) | \(\mathcal{C}_q = e_q^2 \, C_\mathrm{NS} + \frac{\Sigma_\mathrm{ch}}{6}\,(C_\mathrm{S} - C_\mathrm{NS})\) | \(\mathcal{C}_q = e_q^2 \, C_\mathrm{NS}\) |
-| Gluon | \(\mathcal{C}_g = \Sigma_\mathrm{ch} \, C_\mathrm{G}\) | \(\mathcal{C}_g = 0\) |
+| Channel | Coefficient function |
+|---------|---------------------|
+| Quark \(q\) | \(\mathcal{C}_q = w_q \, C_\mathrm{NS} + \frac{\Sigma_w}{6}\,(C_\mathrm{S} - C_\mathrm{NS})\) |
+| Gluon | \(\mathcal{C}_g = \Sigma_w \, C_\mathrm{G}\) |
 
-where \(\Sigma_\mathrm{ch} = \sum_{i=1}^{n_f} e_i^2\) is the sum of electroweak charges
-for the \(n_f\) active quark flavours at the given \(Q^2\), and the factor of 6 matches
-the internal normalisation convention used in APFEL++'s `DISNCBasis`.
+where \(w_q\) is the per-quark weight (electroweak charge \(e_q^2\) for NC, or CKM
+weight for CC), \(\Sigma_w = \sum_{i=1}^{n_f} w_i\), and the factor of 6 matches the
+internal normalisation convention used in APFEL++'s `DISNCBasis`/`DISCCBasis`.
+APFEL++ sets \(C_\mathrm{S} = C_\mathrm{NS}\) and/or \(C_\mathrm{G} = 0\) where
+the physics requires it, so the same formula works for all observables and currents.
 
 !!! note
     The `Channels` field in the grid card is still accepted for backward compatibility,
@@ -144,9 +164,16 @@ Process: DIS
 Observable: F2
 
 # The electroweak current type.
-# Supported values: NC
-# Optional, defaults to NC. CC is not yet supported.
+# Supported values: NC, CC
+# Optional, defaults to NC.
 Current: NC
+
+# CC sign variant (only used when Current: CC).
+# Supported values: Plus, Minus
+# Plus  = (F(nu) + F(nubar)) / 2
+# Minus = (F(nu) - F(nubar)) / 2
+# Optional, defaults to Plus.
+# CCSign: Plus
 
 # PID basis for the channel definitions.
 # Supported values: PDG, EVOL
@@ -255,6 +282,40 @@ Bins:
 
 Normalizations: [1.0, 1.0]
 ```
+
+#### CC DIS example
+
+A DIS \(F_2\) charged-current (CC) grid with the Plus variant \((F(\nu) + F(\bar\nu))/2\).
+The `CCSign` field selects between Plus and Minus. The CKM matrix elements are specified
+in the theory card (see below):
+
+```yaml
+Process: DIS
+Observable: F2
+Current: CC
+CCSign: Plus
+PidBasis: PDG
+HadronPids: [2212]
+ConvolutionTypes: [UNPOL_PDF]
+
+Orders:
+  - [0, 0, 0, 0, 0]
+  - [1, 0, 0, 0, 0]
+  - [2, 0, 0, 0, 0]
+
+Bins:
+  - lower: [10.0, 0.001]
+    upper: [100.0, 0.01]
+  - lower: [100.0, 0.01]
+    upper: [1000.0, 0.1]
+
+Normalizations: [1.0, 1.0]
+```
+
+The theory card should include a `CKM` field with 9 squared CKM matrix elements
+\(|V_{ij}|^2\) in row-major order: \([V_{ud}^2, V_{us}^2, V_{ub}^2, V_{cd}^2,
+V_{cs}^2, V_{cb}^2, V_{td}^2, V_{ts}^2, V_{tb}^2]\). If absent, standard PDG
+values are used.
 
 ---
 
@@ -378,7 +439,9 @@ You can also call `derive_channels()` directly if you need the channels before
 calling `build_grid()`:
 
 ```cpp
-// Derive channels for F2 with 5 active flavours
-auto channels = pineapfel::derive_channels(pineapfel::Observable::F2, 5);
+// Derive channels for F2 NC with 5 active flavours
+auto channels = pineapfel::derive_channels(
+    pineapfel::Observable::F2, pineapfel::Current::NC,
+    pineapfel::CCSign::Plus, 5);
 // Returns 6 channels: d+dbar, u+ubar, s+sbar, c+cbar, b+bbar, gluon
 ```

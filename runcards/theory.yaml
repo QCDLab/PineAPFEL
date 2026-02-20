@@ -16,6 +16,11 @@ QuarkThresholds: [0.0, 0.0, 0.0, 1.4, 4.75]
 # Output flavor PIDs (defines pids_out for the FK table)
 Flavors: [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 21]
 
+# CKM squared matrix elements (Vij^2), 9 entries in row-major order:
+# [Vud^2, Vus^2, Vub^2, Vcd^2, Vcs^2, Vcb^2, Vtd^2, Vts^2, Vtb^2]
+# Optional: defaults to standard CKM values if absent.
+CKM: [0.94922, 0.05077, 0.00001, 0.05073, 0.94760, 0.00168, 0.00007, 0.00162, 0.99831]
+
 # Enable QCD+QED evolution (default: false)
 QED: false
 

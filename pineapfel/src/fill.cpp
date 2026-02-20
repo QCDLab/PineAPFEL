@@ -17,24 +17,47 @@ namespace pineapfel {
 static auto select_initializer(ProcessType process,
     Observable                             observable,
     Current                                current,
+    CCSign                                 cc_sign,
     const apfel::Grid                     &g,
     const std::vector<double>             &thresholds)
     -> std::function<apfel::StructureFunctionObjects(double const &,
         std::vector<double> const &)> {
-    if (current != Current::NC)
-        throw std::runtime_error(
-            "build_grid: only NC current is currently supported");
-
     if (process == ProcessType::DIS) {
-        switch (observable) {
-        case Observable::F2:
-            return apfel::InitializeF2NCObjectsZM(g, thresholds);
-        case Observable::FL:
-            return apfel::InitializeFLNCObjectsZM(g, thresholds);
-        case Observable::F3:
-            return apfel::InitializeF3NCObjectsZM(g, thresholds);
+        if (current == Current::NC) {
+            switch (observable) {
+            case Observable::F2:
+                return apfel::InitializeF2NCObjectsZM(g, thresholds);
+            case Observable::FL:
+                return apfel::InitializeFLNCObjectsZM(g, thresholds);
+            case Observable::F3:
+                return apfel::InitializeF3NCObjectsZM(g, thresholds);
+            }
+        } else {
+            // CC
+            if (cc_sign == CCSign::Plus) {
+                switch (observable) {
+                case Observable::F2:
+                    return apfel::InitializeF2CCPlusObjectsZM(g, thresholds);
+                case Observable::FL:
+                    return apfel::InitializeFLCCPlusObjectsZM(g, thresholds);
+                case Observable::F3:
+                    return apfel::InitializeF3CCPlusObjectsZM(g, thresholds);
+                }
+            } else {
+                switch (observable) {
+                case Observable::F2:
+                    return apfel::InitializeF2CCMinusObjectsZM(g, thresholds);
+                case Observable::FL:
+                    return apfel::InitializeFLCCMinusObjectsZM(g, thresholds);
+                case Observable::F3:
+                    return apfel::InitializeF3CCMinusObjectsZM(g, thresholds);
+                }
+            }
         }
     } else if (process == ProcessType::SIA) {
+        if (current == Current::CC)
+            throw std::runtime_error(
+                "build_grid: CC current is not supported for SIA");
         switch (observable) {
         case Observable::F2:
             return apfel::InitializeF2NCObjectsZMT(g, thresholds);
@@ -83,23 +106,20 @@ static std::vector<double> derive_q2_nodes(const std::vector<BinDef> &bins,
 
 // Build the coefficient function operator for a given channel.
 //
-// For F2/FL, the physical-basis decomposition is:
-//   F = sum_q C_q (x) (q + qbar) + C_g (x) g
+// Physical-basis decomposition:
+//   F = sum_q C_q (x) (q +/- qbar) + C_g (x) g
 // with:
-//   C_q = e_q^2 * CNS + (SumCh / 6) * (CS - CNS)
-//   C_g = SumCh * CG
-// where SumCh = sum of electroweak charges for nf active flavors,
-// and the factor 6 matches the hardcoded normalization in APFEL++'s DISNCBasis.
-//
-// For F3 (valence-type):
-//   C_q = e_q^2 * CNS   (no singlet/gluon)
-//   C_g = 0
+//   C_q = w_q * CNS + (SumW / 6) * (CS - CNS)
+//   C_g = SumW * CG
+// where w_q is the per-quark weight (electroweak charge for NC, CKM weight
+// for CC), SumW = sum of w_q for nf active flavors, and the factor 6 matches
+// the hardcoded normalization in APFEL++'s DISNCBasis/DISCCBasis.
+// APFEL++ sets CS = CNS and CG = 0 where the physics requires it, so this
+// general formula works for all observables and currents.
 static apfel::Operator build_channel_operator(const ChannelDef &channel,
     const std::map<int, apfel::Operator>                       &ops,
     const std::vector<double>                                  &charges,
-    int                                                         nf,
-    bool                                                        f3,
-    const apfel::Operator                                      &zero_op) {
+    int                                                         nf) {
     const apfel::Operator &CNS    = ops.at(apfel::DISNCBasis::CNS);
     const apfel::Operator &CS     = ops.at(apfel::DISNCBasis::CS);
     const apfel::Operator &CG     = ops.at(apfel::DISNCBasis::CG);
@@ -117,10 +137,7 @@ static apfel::Operator build_channel_operator(const ChannelDef &channel,
         }
     }
 
-    if (is_gluon) {
-        if (f3) return zero_op;
-        return sum_ch * CG;
-    }
+    if (is_gluon) { return sum_ch * CG; }
 
     // Quark channel: extract the quark PID
     int quark_pid = 0;
@@ -144,9 +161,8 @@ static apfel::Operator build_channel_operator(const ChannelDef &channel,
                         ? charges[q_idx]
                         : 0.0;
 
-    if (f3) { return e_q_sq * CNS; }
-
-    // C_q = e_q^2 * CNS + (SumCh / 6) * (CS - CNS)
+    // C_q = w_q * CNS + (sum_w / 6) * (CS - CNS)
+    // Works for both NC and CC: APFEL++ sets operators to zero where needed
     return e_q_sq * CNS + (sum_ch / 6.0) * (CS - CNS);
 }
 
@@ -164,7 +180,10 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
     for (const auto &bin : grid_def.bins)
         q2_max = std::max(q2_max, bin.upper[0]);
     int nf_max        = apfel::NF(std::sqrt(q2_max), theory.quark_thresholds);
-    grid_def.channels = derive_channels(grid_def.observable, nf_max);
+    grid_def.channels = derive_channels(grid_def.observable,
+        grid_def.current,
+        grid_def.cc_sign,
+        nf_max);
     std::cout << "  Auto-derived " << grid_def.channels.size()
               << " channels for nf_max=" << nf_max << std::endl;
 
@@ -178,6 +197,7 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
     auto                sf_init        = select_initializer(grid_def.process,
         grid_def.observable,
         grid_def.current,
+        grid_def.cc_sign,
         g,
         theory.quark_thresholds);
 
@@ -205,10 +225,7 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
     std::vector<std::size_t> shape    = {nq, nx};
 
     bool                     timelike = (grid_def.process == ProcessType::SIA);
-    bool                     f3       = (grid_def.observable == Observable::F3);
-
-    // Zero operator for this grid
-    const apfel::Operator    ZeroOp{g, apfel::Null{}, apfel::eps5};
+    bool                     is_cc    = (grid_def.current == Current::CC);
 
     // 5. Precompute structure function objects and operators for each Q^2 node.
     //    Structure: sf_data[iq] = { order -> {CNS, CS, CG} operators }
@@ -223,11 +240,50 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
     std::vector<Q2Data> q2_data(nq);
 
     for (std::size_t iq = 0; iq < nq; iq++) {
-        double Q            = std::sqrt(q2_nodes[iq]);
-        q2_data[iq].nf      = apfel::NF(Q, theory.quark_thresholds);
-        q2_data[iq].charges = apfel::ElectroWeakCharges(Q, timelike);
+        double Q       = std::sqrt(q2_nodes[iq]);
+        q2_data[iq].nf = apfel::NF(Q, theory.quark_thresholds);
 
-        auto FObjQ          = sf_init(Q, q2_data[iq].charges);
+        // For NC: use electroweak charges as per-quark weights
+        // For CC: compute per-quark CKM weights and pass CKM vector to
+        //         APFEL++ initializer
+        std::vector<double> init_charges;
+        if (is_cc) {
+            // Per-quark CKM weight: sum of CKM^2 elements where quark
+            // participates, filtered by active partner flavors.
+            // Divided by 2 because CC Plus/Minus are defined as
+            // (F(nu) +/- F(nubar)) / 2, and each CKM element contributes
+            // to both the up-type and down-type quark channels.
+            int                 nf = q2_data[iq].nf;
+            std::vector<double> weights(nf, 0.0);
+            for (int q = 1; q <= nf; q++) {
+                bool is_down = (q % 2 == 1);
+                if (is_down) {
+                    int d_gen = (q + 1) / 2; // d->1, s->2, b->3
+                    for (int u_gen = 1; u_gen <= 3; u_gen++) {
+                        int partner_pid = 2 * u_gen; // u->2, c->4, t->6
+                        if (partner_pid <= nf)
+                            weights[q - 1] +=
+                                theory.ckm[(u_gen - 1) * 3 + (d_gen - 1)];
+                    }
+                } else {
+                    int u_gen = q / 2; // u->1, c->2, t->3
+                    for (int d_gen = 1; d_gen <= 3; d_gen++) {
+                        int partner_pid = 2 * d_gen - 1; // d->1, s->3, b->5
+                        if (partner_pid <= nf)
+                            weights[q - 1] +=
+                                theory.ckm[(u_gen - 1) * 3 + (d_gen - 1)];
+                    }
+                }
+                weights[q - 1] /= 2.0;
+            }
+            q2_data[iq].charges = weights;
+            init_charges        = theory.ckm;
+        } else {
+            q2_data[iq].charges = apfel::ElectroWeakCharges(Q, timelike);
+            init_charges        = q2_data[iq].charges;
+        }
+
+        auto FObjQ = sf_init(Q, init_charges);
 
         // Extract operators at each perturbative order using k=1
         // (operators are the same for any k; only ConvBasis differs)
@@ -265,9 +321,7 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                         build_channel_operator(grid_def.channels[ich],
                             q2_data[iq].order_ops[alpha_s],
                             q2_data[iq].charges,
-                            q2_data[iq].nf,
-                            f3,
-                            ZeroOp);
+                            q2_data[iq].nf);
 
                     // Evaluate operator at x_center -> Distribution on joint
                     // grid

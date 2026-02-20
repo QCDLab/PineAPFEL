@@ -25,6 +25,7 @@ struct TheoryCard {
     double              alpha_qcd_ref;
     std::vector<double> quark_thresholds;
     std::vector<int>    flavors;
+    std::vector<double> ckm;
     bool                qed;
     double              alpha_qed_ref;
     std::vector<double> lepton_thresholds;

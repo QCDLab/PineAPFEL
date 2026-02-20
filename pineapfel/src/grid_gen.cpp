@@ -6,23 +6,32 @@
 
 namespace pineapfel {
 
-std::vector<ChannelDef> derive_channels(Observable observable, int nf_max) {
+std::vector<ChannelDef> derive_channels(Observable observable,
+    Current                                         current,
+    CCSign                                          cc_sign,
+    int                                             nf_max) {
     std::vector<ChannelDef> channels;
 
-    bool                    is_f3 = (observable == Observable::F3);
+    bool is_f3 = (observable == Observable::F3);
+    bool is_cc = (current == Current::CC);
 
-    // One channel per active quark flavor: (q + qbar) for F2/FL, (q - qbar) for
-    // F3
+    // Determine C-parity of the observable:
+    //   C-odd  (valence, q-qbar): F3 NC, F3 CC Plus, F2/FL CC Minus
+    //   C-even (q+qbar):          F2/FL NC, F2/FL CC Plus, F3 CC Minus
+    bool c_odd = is_f3;
+    if (is_cc && cc_sign == CCSign::Minus) c_odd = !c_odd;
+
     for (int q = 1; q <= nf_max; q++) {
         ChannelDef ch;
         ch.pid_combinations = {{q}, {-q}};
-        ch.factors          = is_f3 ? std::vector<double>{1.0, -1.0}
+        ch.factors          = c_odd ? std::vector<double>{1.0, -1.0}
                                     : std::vector<double>{1.0, 1.0};
         channels.push_back(std::move(ch));
     }
 
-    // Gluon channel only for F2/FL (CG=0 for F3 at all orders)
-    if (!is_f3) {
+    // Gluon channel: present only for F2/FL with NC or CC Plus
+    bool has_gluon = !is_f3 && (!is_cc || cc_sign == CCSign::Plus);
+    if (has_gluon) {
         ChannelDef gch;
         gch.pid_combinations = {{21}};
         gch.factors          = {1.0};
@@ -58,6 +67,14 @@ GridDef load_grid_def(const std::string &path) {
         if (cur == "NC") def.current = Current::NC;
         else if (cur == "CC") def.current = Current::CC;
         else throw std::runtime_error("Unknown current: " + cur);
+    }
+
+    // CC sign (optional, defaults to Plus)
+    if (config["CCSign"]) {
+        std::string sign = config["CCSign"].as<std::string>();
+        if (sign == "Plus") def.cc_sign = CCSign::Plus;
+        else if (sign == "Minus") def.cc_sign = CCSign::Minus;
+        else throw std::runtime_error("Unknown CCSign: " + sign);
     }
 
     // PID basis
