@@ -14,15 +14,17 @@ TheoryCard load_theory_card(const std::string &path) {
     tc.alpha_qcd_ref    = config["AlphaQCDRef"].as<double>();
     tc.quark_thresholds = config["QuarkThresholds"].as<std::vector<double>>();
     tc.flavors          = config["Flavors"].as<std::vector<int>>();
-    tc.ckm              = config["CKM"]
-                              ? config["CKM"].as<std::vector<double>>()
-                              : std::vector<double>{
-                                    0.97428 * 0.97428, 0.22530 * 0.22530,
-                                    0.003470 * 0.003470, 0.22520 * 0.22520,
-                                    0.97345 * 0.97345, 0.04100 * 0.04100,
-                                    0.00862 * 0.00862, 0.04030 * 0.04030,
-                                    0.999152 * 0.999152};
-    tc.qed              = config["QED"] ? config["QED"].as<bool>() : false;
+    tc.ckm = config["CKM"] ? config["CKM"].as<std::vector<double>>()
+                           : std::vector<double>{0.97428 * 0.97428,
+                                 0.22530 * 0.22530,
+                                 0.003470 * 0.003470,
+                                 0.22520 * 0.22520,
+                                 0.97345 * 0.97345,
+                                 0.04100 * 0.04100,
+                                 0.00862 * 0.00862,
+                                 0.04030 * 0.04030,
+                                 0.999152 * 0.999152};
+    tc.qed = config["QED"] ? config["QED"].as<bool>() : false;
     tc.alpha_qed_ref =
         config["AlphaQEDRef"] ? config["AlphaQEDRef"].as<double>() : 0.0;
     tc.lepton_thresholds =

@@ -7,18 +7,18 @@
 namespace pineapfel {
 
 std::vector<ChannelDef> derive_channels(Observable observable,
-    Current                                         current,
-    CCSign                                          cc_sign,
-    int                                             nf_max) {
+    Current                                        current,
+    CCSign                                         cc_sign,
+    int                                            nf_max) {
     std::vector<ChannelDef> channels;
 
-    bool is_f3 = (observable == Observable::F3);
-    bool is_cc = (current == Current::CC);
+    bool                    is_f3 = (observable == Observable::F3);
+    bool                    is_cc = (current == Current::CC);
 
     // Determine C-parity of the observable:
     //   C-odd  (valence, q-qbar): F3 NC, F3 CC Plus, F2/FL CC Minus
     //   C-even (q+qbar):          F2/FL NC, F2/FL CC Plus, F3 CC Minus
-    bool c_odd = is_f3;
+    bool                    c_odd = is_f3;
     if (is_cc && cc_sign == CCSign::Minus) c_odd = !c_odd;
 
     for (int q = 1; q <= nf_max; q++) {

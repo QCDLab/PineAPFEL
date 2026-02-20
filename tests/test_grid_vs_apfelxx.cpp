@@ -159,7 +159,7 @@ int main() {
         static_cast<double>(tabp.n_steps),
         tabp.interp_degree};
 
-    auto q2_nodes = derive_q2_nodes(grid_def.bins, theory.quark_thresholds);
+    auto   q2_nodes  = derive_q2_nodes(grid_def.bins, theory.quark_thresholds);
     bool   timelike  = (grid_def.process == pineapfel::ProcessType::SIA);
 
     int    failures  = 0;
@@ -556,12 +556,11 @@ int main() {
         std::size_t cc_nbins = pineappl_grid_bin_count(cc_grid);
 
         // Build CC structure function via APFEL++ BuildStructureFunctions
-        auto cc_sf_init = apfel::InitializeF2CCPlusObjectsZM(g,
-            cc_theory.quark_thresholds);
+        auto        cc_sf_init =
+            apfel::InitializeF2CCPlusObjectsZM(g, cc_theory.quark_thresholds);
 
-        auto cc_dist_func = [](int const &i,
-                                double const &x,
-                                double const & /*Q*/) -> double {
+        auto cc_dist_func =
+            [](int const &i, double const &x, double const & /*Q*/) -> double {
             double f     = std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
             double g_val = std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
             if (i == 0) return g_val;     // gluon
@@ -574,13 +573,12 @@ int main() {
             return apfel::FourPi * as_tab.Evaluate(Q);
         };
 
-        auto cc_couplings_func =
-            [&](double const &Q) -> std::vector<double> {
-            (void) Q;
+        auto cc_couplings_func = [&](double const &Q) -> std::vector<double> {
+            (void)Q;
             return cc_theory.ckm;
         };
 
-        auto F2CC_map = apfel::BuildStructureFunctions(cc_sf_init,
+        auto  F2CC_map   = apfel::BuildStructureFunctions(cc_sf_init,
             cc_dist_func,
             cc_theory.pert_ord,
             cc_alphas_func,
@@ -593,17 +591,16 @@ int main() {
             double q2max = 0;
             for (const auto &bin : cc_grid_def.bins)
                 q2max = std::max(q2max, bin.upper[0]);
-            int nfm = apfel::NF(std::sqrt(q2max),
-                cc_theory.quark_thresholds);
-            cc_grid_def.channels = pineapfel::derive_channels(
-                cc_grid_def.observable,
-                cc_grid_def.current,
-                cc_grid_def.cc_sign,
-                nfm);
+            int nfm = apfel::NF(std::sqrt(q2max), cc_theory.quark_thresholds);
+            cc_grid_def.channels =
+                pineapfel::derive_channels(cc_grid_def.observable,
+                    cc_grid_def.current,
+                    cc_grid_def.cc_sign,
+                    nfm);
         }
 
-        auto cc_q2_nodes = derive_q2_nodes(cc_grid_def.bins,
-            cc_theory.quark_thresholds);
+        auto cc_q2_nodes =
+            derive_q2_nodes(cc_grid_def.bins, cc_theory.quark_thresholds);
 
         std::vector<double> pineappl_cc(cc_nbins, 0.0);
         pineappl_grid_convolve_with_one(cc_grid,
@@ -618,14 +615,13 @@ int main() {
             pineappl_cc.data());
 
         for (std::size_t ibin = 0; ibin < cc_nbins; ibin++) {
-            double x_center =
-                std::sqrt(cc_grid_def.bins[ibin].lower.back() *
-                          cc_grid_def.bins[ibin].upper.back());
-            double ref = 0;
+            double x_center = std::sqrt(cc_grid_def.bins[ibin].lower.back() *
+                                        cc_grid_def.bins[ibin].upper.back());
+            double ref      = 0;
 
             for (double q2 : cc_q2_nodes) {
-                double Q = std::sqrt(q2);
-                ref     += F2CC_total.Evaluate(x_center, Q);
+                double Q  = std::sqrt(q2);
+                ref      += F2CC_total.Evaluate(x_center, Q);
             }
 
             double rel_diff =
