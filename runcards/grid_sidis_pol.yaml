@@ -1,0 +1,19 @@
+Process: SIDIS
+Observable: F2
+Current: NC
+Polarized: true
+PidBasis: PDG
+HadronPids: [2212, 211]
+ConvolutionTypes: [POL_PDF, UNPOL_FF]
+
+Orders:
+  - [0, 0, 0, 0, 0]
+  - [1, 0, 0, 0, 0]
+
+Bins:
+  - lower: [10.0, 0.001, 0.2]
+    upper: [100.0, 0.01, 0.4]
+  - lower: [100.0, 0.01, 0.4]
+    upper: [1000.0, 0.1, 0.6]
+
+Normalizations: [1.0, 1.0]
