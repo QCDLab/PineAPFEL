@@ -6,7 +6,6 @@
 
 // Compute SIDIS F2 reference values using APFEL++ InitializeSIDIS.
 // Returns per-bin reference values for comparison with PineAPPL convolution.
-// toy_f(pid, x) returns f(x) (NOT x*f).
 std::vector<double> compute_sidis_reference(const apfel::Grid &g,
     const std::vector<double>                                 &thresholds,
     const std::vector<double>                                 &q2_nodes,
@@ -19,7 +18,6 @@ std::vector<double> compute_sidis_reference(const apfel::Grid &g,
 
 // Compute polarized SIDIS G1 reference values using APFEL++ InitializeSIDISpol.
 // Returns per-bin reference values for comparison with PineAPPL convolution.
-// toy_f(pid, x) returns f(x) (NOT x*f).
 std::vector<double> compute_sidis_pol_reference(const apfel::Grid &g,
     const std::vector<double>                                     &thresholds,
     const std::vector<double>                                     &q2_nodes,

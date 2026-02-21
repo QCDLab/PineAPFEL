@@ -5,7 +5,6 @@
 
 #include <sidis_api.h>
 
-// SIDISpol.h already includes SIDIS.h — include only the outermost header.
 #include <apfel/SIDISpol.h>
 
 namespace pineapfel {

@@ -148,6 +148,7 @@ static apfel::Operator build_channel_operator(const ChannelDef &channel,
     // Detect gluon channel: any PID combination containing only PID 21
     bool is_gluon = false;
     for (const auto &combo : channel.pid_combinations) {
+        // TODO: Probably also check GLUON_PID=0
         if (combo.size() == 1 && combo[0] == 21) {
             is_gluon = true;
             break;
@@ -179,12 +180,11 @@ static apfel::Operator build_channel_operator(const ChannelDef &channel,
                         : 0.0;
 
     // C_q = w_q * CNS + (sum_w / 6) * (CS - CNS)
-    // Works for both NC and CC: APFEL++ sets operators to zero where needed
     return e_q_sq * CNS + (sum_ch / 6.0) * (CS - CNS);
 }
 
-// Select the appropriate DoubleObject<Operator> from SidisObjects
-// for a given perturbative order, channel type (qq/gq/qg), and observable.
+// Select the appropriate DoubleObject<Operator> from SidisObjects for
+// a given perturbative order, channel type (qq/gq/qg), and observable.
 static const apfel::DoubleObject<apfel::Operator> *select_sidis_coeff(
     const pineapfel::SidisCoeffs &sobj,
     int                           alpha_s,

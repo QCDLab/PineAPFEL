@@ -329,8 +329,7 @@ pineappl_grid *evolve(pineappl_grid *grid,
             return Couplings.Evaluate(mu)(1, 0);
         };
 
-        // Initialize DGLAP objects for QCD+QED (only UNPOL_PDF supported for
-        // QED)
+        // Initialize DGLAP objects for QCD+QED (only UNPOL_PDF for QED)
         op_params->DglapObj.insert(
             {pineappl_conv_type::PINEAPPL_CONV_TYPE_UNPOL_PDF,
                 InitializeDglapObjectsQCDQED(g,

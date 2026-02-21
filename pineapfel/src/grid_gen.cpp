@@ -239,6 +239,7 @@ pineappl_grid *create_grid(const GridDef &def) {
     }
 
     // 6. Build interpolation specs
+    // TODO: The following needs to be tuned based on kinematics!
     std::vector<pineappl_interp> interps;
     {
         // Scale interpolation
