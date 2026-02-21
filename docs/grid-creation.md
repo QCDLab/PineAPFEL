@@ -17,24 +17,24 @@ The `build_grid()` function currently supports the following combinations:
 
 | Process | Observable | Current | APFEL++ initializer | Mass scheme |
 |---------|-----------|---------|---------------------|-------------|
-| DIS | F2 | NC | `InitializeF2NCObjectsZM` | Zero-mass |
-| DIS | FL | NC | `InitializeFLNCObjectsZM` | Zero-mass |
-| DIS | F3 | NC | `InitializeF3NCObjectsZM` | Zero-mass |
-| DIS | F2 | CC Plus | `InitializeF2CCPlusObjectsZM` | Zero-mass |
-| DIS | FL | CC Plus | `InitializeFLCCPlusObjectsZM` | Zero-mass |
-| DIS | F3 | CC Plus | `InitializeF3CCPlusObjectsZM` | Zero-mass |
-| DIS | F2 | CC Minus | `InitializeF2CCMinusObjectsZM` | Zero-mass |
-| DIS | FL | CC Minus | `InitializeFLCCMinusObjectsZM` | Zero-mass |
-| DIS | F3 | CC Minus | `InitializeF3CCMinusObjectsZM` | Zero-mass |
-| SIA | F2 | NC | `InitializeF2NCObjectsZMT` | Zero-mass |
-| SIA | FL | NC | `InitializeFLNCObjectsZMT` | Zero-mass |
-| SIA | F3 | NC | `InitializeF3NCObjectsZMT` | Zero-mass |
-| SIDIS | F2 | NC | `InitializeSIDIS` | Zero-mass |
-| SIDIS | FL | NC | `InitializeSIDIS` | Zero-mass |
-| DIS (polarized) | F2 → \(g_1\) | NC | `Initializeg1NCObjectsZM` | Zero-mass |
-| DIS (polarized) | FL → \(g_L\) | NC | `InitializegLNCObjectsZM` | Zero-mass |
-| DIS (polarized) | F3 → \(g_4\) | NC | `Initializeg4NCObjectsZM` | Zero-mass |
-| SIDIS (polarized) | F2 → \(G_1\) | NC | `InitializeSIDISpol` | Zero-mass |
+| DIS | \(F_2\) | NC | `InitializeF2NCObjectsZM` | Zero-mass |
+| DIS | \(F_L\) | NC | `InitializeFLNCObjectsZM` | Zero-mass |
+| DIS | \(F_3\) | NC | `InitializeF3NCObjectsZM` | Zero-mass |
+| DIS | \(F_2\) | CC\(+\) | `InitializeF2CCPlusObjectsZM` | Zero-mass |
+| DIS | \(F_L\) | CC\(+\) | `InitializeFLCCPlusObjectsZM` | Zero-mass |
+| DIS | \(F_3\) | CC\(+\) | `InitializeF3CCPlusObjectsZM` | Zero-mass |
+| DIS | \(F_2\) | CC\(-\) | `InitializeF2CCMinusObjectsZM` | Zero-mass |
+| DIS | \(F_L\) | CC\(-\) | `InitializeFLCCMinusObjectsZM` | Zero-mass |
+| DIS | \(F_3\) | CC\(-\) | `InitializeF3CCMinusObjectsZM` | Zero-mass |
+| SIA | \(F_2\) | NC | `InitializeF2NCObjectsZMT` | Zero-mass |
+| SIA | \(F_L\) | NC | `InitializeFLNCObjectsZMT` | Zero-mass |
+| SIA | \(F_3\) | NC | `InitializeF3NCObjectsZMT` | Zero-mass |
+| SIDIS | \(F_2\) | NC | `InitializeSIDIS` | Zero-mass |
+| SIDIS | \(F_L\) | NC | `InitializeSIDIS` | Zero-mass |
+| DIS (polarized) | \(F_2\) → \(g_1\) | NC | `Initializeg1NCObjectsZM` | Zero-mass |
+| DIS (polarized) | \(F_L\) → \(g_L\) | NC | `InitializegLNCObjectsZM` | Zero-mass |
+| DIS (polarized) | \(F_3\) → \(g_4\) | NC | `Initializeg4NCObjectsZM` | Zero-mass |
+| SIDIS (polarized) | \(F_2\) → \(G_1\) | NC | `InitializeSIDISpol` | Zero-mass |
 
 Polarized grids are selected by setting `Polarized: true` in the grid card. The
 `Observable` field retains its unpolarized name (`F2`, `FL`, `F3`) and is interpreted
@@ -62,12 +62,9 @@ non-perturbative input the grid will be convoluted with:
 
 | Process | `ConvolutionTypes` | Description |
 |---------|-------------------|-------------|
-| DIS | `[UNPOL_PDF]` | Unpolarised parton distribution functions |
-| SIA | `[UNPOL_FF]` | Unpolarised fragmentation functions |
-| SIDIS | `[UNPOL_PDF, UNPOL_FF]` | PDF for the initial state, FF for the final state |
-
-Additionally, PineAPFEL's evolution module supports `POL_PDF` (longitudinally polarised PDFs)
-for evolving grids that were filled externally with polarised coefficient functions.
+| DIS | `[(UN)POL_PDF]` | (Un)polarised parton distribution functions |
+| SIA | `[(UN)POL_FF]` | (Un)polarised fragmentation functions |
+| SIDIS | `[(UN)POL_PDF, (UN)POL_FF]` | PDF for the initial state, FF for the final state |
 
 ### Perturbative orders
 
@@ -75,7 +72,7 @@ for evolving grids that were filled externally with polarised coefficient functi
 
 The coefficient functions are available at the following perturbative orders:
 
-| `alpha_s` power | Label | F2/FL content | F3 content |
+| `alpha_s` power | Label | \(F_2\)/\(F_L\) content | \(F_3\) content |
 |:-:|:--:|---|---|
 | 0 | LO | \(\delta(1-x)\) for quarks, 0 for gluon | \(\delta(1-x)\) for quarks, 0 for gluon |
 | 1 | NLO | \(C_{2,\mathrm{NS}}^{(1)}\), \(C_{2,g}^{(1)}\) | \(C_{3,\mathrm{NS}}^{(1)}\), no gluon |
@@ -144,28 +141,28 @@ The `derive_channels()` function generates channels in the **physical (PDG) basi
 
 #### DIS and SIA channels
 
-For **F2** and **FL** (C-even, neutral current):
+For **\(F_2\)** and **\(F_L\)** (C-even, Neutral Current):
 
 - One quark channel per active flavour \(q = 1, \ldots, n_{f}^{\mathrm{max}}\):
   `pids: [[q], [-q]]`, `factors: [1.0, 1.0]` (i.e. \(q + \bar{q}\))
 - One gluon channel: `pids: [[21]]`, `factors: [1.0]`
 
-For **F3** (C-odd, neutral current):
+For **\(F_3\)** (C-odd, Neutral Current):
 
 - One quark channel per active flavour \(q = 1, \ldots, n_{f}^{\mathrm{max}}\):
   `pids: [[q], [-q]]`, `factors: [1.0, -1.0]` (i.e. \(q - \bar{q}\))
 - **No gluon channel** (\(C_\mathrm{G} = 0\) at all perturbative orders)
 
-For **charged-current (CC)** processes, the channel structure depends on both the
+For **Charged-Current (CC)** processes, the channel structure depends on both the
 observable and the CC sign variant. The C-parity of the observable determines the
 quark combination:
 
 - **C-even** (factors \([1, 1]\), i.e. \(q + \bar{q}\)):
-  F2/FL CC Plus, F3 CC Minus
+  \(F_2\)/\(F_L\) CC\(+\), \(F_3\) CC\(-\)
 - **C-odd** (factors \([1, -1]\), i.e. \(q - \bar{q}\)):
-  F2/FL CC Minus, F3 CC Plus
+  \(F_2\)/\(F_L\) CC\(-\), \(F_3\) CC\(+\)
 
-A gluon channel is present only for F2/FL with NC or CC Plus. For CC, the per-quark
+A gluon channel is present only for \(F_2/F_L\) with NC or CC\(+\). For CC, the per-quark
 weights \(w_q\) are the sum of CKM² elements where quark \(q\) participates
 (filtered by active partner flavours), replacing the electroweak charges used in NC.
 
@@ -249,10 +246,9 @@ Current: NC
 # Longitudinal polarization flag.
 # When true, the polarized structure functions are computed:
 #   DIS:   F2 -> g1,  FL -> gL,  F3 -> g4  (NC only)
-#   SIDIS: F2 -> G1                          (NC only, F2 observable required)
+#   SIDIS: F2 -> G1                        (NC only, F2 observable required)
 # Polarized CC and polarized SIA are not supported.
-# Optional, defaults to false.
-# Polarized: false
+# Optional, defaults to false, ie. `Polarized: false`
 
 # PID basis for the channel definitions.
 # Supported values: PDG, EVOL
@@ -309,8 +305,7 @@ Normalizations: [1.0, 1.0]
 
 #### DIS example
 
-A DIS \(F_2\) grid up to NNLO with two \((Q^2, x)\) bins. Channels are auto-derived
-(5 quark flavours + gluon, determined from the maximum \(Q^2\) and the theory thresholds):
+A DIS \(F_2\) grid up to NNLO with two \((Q^2, x)\) bins.
 
 ```yaml
 Process: DIS
@@ -400,7 +395,7 @@ Current: NC
 Polarized: true
 PidBasis: PDG
 HadronPids: [2212]
-ConvolutionTypes: [UNPOL_PDF]
+ConvolutionTypes: [POL_PDF]
 
 Orders:
   - [0, 0, 0, 0, 0]
@@ -426,7 +421,7 @@ Current: NC
 Polarized: true
 PidBasis: PDG
 HadronPids: [2212, 211]
-ConvolutionTypes: [UNPOL_PDF, UNPOL_FF]
+ConvolutionTypes: [POL_PDF, POL_FF]
 
 Orders:
   - [0, 0, 0, 0, 0]
