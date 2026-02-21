@@ -729,6 +729,190 @@ int main() {
     }
 
     // ============================================================
+    // TEST 7: Polarized DIS g₁ — PineAPPL vs BuildStructureFunctions
+    //
+    // Build a polarized DIS grid (g₁) and compare against APFEL++
+    // BuildStructureFunctions using Initializeg1NCObjectsZM.
+    // Follows the same pattern as TEST 4.
+    // ============================================================
+    std::printf(
+        "\n--- TEST 7: Polarized DIS g1 PineAPPL vs BuildStructureFunctions "
+        "---\n");
+    {
+        auto pol_grid_def =
+            pineapfel::load_grid_def("runcards/grid_dis_pol.yaml");
+        auto pol_theory = pineapfel::load_theory_card("runcards/theory.yaml");
+
+        pineappl_grid *pol_grid =
+            pineapfel::build_grid(pol_grid_def, pol_theory, op_card);
+        std::size_t pol_nbins = pineappl_grid_bin_count(pol_grid);
+
+        // Build g1 structure function via APFEL++ BuildStructureFunctions
+        auto        g1_sf_init =
+            apfel::Initializeg1NCObjectsZM(g, pol_theory.quark_thresholds);
+
+        // Same dist_func as TEST 4 (equal toy quarks mapped to evolution basis)
+        auto pol_dist_func =
+            [](int const &i, double const &x, double const & /*Q*/) -> double {
+            double f     = std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
+            double g_val = std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
+            if (i == 0) return g_val;     // gluon
+            if (i == 1) return 10.0 * f;  // Sigma
+            if (i == 11) return 10.0 * f; // T35
+            return 0.0;
+        };
+
+        auto pol_alphas_func = [&](double const &Q) -> double {
+            return apfel::FourPi * as_tab.Evaluate(Q);
+        };
+
+        auto pol_couplings_func = [&](double const &Q) -> std::vector<double> {
+            return apfel::ElectroWeakCharges(Q, false);
+        };
+
+        auto                g1_map = apfel::BuildStructureFunctions(g1_sf_init,
+            pol_dist_func,
+            pol_theory.pert_ord,
+            pol_alphas_func,
+            pol_couplings_func);
+        auto               &g1_total = g1_map.at(0);
+
+        // PineAPPL full convolution (all orders).
+        // Must use pineappl_grid_convolve (not convolve_with_one) because
+        // the grid has PolPDF convolution type; convolve_with_one always
+        // assumes UnpolPDF and would panic at runtime.
+        std::vector<double> pineappl_pol(pol_nbins, 0.0);
+        void               *pol_state[1] = {nullptr};
+
+        pineappl_grid_convolve(pol_grid,
+            xfx_callback,
+            alphas_callback,
+            pol_state,
+            static_cast<void *>(&as_tab),
+            nullptr, // all orders
+            nullptr, // all channels
+            nullptr, // no bin indices
+            0,       // nb_scales
+            nullptr, // mu_scales
+            pineappl_pol.data());
+
+        auto pol_q2_nodes =
+            derive_q2_nodes(pol_grid_def.bins, pol_theory.quark_thresholds);
+
+        for (std::size_t ibin = 0; ibin < pol_nbins; ibin++) {
+            double x_center = std::sqrt(pol_grid_def.bins[ibin].lower.back() *
+                                        pol_grid_def.bins[ibin].upper.back());
+            double ref      = 0;
+
+            for (double q2 : pol_q2_nodes) {
+                double Q  = std::sqrt(q2);
+                ref      += g1_total.Evaluate(x_center, Q);
+            }
+
+            double rel_diff =
+                std::abs(ref) > 1e-30
+                    ? std::abs(pineappl_pol[ibin] - ref) / std::abs(ref)
+                    : 0.0;
+
+            double bsf_tol = 1e-2;
+            bool   ok      = (rel_diff < bsf_tol);
+            std::printf(
+                "  bin %zu: pineappl=%.6e  BSF=%.6e  rel_diff=%.2e %s\n",
+                ibin,
+                pineappl_pol[ibin],
+                ref,
+                rel_diff,
+                ok ? "OK" : "FAIL");
+            if (!ok) failures++;
+        }
+
+        pineappl_grid_delete(pol_grid);
+    }
+
+    // ============================================================
+    // TEST 8: Polarized SIDIS G₁ — PineAPPL LO+NLO vs APFEL++ DoubleObject
+    //
+    // Build a polarized SIDIS grid (G₁) and compare PineAPPL
+    // convolution (POL_PDF ⊗ UNPOL_FF) against independently
+    // evaluating the DoubleObject coefficient functions from
+    // InitializeSIDISpol.  Follows the same pattern as TEST 6.
+    // ============================================================
+    std::printf(
+        "\n--- TEST 8: Polarized SIDIS G1 LO+NLO PineAPPL vs APFEL++ ---\n");
+    {
+        auto pol_sidis_grid_def =
+            pineapfel::load_grid_def("runcards/grid_sidis_pol.yaml");
+        auto pol_sidis_theory =
+            pineapfel::load_theory_card("runcards/theory.yaml");
+
+        pineappl_grid *pol_sidis_grid =
+            pineapfel::build_grid(pol_sidis_grid_def,
+                pol_sidis_theory,
+                op_card);
+        std::size_t pol_sidis_nbins = pineappl_grid_bin_count(pol_sidis_grid);
+
+        auto pol_sidis_q2_nodes     = derive_q2_nodes(pol_sidis_grid_def.bins,
+            pol_sidis_theory.quark_thresholds);
+
+        // PineAPPL convolution with 2 convolution functions (POL_PDF ⊗
+        // UNPOL_FF)
+        std::vector<double> pineappl_pol_sidis(pol_sidis_nbins, 0.0);
+        void               *pdfs_state[2] = {nullptr, nullptr};
+
+        pineappl_grid_convolve(pol_sidis_grid,
+            xfx_callback,
+            alphas_callback,
+            pdfs_state,
+            static_cast<void *>(&as_tab),
+            nullptr, // all orders
+            nullptr, // all channels
+            nullptr, // no bin indices
+            0,       // nb_scales
+            nullptr, // mu_scales
+            pineappl_pol_sidis.data());
+
+        // Reference computation via helper (separate TU with SIDISpol.h)
+        std::vector<std::vector<double>> pol_bin_x_bounds, pol_bin_z_bounds;
+        for (const auto &bin : pol_sidis_grid_def.bins) {
+            pol_bin_x_bounds.push_back({bin.lower[1], bin.upper[1]});
+            pol_bin_z_bounds.push_back({bin.lower[2], bin.upper[2]});
+        }
+
+        auto pol_alphas_func = [&](double Q) -> double {
+            return as_tab.Evaluate(Q);
+        };
+
+        auto pol_ref_vals = compute_sidis_pol_reference(g,
+            pol_sidis_theory.quark_thresholds,
+            pol_sidis_q2_nodes,
+            pol_bin_x_bounds,
+            pol_bin_z_bounds,
+            1, // max_alpha_s = 1 (LO + NLO)
+            toy_f,
+            pol_alphas_func);
+
+        for (std::size_t ibin = 0; ibin < pol_sidis_nbins; ibin++) {
+            double ref = pol_ref_vals[ibin];
+            double rel_diff =
+                std::abs(ref) > 1e-30
+                    ? std::abs(pineappl_pol_sidis[ibin] - ref) / std::abs(ref)
+                    : 0.0;
+
+            bool ok = (rel_diff < tolerance);
+            std::printf(
+                "  bin %zu: pineappl=%.6e  apfel++=%.6e  rel_diff=%.2e %s\n",
+                ibin,
+                pineappl_pol_sidis[ibin],
+                ref,
+                rel_diff,
+                ok ? "OK" : "FAIL");
+            if (!ok) failures++;
+        }
+
+        pineappl_grid_delete(pol_sidis_grid);
+    }
+
+    // ============================================================
     // Summary
     // ============================================================
     std::printf("\n=== Summary: %d failures ===\n", failures);

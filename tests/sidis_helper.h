@@ -16,3 +16,15 @@ std::vector<double> compute_sidis_reference(const apfel::Grid &g,
     int                                     max_alpha_s,
     std::function<double(int, double)>      toy_f,
     std::function<double(double)>           alphas_func);
+
+// Compute polarized SIDIS G1 reference values using APFEL++ InitializeSIDISpol.
+// Returns per-bin reference values for comparison with PineAPPL convolution.
+// toy_f(pid, x) returns f(x) (NOT x*f).
+std::vector<double> compute_sidis_pol_reference(const apfel::Grid &g,
+    const std::vector<double>                                     &thresholds,
+    const std::vector<double>                                     &q2_nodes,
+    const std::vector<std::vector<double>> &bin_x_bounds, // {lo, hi} per bin
+    const std::vector<std::vector<double>> &bin_z_bounds, // {lo, hi} per bin
+    int                                     max_alpha_s,
+    std::function<double(int, double)>      toy_f,
+    std::function<double(double)>           alphas_func);
