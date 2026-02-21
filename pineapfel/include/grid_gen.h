@@ -12,6 +12,7 @@ enum class ProcessType { DIS, SIDIS, SIA };
 enum class Observable { F2, FL, F3 };
 enum class Current { NC, CC };
 enum class CCSign { Plus, Minus };
+enum class MassScheme { ZM, FFN, MassiveZero, FONLL };
 
 struct OrderDef {
     uint8_t alpha_s, alpha, log_xir, log_xif, log_xia;
@@ -30,10 +31,11 @@ struct BinDef {
 
 struct GridDef {
     ProcessType        process;
-    Observable         observable = Observable::F2;
-    Current            current    = Current::NC;
-    CCSign             cc_sign    = CCSign::Plus;
-    bool               polarized  = false; // longitudinal polarization
+    Observable         observable  = Observable::F2;
+    Current            current     = Current::NC;
+    CCSign             cc_sign     = CCSign::Plus;
+    bool               polarized   = false; // longitudinal polarization
+    MassScheme         mass_scheme = MassScheme::ZM;
     pineappl_pid_basis pid_basis;
     std::vector<int>   hadron_pids;
     std::vector<pineappl_conv_type> convolution_types;

@@ -13,6 +13,11 @@ AlphaQCDRef: 0.118
 # Quark mass thresholds in GeV (up through bottom; length determines nf_max)
 QuarkThresholds: [0.0, 0.0, 0.0, 1.4, 4.75]
 
+# Heavy quark masses for massive coefficient functions (all 6 flavors required)
+# APFEL++ InitializeF2/FLNCObjectsMassive require exactly 6 ordered masses.
+# Defaults to QuarkThresholds (padded to 6 with top=172.0 GeV) if absent.
+HeavyQuarkMasses: [0.0, 0.0, 0.0, 1.4, 4.75, 172.0]
+
 # Output flavor PIDs (defines pids_out for the FK table)
 Flavors: [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 21]
 

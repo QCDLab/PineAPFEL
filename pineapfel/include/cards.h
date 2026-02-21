@@ -29,6 +29,15 @@ struct TheoryCard {
     bool                qed;
     double              alpha_qed_ref;
     std::vector<double> lepton_thresholds;
+    // Heavy quark masses for massive scheme coefficient functions
+    std::vector<double> heavy_quark_masses;
+    // Tabulation parameters for massive scheme (APFEL++ defaults)
+    int                 mass_nxi    = 150;
+    double              mass_ximin  = 0.05;
+    double              mass_ximax  = 10000.0;
+    int                 mass_intdeg = 3;
+    double              mass_lambda = 0.0005;
+    int                 mass_imod   = 0;
 };
 
 struct OperatorCard {

@@ -913,6 +913,291 @@ int main() {
     }
 
     // ============================================================
+    // TEST 9: FFN F2 — PineAPPL vs BuildStructureFunctions (Massive)
+    //
+    // Build a DIS grid with MassScheme: FFN and compare against
+    // APFEL++ BuildStructureFunctions using InitializeF2NCObjectsMassive.
+    // ============================================================
+    std::printf(
+        "\n--- TEST 9: FFN F2 PineAPPL vs BuildStructureFunctions ---\n");
+    {
+        auto ffn_grid_def =
+            pineapfel::load_grid_def("runcards/grid_dis_ffn.yaml");
+        auto ffn_theory = pineapfel::load_theory_card("runcards/theory.yaml");
+
+        pineappl_grid *ffn_grid =
+            pineapfel::build_grid(ffn_grid_def, ffn_theory, op_card);
+        std::size_t ffn_nbins   = pineappl_grid_bin_count(ffn_grid);
+
+        auto        ffn_sf_init = apfel::InitializeF2NCObjectsMassive(g,
+            ffn_theory.heavy_quark_masses);
+
+        auto        ffn_dist_func =
+            [](int const &i, double const &x, double const & /*Q*/) -> double {
+            double f     = std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
+            double g_val = std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
+            if (i == 0) return g_val;
+            if (i == 1) return 10.0 * f;
+            if (i == 11) return 10.0 * f;
+            return 0.0;
+        };
+
+        auto ffn_alphas_func = [&](double const &Q) -> double {
+            return apfel::FourPi * as_tab.Evaluate(Q);
+        };
+
+        auto ffn_couplings_func = [&](double const &Q) -> std::vector<double> {
+            return apfel::ElectroWeakCharges(Q, false);
+        };
+
+        auto  F2FFN_map   = apfel::BuildStructureFunctions(ffn_sf_init,
+            ffn_dist_func,
+            ffn_theory.pert_ord,
+            ffn_alphas_func,
+            ffn_couplings_func);
+        auto &F2FFN_total = F2FFN_map.at(0);
+
+        std::vector<double> pineappl_ffn(ffn_nbins, 0.0);
+        void               *ffn_state[1] = {nullptr};
+        pineappl_grid_convolve(ffn_grid,
+            xfx_callback,
+            alphas_callback,
+            ffn_state,
+            static_cast<void *>(&as_tab),
+            nullptr,
+            nullptr,
+            nullptr,
+            0,
+            nullptr,
+            pineappl_ffn.data());
+
+        auto ffn_q2_nodes =
+            derive_q2_nodes(ffn_grid_def.bins, ffn_theory.quark_thresholds);
+
+        for (std::size_t ibin = 0; ibin < ffn_nbins; ibin++) {
+            double x_center = std::sqrt(ffn_grid_def.bins[ibin].lower.back() *
+                                        ffn_grid_def.bins[ibin].upper.back());
+            double ref      = 0;
+            for (double q2 : ffn_q2_nodes) {
+                double Q  = std::sqrt(q2);
+                ref      += F2FFN_total.Evaluate(x_center, Q);
+            }
+            double rel_diff =
+                std::abs(ref) > 1e-30
+                    ? std::abs(pineappl_ffn[ibin] - ref) / std::abs(ref)
+                    : 0.0;
+            double bsf_tol = 1e-2;
+            bool   ok      = (rel_diff < bsf_tol);
+            std::printf(
+                "  bin %zu: pineappl=%.6e  BSF=%.6e  rel_diff=%.2e %s\n",
+                ibin,
+                pineappl_ffn[ibin],
+                ref,
+                rel_diff,
+                ok ? "OK" : "FAIL");
+            if (!ok) failures++;
+        }
+        pineappl_grid_delete(ffn_grid);
+    }
+
+    // ============================================================
+    // TEST 10: MassiveZero F2 — PineAPPL vs BuildStructureFunctions
+    //
+    // Build a DIS grid with MassScheme: MassiveZero and compare against
+    // APFEL++ BuildStructureFunctions using InitializeF2NCObjectsMassiveZero.
+    // ============================================================
+    std::printf("\n--- TEST 10: MassiveZero F2 PineAPPL vs "
+                "BuildStructureFunctions ---\n");
+    {
+        auto mz_grid_def =
+            pineapfel::load_grid_def("runcards/grid_dis_mz.yaml");
+        auto mz_theory = pineapfel::load_theory_card("runcards/theory.yaml");
+
+        pineappl_grid *mz_grid =
+            pineapfel::build_grid(mz_grid_def, mz_theory, op_card);
+        std::size_t mz_nbins   = pineappl_grid_bin_count(mz_grid);
+
+        auto        mz_sf_init = apfel::InitializeF2NCObjectsMassiveZero(g,
+            mz_theory.heavy_quark_masses);
+
+        auto        mz_dist_func =
+            [](int const &i, double const &x, double const & /*Q*/) -> double {
+            double f     = std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
+            double g_val = std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
+            if (i == 0) return g_val;
+            if (i == 1) return 10.0 * f;
+            if (i == 11) return 10.0 * f;
+            return 0.0;
+        };
+
+        auto mz_alphas_func = [&](double const &Q) -> double {
+            return apfel::FourPi * as_tab.Evaluate(Q);
+        };
+
+        auto mz_couplings_func = [&](double const &Q) -> std::vector<double> {
+            return apfel::ElectroWeakCharges(Q, false);
+        };
+
+        auto  F2MZ_map   = apfel::BuildStructureFunctions(mz_sf_init,
+            mz_dist_func,
+            mz_theory.pert_ord,
+            mz_alphas_func,
+            mz_couplings_func);
+        auto &F2MZ_total = F2MZ_map.at(0);
+
+        std::vector<double> pineappl_mz(mz_nbins, 0.0);
+        void               *mz_state[1] = {nullptr};
+        pineappl_grid_convolve(mz_grid,
+            xfx_callback,
+            alphas_callback,
+            mz_state,
+            static_cast<void *>(&as_tab),
+            nullptr,
+            nullptr,
+            nullptr,
+            0,
+            nullptr,
+            pineappl_mz.data());
+
+        auto mz_q2_nodes =
+            derive_q2_nodes(mz_grid_def.bins, mz_theory.quark_thresholds);
+
+        for (std::size_t ibin = 0; ibin < mz_nbins; ibin++) {
+            double x_center = std::sqrt(mz_grid_def.bins[ibin].lower.back() *
+                                        mz_grid_def.bins[ibin].upper.back());
+            double ref      = 0;
+            for (double q2 : mz_q2_nodes) {
+                double Q  = std::sqrt(q2);
+                ref      += F2MZ_total.Evaluate(x_center, Q);
+            }
+            double rel_diff =
+                std::abs(ref) > 1e-30
+                    ? std::abs(pineappl_mz[ibin] - ref) / std::abs(ref)
+                    : 0.0;
+            double bsf_tol = 1e-2;
+            bool   ok      = (rel_diff < bsf_tol);
+            std::printf(
+                "  bin %zu: pineappl=%.6e  BSF=%.6e  rel_diff=%.2e %s\n",
+                ibin,
+                pineappl_mz[ibin],
+                ref,
+                rel_diff,
+                ok ? "OK" : "FAIL");
+            if (!ok) failures++;
+        }
+        pineappl_grid_delete(mz_grid);
+    }
+
+    // ============================================================
+    // TEST 11: FONLL F2 — PineAPPL vs manual combination
+    //
+    // Build a DIS grid with MassScheme: FONLL and compare against
+    // the manually combined reference: F_FONLL = F_ZM + F_FFN - F_MZ.
+    // ============================================================
+    std::printf("\n--- TEST 11: FONLL F2 PineAPPL vs manual ZM+FFN-MZ ---\n");
+    {
+        auto fonll_grid_def =
+            pineapfel::load_grid_def("runcards/grid_dis_fonll.yaml");
+        auto fonll_theory = pineapfel::load_theory_card("runcards/theory.yaml");
+
+        pineappl_grid *fonll_grid =
+            pineapfel::build_grid(fonll_grid_def, fonll_theory, op_card);
+        std::size_t fonll_nbins    = pineappl_grid_bin_count(fonll_grid);
+
+        // ZM initializer (already built as sf_init above)
+        // FFN initializer
+        auto        fonll_ffn_init = apfel::InitializeF2NCObjectsMassive(g,
+            fonll_theory.heavy_quark_masses);
+        // MassiveZero initializer
+        auto        fonll_mz_init  = apfel::InitializeF2NCObjectsMassiveZero(g,
+            fonll_theory.heavy_quark_masses);
+
+        auto        fonll_dist_func =
+            [](int const &i, double const &x, double const & /*Q*/) -> double {
+            double f     = std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
+            double g_val = std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
+            if (i == 0) return g_val;
+            if (i == 1) return 10.0 * f;
+            if (i == 11) return 10.0 * f;
+            return 0.0;
+        };
+
+        auto fonll_alphas_func = [&](double const &Q) -> double {
+            return apfel::FourPi * as_tab.Evaluate(Q);
+        };
+
+        auto fonll_couplings_func =
+            [&](double const &Q) -> std::vector<double> {
+            return apfel::ElectroWeakCharges(Q, false);
+        };
+
+        auto  F2ZM_map_f  = apfel::BuildStructureFunctions(sf_init,
+            fonll_dist_func,
+            fonll_theory.pert_ord,
+            fonll_alphas_func,
+            fonll_couplings_func);
+        auto  F2FFN_map_f = apfel::BuildStructureFunctions(fonll_ffn_init,
+            fonll_dist_func,
+            fonll_theory.pert_ord,
+            fonll_alphas_func,
+            fonll_couplings_func);
+        auto  F2MZ_map_f  = apfel::BuildStructureFunctions(fonll_mz_init,
+            fonll_dist_func,
+            fonll_theory.pert_ord,
+            fonll_alphas_func,
+            fonll_couplings_func);
+
+        auto &F2ZM_tot    = F2ZM_map_f.at(0);
+        auto &F2FFN_tot   = F2FFN_map_f.at(0);
+        auto &F2MZ_tot    = F2MZ_map_f.at(0);
+
+        std::vector<double> pineappl_fonll(fonll_nbins, 0.0);
+        void               *fonll_state[1] = {nullptr};
+        pineappl_grid_convolve(fonll_grid,
+            xfx_callback,
+            alphas_callback,
+            fonll_state,
+            static_cast<void *>(&as_tab),
+            nullptr,
+            nullptr,
+            nullptr,
+            0,
+            nullptr,
+            pineappl_fonll.data());
+
+        auto fonll_q2_nodes =
+            derive_q2_nodes(fonll_grid_def.bins, fonll_theory.quark_thresholds);
+
+        for (std::size_t ibin = 0; ibin < fonll_nbins; ibin++) {
+            double x_center = std::sqrt(fonll_grid_def.bins[ibin].lower.back() *
+                                        fonll_grid_def.bins[ibin].upper.back());
+            double ref      = 0;
+            for (double q2 : fonll_q2_nodes) {
+                double Q  = std::sqrt(q2);
+                // F_FONLL = F_ZM + F_FFN - F_MZ
+                ref      += F2ZM_tot.Evaluate(x_center, Q) +
+                       F2FFN_tot.Evaluate(x_center, Q) -
+                       F2MZ_tot.Evaluate(x_center, Q);
+            }
+            double rel_diff =
+                std::abs(ref) > 1e-30
+                    ? std::abs(pineappl_fonll[ibin] - ref) / std::abs(ref)
+                    : 0.0;
+            double bsf_tol = 1e-2;
+            bool   ok      = (rel_diff < bsf_tol);
+            std::printf(
+                "  bin %zu: pineappl=%.6e  ref=%.6e  rel_diff=%.2e %s\n",
+                ibin,
+                pineappl_fonll[ibin],
+                ref,
+                rel_diff,
+                ok ? "OK" : "FAIL");
+            if (!ok) failures++;
+        }
+        pineappl_grid_delete(fonll_grid);
+    }
+
+    // ============================================================
     // Summary
     // ============================================================
     std::printf("\n=== Summary: %d failures ===\n", failures);

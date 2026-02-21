@@ -14,16 +14,24 @@
 
 namespace pineapfel {
 
-// Select the appropriate APFEL++ structure function initializer.
-static auto select_initializer(ProcessType process,
-    Observable                             observable,
-    Current                                current,
-    CCSign                                 cc_sign,
-    bool                                   polarized,
-    const apfel::Grid                     &g,
-    const std::vector<double>             &thresholds)
-    -> std::function<apfel::StructureFunctionObjects(double const &,
-        std::vector<double> const &)> {
+using SFInitFn = std::function<apfel::StructureFunctionObjects(double const &,
+    std::vector<double> const &)>;
+
+struct WeightedSFInit {
+    SFInitFn init;
+    double   sign;  // +1 or -1
+    int      actnf; // -1 = ZM (Q-dependent nf); >=0 = fixed (massive)
+};
+
+// Build the ZM (or polarized ZM) initializer — handles all
+// process/observable/current combinations.
+static SFInitFn make_zm_init(ProcessType process,
+    Observable                           observable,
+    Current                              current,
+    CCSign                               cc_sign,
+    bool                                 polarized,
+    const apfel::Grid                   &g,
+    const std::vector<double>           &thresholds) {
     if (process == ProcessType::DIS) {
         if (polarized) {
             if (current == Current::CC)
@@ -89,6 +97,123 @@ static auto select_initializer(ProcessType process,
         "build_grid: unsupported process/observable combination");
 }
 
+// Build the Massive or MassiveZero initializer for NC F2/FL.
+// Returns nullptr for unsupported cases (F3, CC, polarized, SIA).
+static SFInitFn make_massive_init(Observable obs,
+    bool                                     zero,
+    const apfel::Grid                       &g,
+    const TheoryCard                        &theory) {
+    const auto &M = theory.heavy_quark_masses;
+    if (!zero) {
+        if (obs == Observable::F2)
+            return apfel::InitializeF2NCObjectsMassive(g,
+                M,
+                1e-5,
+                theory.mass_nxi,
+                theory.mass_ximin,
+                theory.mass_ximax,
+                theory.mass_intdeg,
+                theory.mass_lambda,
+                theory.mass_imod);
+        else
+            return apfel::InitializeFLNCObjectsMassive(g,
+                M,
+                1e-5,
+                theory.mass_nxi,
+                theory.mass_ximin,
+                theory.mass_ximax,
+                theory.mass_intdeg,
+                theory.mass_lambda,
+                theory.mass_imod);
+    } else {
+        if (obs == Observable::F2)
+            return apfel::InitializeF2NCObjectsMassiveZero(g,
+                M,
+                1e-5,
+                theory.mass_nxi,
+                theory.mass_ximin,
+                theory.mass_ximax,
+                theory.mass_intdeg,
+                theory.mass_lambda);
+        else
+            return apfel::InitializeFLNCObjectsMassiveZero(g,
+                M,
+                1e-5,
+                theory.mass_nxi,
+                theory.mass_ximin,
+                theory.mass_ximax,
+                theory.mass_intdeg,
+                theory.mass_lambda);
+    }
+}
+
+// Select the set of weighted initializers for the requested mass scheme.
+// Returns a vector of {init, sign} pairs to be accumulated into operator maps.
+static std::vector<WeightedSFInit> select_initializers(ProcessType process,
+    Observable                                                     observable,
+    Current                                                        current,
+    CCSign                                                         cc_sign,
+    bool                                                           polarized,
+    MassScheme                                                     mass_scheme,
+    const apfel::Grid                                             &g,
+    const TheoryCard                                              &theory) {
+    // Warn and fall back to ZM for cases where massive scheme is unsupported
+    bool massive_unsupported =
+        (current == Current::CC || polarized || process == ProcessType::SIA ||
+            observable == Observable::F3);
+
+    if (mass_scheme != MassScheme::ZM && massive_unsupported) {
+        std::cerr << "Warning: FFN/FONLL not supported for this "
+                     "process/observable/current; falling back to ZM.\n";
+        mass_scheme = MassScheme::ZM;
+    }
+
+    auto zm            = make_zm_init(process,
+        observable,
+        current,
+        cc_sign,
+        polarized,
+        g,
+        theory.quark_thresholds);
+
+    // Count light quarks (mass ≈ 0) to determine actnf for massive inits
+    int  actnf_massive = 0;
+    for (auto m : theory.heavy_quark_masses)
+        if (m < 1e-8) actnf_massive++;
+
+    switch (mass_scheme) {
+    case MassScheme::ZM:
+        return {
+            {zm, +1.0, -1}
+        };
+
+    case MassScheme::FFN: {
+        auto ffn = make_massive_init(observable, false, g, theory);
+        return {
+            {ffn, +1.0, actnf_massive}
+        };
+    }
+
+    case MassScheme::MassiveZero:
+        // APFEL++ InitializeF2NCObjectsMassiveZero sets the total channel (k=0)
+        // to {CNS:Zero, CS:Zero, CG:Zero} ("Not") for all perturbative orders.
+        // BuildStructureFunctions only uses k=0, so it gives BSF=0.
+        // Return an empty initializer list so PineAPFEL also contributes zero.
+        return {};
+
+    case MassScheme::FONLL: {
+        auto ffn = make_massive_init(observable, false, g, theory);
+        // F_MassiveZero = 0 from APFEL++ (total channel set to zero), so
+        // FONLL = F_ZM + F_FFN - 0 = F_ZM + F_FFN.
+        return {
+            { zm, +1.0,            -1},
+            {ffn, +1.0, actnf_massive}
+        };
+    }
+    }
+    throw std::runtime_error("select_initializers: unhandled mass scheme");
+}
+
 // Collect unique Q^2 nodes from bin edges with geometric intermediate points.
 static std::vector<double> derive_q2_nodes(const std::vector<BinDef> &bins,
     const std::vector<double> &thresholds,
@@ -119,68 +244,6 @@ static std::vector<double> derive_q2_nodes(const std::vector<BinDef> &bins,
     }
 
     return std::vector<double>(q2_set.begin(), q2_set.end());
-}
-
-// Build the coefficient function operator for a given channel.
-//
-// Physical-basis decomposition:
-//   F = sum_q C_q (x) (q +/- qbar) + C_g (x) g
-// with:
-//   C_q = w_q * CNS + (SumW / 6) * (CS - CNS)
-//   C_g = SumW * CG
-// where w_q is the per-quark weight (electroweak charge for NC, CKM weight
-// for CC), SumW = sum of w_q for nf active flavors, and the factor 6 matches
-// the hardcoded normalization in APFEL++'s DISNCBasis/DISCCBasis.
-// APFEL++ sets CS = CNS and CG = 0 where the physics requires it, so this
-// general formula works for all observables and currents.
-static apfel::Operator build_channel_operator(const ChannelDef &channel,
-    const std::map<int, apfel::Operator>                       &ops,
-    const std::vector<double>                                  &charges,
-    int                                                         nf) {
-    const apfel::Operator &CNS    = ops.at(apfel::DISNCBasis::CNS);
-    const apfel::Operator &CS     = ops.at(apfel::DISNCBasis::CS);
-    const apfel::Operator &CG     = ops.at(apfel::DISNCBasis::CG);
-
-    double                 sum_ch = 0;
-    for (int i = 0; i < nf && i < static_cast<int>(charges.size()); i++)
-        sum_ch += charges[i];
-
-    // Detect gluon channel: any PID combination containing only PID 21
-    bool is_gluon = false;
-    for (const auto &combo : channel.pid_combinations) {
-        // TODO: Probably also check GLUON_PID=0
-        if (combo.size() == 1 && combo[0] == 21) {
-            is_gluon = true;
-            break;
-        }
-    }
-
-    if (is_gluon) { return sum_ch * CG; }
-
-    // Quark channel: extract the quark PID
-    int quark_pid = 0;
-    for (const auto &combo : channel.pid_combinations) {
-        if (combo.size() == 1 && combo[0] > 0) {
-            quark_pid = combo[0];
-            break;
-        }
-    }
-    if (quark_pid == 0) {
-        for (const auto &combo : channel.pid_combinations) {
-            if (combo.size() == 1 && combo[0] < 0) {
-                quark_pid = -combo[0];
-                break;
-            }
-        }
-    }
-
-    int    q_idx  = quark_pid - 1;
-    double e_q_sq = (q_idx >= 0 && q_idx < static_cast<int>(charges.size()))
-                        ? charges[q_idx]
-                        : 0.0;
-
-    // C_q = w_q * CNS + (sum_w / 6) * (CS - CNS)
-    return e_q_sq * CNS + (sum_ch / 6.0) * (CS - CNS);
 }
 
 // Select the appropriate DoubleObject<Operator> from SidisObjects for
@@ -452,14 +515,15 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
         subgrids.emplace_back(sg.n_knots, sg.x_min, sg.poly_degree);
     const apfel::Grid   g{subgrids};
 
-    // 2. Initialize structure function objects
-    auto                sf_init        = select_initializer(grid_def.process,
+    // 2. Initialize structure function objects (one or more weighted inits)
+    auto                weighted_inits = select_initializers(grid_def.process,
         grid_def.observable,
         grid_def.current,
         grid_def.cc_sign,
         grid_def.polarized,
+        grid_def.mass_scheme,
         g,
-        theory.quark_thresholds);
+        theory);
 
     // 3. Create empty PineAPPL grid
     pineappl_grid      *grid           = create_grid(grid_def);
@@ -482,53 +546,80 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
     node_values.insert(node_values.end(), q2_nodes.begin(), q2_nodes.end());
     node_values.insert(node_values.end(), x_nodes.begin(), x_nodes.end());
 
-    std::vector<std::size_t> shape    = {nq, nx};
+    std::vector<std::size_t> shape     = {nq, nx};
 
-    bool                     timelike = (grid_def.process == ProcessType::SIA);
-    bool                     is_cc    = (grid_def.current == Current::CC);
+    bool                     timelike  = (grid_def.process == ProcessType::SIA);
+    bool                     is_cc     = (grid_def.current == Current::CC);
 
-    // 5. Precompute structure function objects and operators for each Q^2 node.
-    //    Structure: sf_data[iq] = { order -> {CNS, CS, CG} operators }
-    //    Also store nf and charges per Q^2 node.
+    // Pre-determine gluon channel index (gluon is the last channel when
+    // present)
+    int                      gluon_ich = -1;
+    bool                     has_gluon_channel  = false;
+    int                      num_quark_channels = 0;
+    for (int ich = 0; ich < (int)grid_def.channels.size(); ich++) {
+        for (const auto &combo : grid_def.channels[ich].pid_combinations) {
+            if (combo.size() == 1 && combo[0] == 21) {
+                gluon_ich         = ich;
+                has_gluon_channel = true;
+                break;
+            }
+        }
+        if (has_gluon_channel) break;
+    }
+    num_quark_channels =
+        (int)grid_def.channels.size() - (has_gluon_channel ? 1 : 0);
+
+    // 5. Precompute per-channel operators for each (Q^2, order) node.
+    //    channel_ops[order][channel_idx] accumulates the combined operator
+    //    from all weighted initializers.  Gluon and quark channels are
+    //    handled separately to correctly incorporate heavy-quark
+    //    contributions in the massive scheme.
     struct Q2Data {
-        int                 nf;
-        std::vector<double> charges;
-        std::map<int, std::map<int, apfel::Operator>>
-            order_ops; // order -> operator map
+        int nf;
+        std::vector<double>
+            charges; // 6-entry EW charges (NC) or nf-entry CKM (CC)
+        // channel_ops[order][channel_idx] = accumulated operator
+        std::map<int, std::map<int, apfel::Operator>> channel_ops;
     };
 
     std::vector<Q2Data> q2_data(nq);
+
+    // Helper: accumulate op*sign into target[ich].
+    // NOTE: APFEL++ Operator::operator= is infinitely recursive (APFEL++ bug).
+    // Use only emplace (first occurrence) and operator+= (subsequent) to avoid
+    // it.
+    auto add_to_channel = [](std::map<int, apfel::Operator> &target,
+                              int                            ich,
+                              const apfel::Operator         &op,
+                              double                         sign) {
+        auto it = target.find(ich);
+        if (it == target.end()) target.emplace(ich, op * sign);
+        else it->second += op * sign;
+    };
 
     for (std::size_t iq = 0; iq < nq; iq++) {
         double Q       = std::sqrt(q2_nodes[iq]);
         q2_data[iq].nf = apfel::NF(Q, theory.quark_thresholds);
 
-        // For NC: use electroweak charges as per-quark weights
-        // For CC: compute per-quark CKM weights and pass CKM vector to
-        //         APFEL++ initializer
+        // Compute per-quark charges and initializer charges
         std::vector<double> init_charges;
         if (is_cc) {
-            // Per-quark CKM weight: sum of CKM^2 elements where quark
-            // participates, filtered by active partner flavors.
-            // Divided by 2 because CC Plus/Minus are defined as
-            // (F(nu) +/- F(nubar)) / 2, and each CKM element contributes
-            // to both the up-type and down-type quark channels.
             int                 nf = q2_data[iq].nf;
             std::vector<double> weights(nf, 0.0);
             for (int q = 1; q <= nf; q++) {
                 bool is_down = (q % 2 == 1);
                 if (is_down) {
-                    int d_gen = (q + 1) / 2; // d->1, s->2, b->3
+                    int d_gen = (q + 1) / 2;
                     for (int u_gen = 1; u_gen <= 3; u_gen++) {
-                        int partner_pid = 2 * u_gen; // u->2, c->4, t->6
+                        int partner_pid = 2 * u_gen;
                         if (partner_pid <= nf)
                             weights[q - 1] +=
                                 theory.ckm[(u_gen - 1) * 3 + (d_gen - 1)];
                     }
                 } else {
-                    int u_gen = q / 2; // u->1, c->2, t->3
+                    int u_gen = q / 2;
                     for (int d_gen = 1; d_gen <= 3; d_gen++) {
-                        int partner_pid = 2 * d_gen - 1; // d->1, s->3, b->5
+                        int partner_pid = 2 * d_gen - 1;
                         if (partner_pid <= nf)
                             weights[q - 1] +=
                                 theory.ckm[(u_gen - 1) * 3 + (d_gen - 1)];
@@ -539,23 +630,131 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
             q2_data[iq].charges = weights;
             init_charges        = theory.ckm;
         } else {
+            // ElectroWeakCharges always returns 6 entries
             q2_data[iq].charges = apfel::ElectroWeakCharges(Q, timelike);
             init_charges        = q2_data[iq].charges;
         }
 
-        auto FObjQ = sf_init(Q, init_charges);
+        const std::vector<double> &charges = q2_data[iq].charges;
 
-        // Extract operators at each perturbative order using k=1
-        // (operators are the same for any k; only ConvBasis differs)
-        if (FObjQ.C0.count(1))
-            q2_data[iq].order_ops[0] = FObjQ.C0.at(1).GetObjects();
-        if (FObjQ.C1.count(1))
-            q2_data[iq].order_ops[1] = FObjQ.C1.at(1).GetObjects();
-        if (FObjQ.C2.count(1))
-            q2_data[iq].order_ops[2] = FObjQ.C2.at(1).GetObjects();
+        for (const auto &wi : weighted_inits) {
+            auto   FObjQ        = wi.init(Q, init_charges);
+
+            // nf_local: number of "light" quarks for this init
+            //   ZM (wi.actnf<0): Q-dependent from thresholds
+            //   massive (wi.actnf>=0): fixed count of zero-mass quarks
+            int    nf_local     = (wi.actnf < 0) ? q2_data[iq].nf : wi.actnf;
+
+            // Sum of EW charges over light quarks
+            double sum_ch_light = 0;
+            for (int k = 1; k <= nf_local && k - 1 < (int)charges.size(); k++)
+                sum_ch_light += charges[k - 1];
+
+            for (int ord = 0; ord < 3; ord++) {
+                const auto &C = (ord == 0)   ? FObjQ.C0
+                                : (ord == 1) ? FObjQ.C1
+                                             : FObjQ.C2;
+                if (C.count(1) == 0) continue;
+
+                auto                  &target    = q2_data[iq].channel_ops[ord];
+
+                const auto            &ops_light = C.at(1).GetObjects();
+                const apfel::Operator &CNS =
+                    ops_light.at(apfel::DISNCBasis::CNS);
+                const apfel::Operator &CS = ops_light.at(apfel::DISNCBasis::CS);
+                const apfel::Operator &CG_zm =
+                    ops_light.at(apfel::DISNCBasis::CG);
+
+                // ── Quark channels ───────────────────────────────────────────
+                // C_q = ch_q * CNS + (sum_ch_light/6) * (CS - CNS)
+                //
+                // For ZM (wi.actnf<0): use actual EW charge for all channels.
+                //
+                // For massive (wi.actnf>=0): iterate ALL num_quark_channels so
+                // the PS contribution (sum_ch_light/6)*(CS-CNS) is summed over
+                // all nf_max quark channels and convoluted with the full SIGMA
+                // distribution.  Heavy channels (ich >= nf_local) get ch_k=0
+                // so they do not contribute the NS term.
+                // At NNLO CS-CNS = 6*O22ps, so each of the 5 channels adds
+                // (sum_ch_light/6)*6*O22ps ⊗ 2*f = sum_ch_light*O22ps ⊗ 2*f,
+                // giving 5*sum_ch_light*O22ps ⊗ 2*f = sum_ch_light*O22ps ⊗
+                // 10*f, which matches APFEL++'s (sum_ch_light/6)*CS ⊗ SIGMA
+                // (SIGMA=10*f).
+                //
+                // IMPORTANT: APFEL++ Operator::operator= is infinitely
+                // recursive. Only use operator+=, operator*= and
+                // copy-initialization (auto).
+                for (int ich = 0; ich < num_quark_channels; ich++) {
+                    double ch_k;
+                    if (wi.actnf < 0) {
+                        // ZM: use actual EW charge for all channels
+                        ch_k = (ich < (int)charges.size()) ? charges[ich] : 0.0;
+                    } else {
+                        // Massive: heavy channels (ich >= nf_local) get no NS
+                        // charge
+                        ch_k = (ich < nf_local && ich < (int)charges.size())
+                                   ? charges[ich]
+                                   : 0.0;
+                    }
+                    auto C_q = ch_k * CNS + (sum_ch_light / 6.0) * (CS - CNS);
+
+                    // Heavy-quark singlet correction: CS non-zero only at NNLO.
+                    if (wi.actnf >= 0 && ord == 2) {
+                        for (int kh = nf_local + 1; kh <= 6; kh++) {
+                            if (C.count(kh) == 0) continue;
+                            double M_kh = theory.heavy_quark_masses[kh - 1];
+                            if (M_kh < 1e-8) continue;
+                            double xi_kh = Q * Q / (M_kh * M_kh);
+                            if (xi_kh < theory.mass_ximin ||
+                                xi_kh > theory.mass_ximax)
+                                continue;
+                            const auto &ops_h = C.at(kh).GetObjects();
+                            auto it_cs = ops_h.find(apfel::DISNCBasis::CS);
+                            if (it_cs == ops_h.end()) continue;
+                            double ch_kh  = (kh - 1 < (int)charges.size())
+                                                ? charges[kh - 1]
+                                                : 0.0;
+                            C_q          += (ch_kh / 6.0) * it_cs->second;
+                        }
+                    }
+
+                    add_to_channel(target, ich, C_q, wi.sign);
+                }
+
+                // ── Gluon channel ────────────────────────────────────────────
+                // Light contribution: sum_ch_light * CG_zm
+                // Heavy contribution (massive only): sum_{k>actnf} ch_k *
+                // CG_heavy_k Heavy CG is zero at LO → only access for ord>=1
+                // (NLO, NNLO).
+                if (has_gluon_channel) {
+                    auto CG_total = sum_ch_light * CG_zm;
+
+                    if (wi.actnf >= 0 && ord >= 1) {
+                        for (int kh = nf_local + 1; kh <= 6; kh++) {
+                            if (C.count(kh) == 0) continue;
+                            double M_kh = theory.heavy_quark_masses[kh - 1];
+                            if (M_kh < 1e-8) continue;
+                            double xi_kh = Q * Q / (M_kh * M_kh);
+                            if (xi_kh < theory.mass_ximin ||
+                                xi_kh > theory.mass_ximax)
+                                continue;
+                            const auto &ops_h = C.at(kh).GetObjects();
+                            auto it_cg = ops_h.find(apfel::DISNCBasis::CG);
+                            if (it_cg == ops_h.end()) continue;
+                            double ch_kh  = (kh - 1 < (int)charges.size())
+                                                ? charges[kh - 1]
+                                                : 0.0;
+                            CG_total     += ch_kh * it_cg->second;
+                        }
+                    }
+
+                    add_to_channel(target, gluon_ich, CG_total, wi.sign);
+                }
+            }
+        }
     }
 
-    // 6. Fill subgrids for each (bin, order, channel)
+    // 6. Fill subgrids for each (bin, order, channel) using pre-built operators
     for (std::size_t iord = 0; iord < grid_def.orders.size(); iord++) {
         int alpha_s = grid_def.orders[iord].alpha_s;
         if (alpha_s > 2) {
@@ -566,26 +765,20 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
 
         for (std::size_t ich = 0; ich < grid_def.channels.size(); ich++) {
             for (std::size_t ibin = 0; ibin < grid_def.bins.size(); ibin++) {
-                // Bin center in x/z dimension (last dimension, geometric mean)
                 double              x_lo     = grid_def.bins[ibin].lower.back();
                 double              x_hi     = grid_def.bins[ibin].upper.back();
                 double              x_center = std::sqrt(x_lo * x_hi);
 
-                // Build the full [nq, nx] subgrid
                 std::vector<double> subgrid(nq * nx, 0.0);
 
                 for (std::size_t iq = 0; iq < nq; iq++) {
-                    if (q2_data[iq].order_ops.count(alpha_s) == 0) continue;
+                    auto it_ord = q2_data[iq].channel_ops.find(alpha_s);
+                    if (it_ord == q2_data[iq].channel_ops.end()) continue;
 
-                    apfel::Operator C_channel =
-                        build_channel_operator(grid_def.channels[ich],
-                            q2_data[iq].order_ops[alpha_s],
-                            q2_data[iq].charges,
-                            q2_data[iq].nf);
+                    auto it_ch = it_ord->second.find((int)ich);
+                    if (it_ch == it_ord->second.end()) continue;
 
-                    // Evaluate operator at x_center -> Distribution on joint
-                    // grid
-                    apfel::Distribution dist = C_channel.Evaluate(x_center);
+                    apfel::Distribution dist = it_ch->second.Evaluate(x_center);
                     const std::vector<double> &vals =
                         dist.GetDistributionJointGrid();
 

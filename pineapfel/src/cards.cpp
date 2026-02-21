@@ -32,6 +32,26 @@ TheoryCard load_theory_card(const std::string &path) {
             ? config["LeptonThresholds"].as<std::vector<double>>()
             : std::vector<double>{};
 
+    // Heavy quark masses (default to quark_thresholds padded to 6 if absent)
+    // APFEL++ massive initializers require exactly 6 ordered masses.
+    if (config["HeavyQuarkMasses"])
+        tc.heavy_quark_masses =
+            config["HeavyQuarkMasses"].as<std::vector<double>>();
+    else {
+        tc.heavy_quark_masses = tc.quark_thresholds;
+        while (tc.heavy_quark_masses.size() < 6)
+            tc.heavy_quark_masses.push_back(172.0);
+    }
+
+    // Massive scheme tabulation parameters (all optional)
+    if (config["MassNxi"]) tc.mass_nxi = config["MassNxi"].as<int>();
+    if (config["MassXiMin"]) tc.mass_ximin = config["MassXiMin"].as<double>();
+    if (config["MassXiMax"]) tc.mass_ximax = config["MassXiMax"].as<double>();
+    if (config["MassIntDeg"]) tc.mass_intdeg = config["MassIntDeg"].as<int>();
+    if (config["MassLambda"])
+        tc.mass_lambda = config["MassLambda"].as<double>();
+    if (config["MassIMod"]) tc.mass_imod = config["MassIMod"].as<int>();
+
     return tc;
 }
 

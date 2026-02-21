@@ -115,6 +115,16 @@ GridDef load_grid_def(const std::string &path) {
     // Polarization (optional, defaults to false)
     if (config["Polarized"]) def.polarized = config["Polarized"].as<bool>();
 
+    // Mass scheme (optional, defaults to ZM)
+    if (config["MassScheme"]) {
+        std::string ms = config["MassScheme"].as<std::string>();
+        if (ms == "ZM") def.mass_scheme = MassScheme::ZM;
+        else if (ms == "FFN") def.mass_scheme = MassScheme::FFN;
+        else if (ms == "MassiveZero") def.mass_scheme = MassScheme::MassiveZero;
+        else if (ms == "FONLL") def.mass_scheme = MassScheme::FONLL;
+        else throw std::runtime_error("Unknown MassScheme: " + ms);
+    }
+
     // PID basis
     std::string basis = config["PidBasis"].as<std::string>();
     if (basis == "PDG") def.pid_basis = PINEAPPL_PID_BASIS_PDG;
