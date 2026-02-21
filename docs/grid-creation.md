@@ -29,15 +29,16 @@ The `build_grid()` function currently supports the following combinations:
 | SIA | F2 | NC | `InitializeF2NCObjectsZMT` | Zero-mass |
 | SIA | FL | NC | `InitializeFLNCObjectsZMT` | Zero-mass |
 | SIA | F3 | NC | `InitializeF3NCObjectsZMT` | Zero-mass |
+| SIDIS | F2 | NC | `InitializeSIDIS` | Zero-mass |
+| SIDIS | FL | NC | `InitializeSIDIS` | Zero-mass |
 
 All combinations use the **zero-mass variable-flavour-number scheme** (ZM-VFNS), where
 quarks are treated as massless above their respective thresholds.
 
 !!! info "What is not yet supported"
-    - **SIDIS** (semi-inclusive DIS) grid filling is not supported. SIDIS grids can still
-      be created with `create_grid()` and filled manually, but `build_grid()` does not
-      handle the two-convolution structure.
     - **SIA + CC** is not supported (APFEL++ only provides CC initializers for DIS).
+    - **SIDIS + CC** is not supported.
+    - **SIDIS + F3** is not supported (APFEL++ does not provide SIDIS F3 coefficient functions).
     - **Massive coefficient functions** (FONLL, ACOT, S-ACOT) are not available.
     - **Polarised structure functions** (\(g_1\), \(g_4\), \(g_L\)) are not exposed
       through `build_grid()`, although APFEL++ does provide initializers for them.
@@ -60,6 +61,8 @@ for evolving grids that were filled externally with polarised coefficient functi
 
 ### Perturbative orders
 
+#### DIS and SIA
+
 The coefficient functions are available at the following perturbative orders:
 
 | `alpha_s` power | Label | F2/FL content | F3 content |
@@ -67,6 +70,23 @@ The coefficient functions are available at the following perturbative orders:
 | 0 | LO | \(\delta(1-x)\) for quarks, 0 for gluon | \(\delta(1-x)\) for quarks, 0 for gluon |
 | 1 | NLO | \(C_{2,\mathrm{NS}}^{(1)}\), \(C_{2,g}^{(1)}\) | \(C_{3,\mathrm{NS}}^{(1)}\), no gluon |
 | 2 | NNLO | \(C_{2,\mathrm{NS}}^{(2)}\), \(C_{2,\mathrm{PS}}^{(2)}\), \(C_{2,g}^{(2)}\) | \(C_{3,\mathrm{NS}}^{(2)}\), no gluon |
+
+#### SIDIS
+
+SIDIS coefficient functions depend on two momentum-fraction variables (\(x\) and \(z\)) and are
+provided as `DoubleObject<Operator>` instances by APFEL++. The available terms per channel type
+at each order are:
+
+| `alpha_s` power | Label | \(qq\) | \(gq\) | \(qg\) |
+|:-:|:--:|:--:|:--:|:--:|
+| 0 | LO | \(C_{2,qq}^{(0)}\) | — | — |
+| 1 | NLO | \(C_{2,qq}^{(1)}\) | \(C_{2,gq}^{(1)}\) | \(C_{2,qg}^{(1)}\) |
+| 2 | NNLO | \(C_{2,qq}^{(2)}\) (\(n_f\)-dependent) | — | — |
+
+The channel labels refer to the convolution pair (PDF flavour, FF flavour):
+\(qq\) = quark PDF ⊗ quark FF, \(gq\) = quark PDF ⊗ gluon FF,
+\(qg\) = gluon PDF ⊗ quark FF. The same coefficient functions apply to \(F_L\)
+with \(C_{L,qq/gq/qg}\) replacing \(C_{2,\ldots}\); \(F_L\) has no LO contribution.
 
 The orders are specified in the grid card via the `Orders` field. Each order entry is a
 5-element array `[alpha_s, alpha, log_xir, log_xif, log_xia]`. For pure QCD coefficient
@@ -83,13 +103,14 @@ must be listed so that the grid contains separate subgrids for each perturbative
 
 ### Channel decomposition
 
-Channels are **automatically derived** by `build_grid()` from the observable and the number
-of active flavours. You do not need to specify them in the grid card. The number of active
-flavours \(n_{f}^{\mathrm{max}}\) is determined from the maximum \(Q^2\) across all bins
-using the quark thresholds from the theory card.
+Channels are **automatically derived** by `build_grid()` from the process, observable, and
+the number of active flavours. You do not need to specify them in the grid card. The number
+of active flavours \(n_{f}^{\mathrm{max}}\) is determined from the maximum \(Q^2\) across
+all bins using the quark thresholds from the theory card.
 
-The `derive_channels()` function generates channels in the **physical (PDG) basis**
-according to the following rules:
+The `derive_channels()` function generates channels in the **physical (PDG) basis**.
+
+#### DIS and SIA channels
 
 For **F2** and **FL** (C-even, neutral current):
 
@@ -116,7 +137,7 @@ A gluon channel is present only for F2/FL with NC or CC Plus. For CC, the per-qu
 weights \(w_q\) are the sum of CKM² elements where quark \(q\) participates
 (filtered by active partner flavours), replacing the electroweak charges used in NC.
 
-For example, with 5 active flavours and observable F2, the auto-derived channels are:
+For example, with 5 active flavours and observable F2 NC, the auto-derived channels are:
 
 | Channel | PIDs | Factors |
 |---------|------|---------|
@@ -140,6 +161,24 @@ weight for CC), \(\Sigma_w = \sum_{i=1}^{n_f} w_i\), and the factor of 6 matches
 internal normalisation convention used in APFEL++'s `DISNCBasis`/`DISCCBasis`.
 APFEL++ sets \(C_\mathrm{S} = C_\mathrm{NS}\) and/or \(C_\mathrm{G} = 0\) where
 the physics requires it, so the same formula works for all observables and currents.
+
+#### SIDIS channels
+
+SIDIS grids carry **two convolutions** (PDF ⊗ FF), so each channel entry specifies a pair of
+PIDs rather than a single one. Three channel types are generated per active quark
+\(q = 1, \ldots, n_{f}^{\mathrm{max}}\):
+
+| Channel type | PIDs | Factors | Description |
+|---|---|:---:|---|
+| \(qq\) | `[[q, q], [-q, -q]]` | `[1.0, 1.0]` | Quark PDF ⊗ quark FF (and anti-quark) |
+| \(gq\) | `[[q, 21], [-q, 21]]` | `[1.0, 1.0]` | Quark PDF ⊗ gluon FF |
+| \(qg\) | `[[21, q], [21, -q]]` | `[1.0, 1.0]` | Gluon PDF ⊗ quark FF |
+
+The channel ordering in the grid is `qq`, `gq`, `qg` for quark 1, then `qq`, `gq`, `qg`
+for quark 2, and so on. With 5 active flavours this gives 15 channels in total.
+
+The electroweak weight \(e_q^2\) is applied per-quark directly to the subgrid values
+during filling; the channel PIDs themselves are charge-neutral in the grid card.
 
 !!! note
     The `Channels` field in the grid card is still accepted for backward compatibility,
@@ -283,6 +322,32 @@ Bins:
 Normalizations: [1.0, 1.0]
 ```
 
+#### SIDIS example
+
+A SIDIS \(F_2\) grid for proton→pion semi-inclusive production up to NLO. Bins are
+three-dimensional \((Q^2, x, z)\) and two convolution types are required (PDF and FF):
+
+```yaml
+Process: SIDIS
+Observable: F2
+Current: NC
+PidBasis: PDG
+HadronPids: [2212, 211]
+ConvolutionTypes: [UNPOL_PDF, UNPOL_FF]
+
+Orders:
+  - [0, 0, 0, 0, 0]   # LO
+  - [1, 0, 0, 0, 0]   # NLO
+
+Bins:
+  - lower: [10.0, 0.001, 0.2]
+    upper: [100.0, 0.01, 0.4]
+  - lower: [100.0, 0.01, 0.4]
+    upper: [1000.0, 0.1, 0.6]
+
+Normalizations: [1.0, 1.0]
+```
+
 #### CC DIS example
 
 A DIS \(F_2\) charged-current (CC) grid with the Plus variant \((F(\nu) + F(\bar\nu))/2\).
@@ -397,18 +462,42 @@ The grid nodes are defined automatically:
 
 #### Subgrid layout
 
-Each subgrid (one per combination of bin, perturbative order, and channel) is a two-dimensional
-array (in the case of one hadron such as in DIS or SIA) of shape `[n_Q2, n_x]`, stored in
-row-major order. The `node_values` vector concatenates the \(Q^2\) nodes followed by the x/z
-nodes:
+##### DIS and SIA
+
+Each subgrid (one per combination of bin, perturbative order, and channel) is a
+two-dimensional array of shape `[n_Q2, n_x]`, stored in row-major order. The
+`node_values` vector concatenates the \(Q^2\) nodes followed by the \(x\)/\(z\) nodes:
 
 ```
-node_values = [Q^2_0, Q^2_1, ..., Q^2_{nq-1}, x_0, x_1, ..., x_{nx-1}]
+node_values = [Q^2_0, ..., Q^2_{nq-1}, x_0, ..., x_{nx-1}]
 ```
 
-For each Q^2 node, the coefficient function operator is evaluated at the bin's
-x/z centre (geometric mean of the bin edges) to produce a distribution on the
+For each \(Q^2\) node, the coefficient function operator is evaluated at the bin's
+\(x\)/\(z\) centre (geometric mean of the bin edges) to produce a distribution on the
 APFEL++ joint grid, which populates one row of the subgrid.
+
+##### SIDIS
+
+SIDIS subgrids are three-dimensional arrays of shape `[n_Q2, n_x, n_z]`, stored in
+row-major order. The same APFEL++ joint grid is used for both the \(x\) (PDF) and
+\(z\) (FF) dimensions. The `node_values` vector concatenates three segments:
+
+```
+node_values = [Q^2_0, ..., Q^2_{nq-1}, x_0, ..., x_{nx-1}, z_0, ..., z_{nz-1}]
+```
+
+For each \(Q^2\) node and each `DoubleObject` term in the coefficient function,
+the \(x\)-distribution is evaluated at the bin's \(x\)-centre and the \(z\)-distribution
+at the bin's \(z\)-centre (both geometric means). The subgrid entry at `[iq, ix, iz]`
+is the outer product of these two distributions, weighted by \(e_q^2\) and the term
+coefficient:
+
+```
+subgrid[iq, ix, iz] = e_q^2 * sum_terms { c_term * K_x(x[ix]; x_centre) * K_z(z[iz]; z_centre) }
+```
+
+where \(K_x\) and \(K_z\) are the APFEL++ distribution kernels in the \(x\) and \(z\)
+directions respectively.
 
 ### Programmatic grid definition
 
@@ -439,9 +528,21 @@ You can also call `derive_channels()` directly if you need the channels before
 calling `build_grid()`:
 
 ```cpp
-// Derive channels for F2 NC with 5 active flavours
+// Derive channels for DIS F2 NC with 5 active flavours
 auto channels = pineapfel::derive_channels(
-    pineapfel::Observable::F2, pineapfel::Current::NC,
-    pineapfel::CCSign::Plus, 5);
+    pineapfel::ProcessType::DIS,
+    pineapfel::Observable::F2,
+    pineapfel::Current::NC,
+    pineapfel::CCSign::Plus,
+    5);
 // Returns 6 channels: d+dbar, u+ubar, s+sbar, c+cbar, b+bbar, gluon
+
+// Derive channels for SIDIS F2 with 5 active flavours
+auto sidis_channels = pineapfel::derive_channels(
+    pineapfel::ProcessType::SIDIS,
+    pineapfel::Observable::F2,
+    pineapfel::Current::NC,
+    pineapfel::CCSign::Plus,
+    5);
+// Returns 15 channels: (qq, gq, qg) x 5 quarks
 ```

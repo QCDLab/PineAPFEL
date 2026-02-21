@@ -1,5 +1,6 @@
 #include <apfel/apfelxx.h>
 #include <fill.h>
+#include <sidis_api.h>
 
 #include <cmath>
 #include <cstddef>
@@ -166,11 +167,196 @@ static apfel::Operator build_channel_operator(const ChannelDef &channel,
     return e_q_sq * CNS + (sum_ch / 6.0) * (CS - CNS);
 }
 
+// Select the appropriate DoubleObject<Operator> from SidisObjects
+// for a given perturbative order, channel type (qq/gq/qg), and observable.
+static const apfel::DoubleObject<apfel::Operator> *select_sidis_coeff(
+    const pineapfel::SidisCoeffs &sobj,
+    int                           alpha_s,
+    int                           channel_type, // 0=qq, 1=gq, 2=qg
+    Observable                    observable,
+    int                           nf) {
+    if (observable == Observable::F2) {
+        if (alpha_s == 0) {
+            if (channel_type == 0) return &sobj.C20qq;
+            return nullptr; // gq, qg start at NLO
+        } else if (alpha_s == 1) {
+            if (channel_type == 0) return &sobj.C21qq;
+            if (channel_type == 1) return &sobj.C21gq;
+            if (channel_type == 2) return &sobj.C21qg;
+        } else if (alpha_s == 2) {
+            if (channel_type == 0) {
+                auto it = sobj.C22qq.find(nf);
+                if (it != sobj.C22qq.end()) return &it->second;
+            }
+            return nullptr; // gq, qg not available at NNLO
+        }
+    } else if (observable == Observable::FL) {
+        if (alpha_s == 0) return nullptr; // No LO FL
+        if (alpha_s == 1) {
+            if (channel_type == 0) return &sobj.CL1qq;
+            if (channel_type == 1) return &sobj.CL1gq;
+            if (channel_type == 2) return &sobj.CL1qg;
+        }
+        // No NNLO FL in APFEL++
+    }
+    return nullptr;
+}
+
+static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
+    const TheoryCard                                 &theory,
+    const OperatorCard                               &op_card) {
+    if (grid_def_in.observable == Observable::F3)
+        throw std::runtime_error(
+            "build_grid_sidis: F3 is not supported for SIDIS");
+    if (grid_def_in.current == Current::CC)
+        throw std::runtime_error(
+            "build_grid_sidis: CC current is not supported for SIDIS");
+
+    std::cout << "Building APFEL++ SIDIS coefficient function grid..."
+              << std::endl;
+
+    // Auto-derive channels
+    GridDef grid_def = grid_def_in;
+    double  q2_max   = 0;
+    for (const auto &bin : grid_def.bins)
+        q2_max = std::max(q2_max, bin.upper[0]);
+    int nf_max        = apfel::NF(std::sqrt(q2_max), theory.quark_thresholds);
+    grid_def.channels = derive_channels(grid_def.process,
+        grid_def.observable,
+        grid_def.current,
+        grid_def.cc_sign,
+        nf_max);
+    std::cout << "  Auto-derived " << grid_def.channels.size()
+              << " channels for nf_max=" << nf_max << std::endl;
+
+    // 1. Build APFEL++ x-space grid (same grid for x and z)
+    std::vector<apfel::SubGrid> subgrids;
+    for (const auto &sg : op_card.xgrid)
+        subgrids.emplace_back(sg.n_knots, sg.x_min, sg.poly_degree);
+    const apfel::Grid g{subgrids};
+
+    // 2. Initialize SIDIS objects
+    auto              sobj = pineapfel::init_sidis(g, theory.quark_thresholds);
+
+    // 3. Create empty PineAPPL grid
+    pineappl_grid    *grid = create_grid(grid_def);
+
+    // 4. Determine grid nodes
+    const auto       &joint_grid_vec = g.GetJointGrid().GetGrid();
+    std::vector<double> x_nodes(joint_grid_vec.begin(), joint_grid_vec.end());
+    const std::size_t   nx = x_nodes.size();
+    // Same grid for z
+    const std::size_t   nz = nx;
+
+    std::vector<double> q2_nodes =
+        derive_q2_nodes(grid_def.bins, theory.quark_thresholds);
+    const std::size_t nq = q2_nodes.size();
+
+    std::cout << "  Grid nodes: " << nq << " Q^2 x " << nx << " x x " << nz
+              << " z points" << std::endl;
+
+    // node_values: [q2_0..q2_{nq-1}, x_0..x_{nx-1}, z_0..z_{nz-1}]
+    std::vector<double> node_values;
+    node_values.reserve(nq + nx + nz);
+    node_values.insert(node_values.end(), q2_nodes.begin(), q2_nodes.end());
+    node_values.insert(node_values.end(), x_nodes.begin(), x_nodes.end());
+    node_values.insert(node_values.end(), x_nodes.begin(), x_nodes.end());
+
+    std::vector<std::size_t> shape = {nq, nx, nz};
+
+    // 5. Precompute electroweak charges per Q² node
+    struct Q2DataSidis {
+        int                 nf;
+        std::vector<double> charges;
+    };
+    std::vector<Q2DataSidis> q2_data(nq);
+    for (std::size_t iq = 0; iq < nq; iq++) {
+        double Q       = std::sqrt(q2_nodes[iq]);
+        q2_data[iq].nf = apfel::NF(Q, theory.quark_thresholds);
+        q2_data[iq].charges =
+            apfel::ElectroWeakCharges(Q, false /* spacelike */);
+    }
+
+    // 6. Fill subgrids for each (order, channel, bin)
+    // Channels are grouped: for quark q, indices are 3*(q-1)+type
+    //   type: 0=qq, 1=gq, 2=qg
+    for (std::size_t iord = 0; iord < grid_def.orders.size(); iord++) {
+        int alpha_s = grid_def.orders[iord].alpha_s;
+        if (alpha_s > 2) {
+            std::cerr << "  Warning: skipping order alpha_s^" << alpha_s
+                      << " (beyond NNLO)" << std::endl;
+            continue;
+        }
+
+        for (std::size_t ich = 0; ich < grid_def.channels.size(); ich++) {
+            int quark_idx    = static_cast<int>(ich / 3); // 0-based quark index
+            int channel_type = static_cast<int>(ich % 3); // 0=qq, 1=gq, 2=qg
+
+            for (std::size_t ibin = 0; ibin < grid_def.bins.size(); ibin++) {
+                // Bin centers: dim 0=Q², dim 1=x, dim 2=z
+                double              x_lo     = grid_def.bins[ibin].lower[1];
+                double              x_hi     = grid_def.bins[ibin].upper[1];
+                double              x_center = std::sqrt(x_lo * x_hi);
+
+                double              z_lo     = grid_def.bins[ibin].lower[2];
+                double              z_hi     = grid_def.bins[ibin].upper[2];
+                double              z_center = std::sqrt(z_lo * z_hi);
+
+                std::vector<double> subgrid(nq * nx * nz, 0.0);
+
+                for (std::size_t iq = 0; iq < nq; iq++) {
+                    int nf = q2_data[iq].nf;
+
+                    // Skip if quark is not active at this Q²
+                    if (quark_idx + 1 > nf) continue;
+
+                    const auto *coeff = select_sidis_coeff(sobj,
+                        alpha_s,
+                        channel_type,
+                        grid_def.observable,
+                        nf);
+                    if (coeff == nullptr) continue;
+
+                    // e_q² weight for this quark
+                    double      e_q_sq = q2_data[iq].charges[quark_idx];
+
+                    // Evaluate via outer product of the DoubleObject terms
+                    const auto &terms  = coeff->GetTerms();
+                    for (const auto &term : terms) {
+                        double              c = term.coefficient;
+                        apfel::Distribution dist_x =
+                            term.object1.Evaluate(x_center);
+                        apfel::Distribution dist_z =
+                            term.object2.Evaluate(z_center);
+
+                        const auto &vx = dist_x.GetDistributionJointGrid();
+                        const auto &vz = dist_z.GetDistributionJointGrid();
+
+                        for (std::size_t ix = 0; ix < nx && ix < vx.size();
+                             ix++) {
+                            for (std::size_t iz = 0; iz < nz && iz < vz.size();
+                                 iz++) {
+                                subgrid[iq * nx * nz + ix * nz + iz] +=
+                                    e_q_sq * c * vx[ix] * vz[iz];
+                            }
+                        }
+                    }
+                }
+
+                set_subgrid(grid, ibin, iord, ich, node_values, subgrid, shape);
+            }
+        }
+    }
+
+    std::cout << "SIDIS grid filled successfully." << std::endl;
+    return grid;
+}
+
 pineappl_grid *build_grid(const GridDef &grid_def_in,
     const TheoryCard                    &theory,
     const OperatorCard                  &op_card) {
     if (grid_def_in.process == ProcessType::SIDIS)
-        throw std::runtime_error("build_grid: SIDIS is not supported");
+        return build_grid_sidis(grid_def_in, theory, op_card);
 
     std::cout << "Building APFEL++ coefficient function grid..." << std::endl;
 
@@ -180,7 +366,8 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
     for (const auto &bin : grid_def.bins)
         q2_max = std::max(q2_max, bin.upper[0]);
     int nf_max        = apfel::NF(std::sqrt(q2_max), theory.quark_thresholds);
-    grid_def.channels = derive_channels(grid_def.observable,
+    grid_def.channels = derive_channels(grid_def.process,
+        grid_def.observable,
         grid_def.current,
         grid_def.cc_sign,
         nf_max);

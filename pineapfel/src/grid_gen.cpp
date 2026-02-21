@@ -6,19 +6,54 @@
 
 namespace pineapfel {
 
-std::vector<ChannelDef> derive_channels(Observable observable,
-    Current                                        current,
-    CCSign                                         cc_sign,
-    int                                            nf_max) {
+std::vector<ChannelDef> derive_channels(ProcessType process,
+    Observable                                      observable,
+    Current                                         current,
+    CCSign                                          cc_sign,
+    int                                             nf_max) {
     std::vector<ChannelDef> channels;
 
-    bool                    is_f3 = (observable == Observable::F3);
-    bool                    is_cc = (current == Current::CC);
+    // SIDIS: 3 channel types per quark (qq, gq, qg), each with 2 convolutions
+    if (process == ProcessType::SIDIS) {
+        for (int q = 1; q <= nf_max; q++) {
+            // qq channel: PDF(q) ⊗ FF(q)
+            ChannelDef qq;
+            qq.pid_combinations = {
+                { q,  q},
+                {-q, -q}
+            };
+            qq.factors = {1.0, 1.0};
+            channels.push_back(std::move(qq));
+
+            // gq channel: PDF(q) ⊗ FF(g)
+            ChannelDef gq;
+            gq.pid_combinations = {
+                { q, 21},
+                {-q, 21}
+            };
+            gq.factors = {1.0, 1.0};
+            channels.push_back(std::move(gq));
+
+            // qg channel: PDF(g) ⊗ FF(q)
+            ChannelDef qg;
+            qg.pid_combinations = {
+                {21,  q},
+                {21, -q}
+            };
+            qg.factors = {1.0, 1.0};
+            channels.push_back(std::move(qg));
+        }
+        return channels;
+    }
+
+    // DIS / SIA: single convolution channels
+    bool is_f3 = (observable == Observable::F3);
+    bool is_cc = (current == Current::CC);
 
     // Determine C-parity of the observable:
     //   C-odd  (valence, q-qbar): F3 NC, F3 CC Plus, F2/FL CC Minus
     //   C-even (q+qbar):          F2/FL NC, F2/FL CC Plus, F3 CC Minus
-    bool                    c_odd = is_f3;
+    bool c_odd = is_f3;
     if (is_cc && cc_sign == CCSign::Minus) c_odd = !c_odd;
 
     for (int q = 1; q <= nf_max; q++) {

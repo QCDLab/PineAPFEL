@@ -44,6 +44,7 @@ add_library(pineapfel
     pineapfel/src/evolution.cpp
     pineapfel/src/fill.cpp
     pineapfel/src/grid_gen.cpp
+    pineapfel/src/sidis_init.cpp
 )
 target_include_directories(pineapfel PUBLIC
     pineapfel/include
@@ -73,7 +74,7 @@ target_compile_options(pineapfel-build PRIVATE -Wall -Wextra -O3)
 
 # Tests
 enable_testing()
-add_executable(test_grid_vs_apfelxx tests/test_grid_vs_apfelxx.cpp)
+add_executable(test_grid_vs_apfelxx tests/test_grid_vs_apfelxx.cpp tests/sidis_helper.cpp)
 target_link_libraries(test_grid_vs_apfelxx PRIVATE pineapfel)
 target_compile_options(test_grid_vs_apfelxx PRIVATE -Wall -Wextra -O3)
 add_test(NAME grid_vs_apfelxx COMMAND test_grid_vs_apfelxx

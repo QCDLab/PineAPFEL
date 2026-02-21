@@ -15,6 +15,11 @@ PineAPFEL exposes three main modules:
 | Cards | `cards.h` | `load_theory_card()`, `load_operator_card()` |
 | Grid creation | `grid_gen.h`, `fill.h` | `load_grid_def()`, `derive_channels()`, `create_grid()`, `build_grid()` |
 | Evolution | `evolution.h` | `evolve()` |
+| SIDIS coefficients | `sidis_api.h` | `init_sidis()`, `SidisCoeffs` |
+
+`sidis_api.h` is an internal header used by `build_grid()` to load the SIDIS coefficient
+functions from APFEL++ without exposing `<apfel/SIDIS.h>` to other translation units.
+You do not need to include it in application code.
 
 ### Grid creation example
 
@@ -40,6 +45,17 @@ int main() {
 
     return 0;
 }
+```
+
+The same `build_grid()` call works unchanged for SIDIS — the process type is read from
+the grid card:
+
+```cpp
+auto grid_def = pineapfel::load_grid_def("grid_sidis.yaml");  // Process: SIDIS
+auto* grid    = pineapfel::build_grid(grid_def, theory, op_card);
+// grid is now a two-convolution (PDF ⊗ FF) PineAPPL grid
+pineappl_grid_write(grid, "sidis_f2.pineappl.lz4");
+pineappl_grid_delete(grid);
 ```
 
 See [Grid creation](grid-creation.md) for details on the grid card format and

@@ -27,6 +27,10 @@ pineapfel-build runcards/grid_dis.yaml runcards/theory.yaml runcards/operator.ya
 # Build an SIA grid with a custom output name
 pineapfel-build runcards/grid_sia.yaml runcards/theory.yaml runcards/operator.yaml \
     -o sia_f2.pineappl.lz4
+
+# Build a SIDIS F2 grid (two-convolution: PDF ⊗ FF)
+pineapfel-build runcards/grid_sidis.yaml runcards/theory.yaml runcards/operator.yaml \
+    -o sidis_f2.pineappl.lz4
 ```
 
 ### `pineapfel-evolve`
@@ -53,17 +57,22 @@ pineapfel-evolve grid.pineappl.lz4 theory.yaml operator.yaml -o my_fktable.pinea
 
 ### Full pipeline
 
-A typical workflow chains grid creation and evolution:
+A typical workflow chains grid creation and evolution. The same commands work for DIS,
+SIA, and SIDIS — only the grid card differs:
 
 ```bash
-# Step 1: Create the grid with coefficient functions
+# DIS F2: create and evolve
 pineapfel-build runcards/grid_dis.yaml runcards/theory.yaml runcards/operator.yaml \
     -o dis_f2.pineappl.lz4
-
-# Step 2: Evolve into an FK table
 pineapfel-evolve dis_f2.pineappl.lz4 runcards/theory.yaml runcards/operator.yaml \
     -o dis_f2.fk.pineappl.lz4
+
+# SIDIS F2: create and evolve (two-convolution grid)
+pineapfel-build runcards/grid_sidis.yaml runcards/theory.yaml runcards/operator.yaml \
+    -o sidis_f2.pineappl.lz4
+pineapfel-evolve sidis_f2.pineappl.lz4 runcards/theory.yaml runcards/operator.yaml \
+    -o sidis_f2.fk.pineappl.lz4
 ```
 
-The resulting FK table can be convoluted with PDFs using the `pineappl` CLI or any
-PineAPPL-compatible tool.
+The resulting FK table can be convoluted with PDFs (and FFs for SIDIS) using the
+`pineappl` CLI or any PineAPPL-compatible tool.

@@ -1,3 +1,4 @@
+#include "sidis_helper.h"
 #include <apfel/apfelxx.h>
 #include <pineapfel.h>
 #include <pineappl_capi.h>
@@ -129,7 +130,8 @@ int main() {
         for (const auto &bin : grid_def.bins)
             q2_max = std::max(q2_max, bin.upper[0]);
         int nf_max = apfel::NF(std::sqrt(q2_max), theory.quark_thresholds);
-        grid_def.channels = pineapfel::derive_channels(grid_def.observable,
+        grid_def.channels = pineapfel::derive_channels(grid_def.process,
+            grid_def.observable,
             grid_def.current,
             grid_def.cc_sign,
             nf_max);
@@ -593,7 +595,8 @@ int main() {
                 q2max = std::max(q2max, bin.upper[0]);
             int nfm = apfel::NF(std::sqrt(q2max), cc_theory.quark_thresholds);
             cc_grid_def.channels =
-                pineapfel::derive_channels(cc_grid_def.observable,
+                pineapfel::derive_channels(cc_grid_def.process,
+                    cc_grid_def.observable,
                     cc_grid_def.current,
                     cc_grid_def.cc_sign,
                     nfm);
@@ -642,6 +645,87 @@ int main() {
         }
 
         pineappl_grid_delete(cc_grid);
+    }
+
+    // ============================================================
+    // TEST 6: SIDIS F2 — PineAPPL LO+NLO vs APFEL++ DoubleObject
+    //
+    // Build a SIDIS grid and compare PineAPPL convolution (with 2
+    // convolution functions: PDF ⊗ FF) against independently
+    // evaluating the DoubleObject coefficient functions from
+    // InitializeSIDIS (computed in a separate TU to avoid ODR
+    // violations from APFEL++'s header-defined functions).
+    // ============================================================
+    std::printf("\n--- TEST 6: SIDIS F2 LO+NLO PineAPPL vs APFEL++ ---\n");
+    {
+        auto sidis_grid_def =
+            pineapfel::load_grid_def("runcards/grid_sidis.yaml");
+        auto sidis_theory = pineapfel::load_theory_card("runcards/theory.yaml");
+
+        pineappl_grid *sidis_grid =
+            pineapfel::build_grid(sidis_grid_def, sidis_theory, op_card);
+        std::size_t sidis_nbins = pineappl_grid_bin_count(sidis_grid);
+
+        auto        sidis_q2_nodes =
+            derive_q2_nodes(sidis_grid_def.bins, sidis_theory.quark_thresholds);
+
+        // PineAPPL convolution with 2 convolution functions (PDF and FF).
+        // Both use the same toy_f functional form.
+        std::vector<double> pineappl_sidis(sidis_nbins, 0.0);
+        void               *pdfs_state[2] = {nullptr, nullptr};
+
+        pineappl_grid_convolve(sidis_grid,
+            xfx_callback,
+            alphas_callback,
+            pdfs_state,
+            static_cast<void *>(&as_tab),
+            nullptr, // all orders
+            nullptr, // all channels
+            nullptr, // no bin indices
+            0,       // nb_scales
+            nullptr, // mu_scales
+            pineappl_sidis.data());
+
+        // Reference computation via helper (separate TU with SIDIS.h)
+        std::vector<std::vector<double>> bin_x_bounds, bin_z_bounds;
+        for (const auto &bin : sidis_grid_def.bins) {
+            bin_x_bounds.push_back({bin.lower[1], bin.upper[1]});
+            bin_z_bounds.push_back({bin.lower[2], bin.upper[2]});
+        }
+
+        auto alphas_func = [&](double Q) -> double {
+            return as_tab.Evaluate(Q);
+        };
+
+        auto ref_vals = compute_sidis_reference(g,
+            sidis_theory.quark_thresholds,
+            sidis_q2_nodes,
+            bin_x_bounds,
+            bin_z_bounds,
+            {},
+            1, // max_alpha_s = 1 (LO + NLO)
+            toy_f,
+            alphas_func);
+
+        for (std::size_t ibin = 0; ibin < sidis_nbins; ibin++) {
+            double ref = ref_vals[ibin];
+            double rel_diff =
+                std::abs(ref) > 1e-30
+                    ? std::abs(pineappl_sidis[ibin] - ref) / std::abs(ref)
+                    : 0.0;
+
+            bool ok = (rel_diff < tolerance);
+            std::printf(
+                "  bin %zu: pineappl=%.6e  apfel++=%.6e  rel_diff=%.2e %s\n",
+                ibin,
+                pineappl_sidis[ibin],
+                ref,
+                rel_diff,
+                ok ? "OK" : "FAIL");
+            if (!ok) failures++;
+        }
+
+        pineappl_grid_delete(sidis_grid);
     }
 
     // ============================================================

@@ -43,10 +43,11 @@ struct GridDef {
 };
 
 GridDef                 load_grid_def(const std::string &path);
-std::vector<ChannelDef> derive_channels(Observable observable,
-    Current                                        current,
-    CCSign                                         cc_sign,
-    int                                            nf_max);
+std::vector<ChannelDef> derive_channels(ProcessType process,
+    Observable                                      observable,
+    Current                                         current,
+    CCSign                                          cc_sign,
+    int                                             nf_max);
 pineappl_grid          *create_grid(const GridDef &def);
 void                    set_subgrid(pineappl_grid *grid,
                        std::size_t                 bin,
