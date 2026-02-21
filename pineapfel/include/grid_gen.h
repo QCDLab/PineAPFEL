@@ -29,12 +29,13 @@ struct BinDef {
 };
 
 struct GridDef {
-    ProcessType                     process;
-    Observable                      observable = Observable::F2;
-    Current                         current    = Current::NC;
-    CCSign                          cc_sign    = CCSign::Plus;
-    pineappl_pid_basis              pid_basis;
-    std::vector<int>                hadron_pids;
+    ProcessType        process;
+    Observable         observable = Observable::F2;
+    Current            current    = Current::NC;
+    CCSign             cc_sign    = CCSign::Plus;
+    bool               polarized  = false; // longitudinal polarization
+    pineappl_pid_basis pid_basis;
+    std::vector<int>   hadron_pids;
     std::vector<pineappl_conv_type> convolution_types;
     std::vector<OrderDef>           orders;
     std::vector<ChannelDef>         channels;

@@ -25,4 +25,18 @@ struct SidisCoeffs {
 SidisCoeffs init_sidis(const apfel::Grid &g,
     const std::vector<double>            &thresholds);
 
+// Mirror of apfel::SidisPolObjects (from SIDISpol.h).
+// Same ODR-safe isolation as SidisCoeffs.
+struct SidisPolCoeffs {
+    apfel::DoubleObject<apfel::Operator>                G10qq;
+    apfel::DoubleObject<apfel::Operator>                G11qq;
+    apfel::DoubleObject<apfel::Operator>                G11gq;
+    apfel::DoubleObject<apfel::Operator>                G11qg;
+    std::map<int, apfel::DoubleObject<apfel::Operator>> G12qq;
+};
+
+// Thin wrapper around apfel::InitializeSIDISpol (same x and z grid).
+SidisPolCoeffs init_sidis_pol(const apfel::Grid &g,
+    const std::vector<double>                   &thresholds);
+
 } // namespace pineapfel

@@ -112,6 +112,9 @@ GridDef load_grid_def(const std::string &path) {
         else throw std::runtime_error("Unknown CCSign: " + sign);
     }
 
+    // Polarization (optional, defaults to false)
+    if (config["Polarized"]) def.polarized = config["Polarized"].as<bool>();
+
     // PID basis
     std::string basis = config["PidBasis"].as<std::string>();
     if (basis == "PDG") def.pid_basis = PINEAPPL_PID_BASIS_PDG;

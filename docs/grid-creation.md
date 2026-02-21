@@ -31,6 +31,15 @@ The `build_grid()` function currently supports the following combinations:
 | SIA | F3 | NC | `InitializeF3NCObjectsZMT` | Zero-mass |
 | SIDIS | F2 | NC | `InitializeSIDIS` | Zero-mass |
 | SIDIS | FL | NC | `InitializeSIDIS` | Zero-mass |
+| DIS (polarized) | F2 → \(g_1\) | NC | `Initializeg1NCObjectsZM` | Zero-mass |
+| DIS (polarized) | FL → \(g_L\) | NC | `InitializegLNCObjectsZM` | Zero-mass |
+| DIS (polarized) | F3 → \(g_4\) | NC | `Initializeg4NCObjectsZM` | Zero-mass |
+| SIDIS (polarized) | F2 → \(G_1\) | NC | `InitializeSIDISpol` | Zero-mass |
+
+Polarized grids are selected by setting `Polarized: true` in the grid card. The
+`Observable` field retains its unpolarized name (`F2`, `FL`, `F3`) and is interpreted
+as the corresponding polarized observable (\(g_1\), \(g_L\), \(g_4\), or \(G_1\) for
+SIDIS) when `Polarized: true`.
 
 All combinations use the **zero-mass variable-flavour-number scheme** (ZM-VFNS), where
 quarks are treated as massless above their respective thresholds.
@@ -39,9 +48,10 @@ quarks are treated as massless above their respective thresholds.
     - **SIA + CC** is not supported (APFEL++ only provides CC initializers for DIS).
     - **SIDIS + CC** is not supported.
     - **SIDIS + F3** is not supported (APFEL++ does not provide SIDIS F3 coefficient functions).
+    - **Polarized + CC** is not supported.
+    - **Polarized SIA** is not supported (APFEL++ does not provide time-like polarized SF initializers).
+    - **Polarized SIDIS + FL** is not supported (only \(G_1\) is available).
     - **Massive coefficient functions** (FONLL, ACOT, S-ACOT) are not available.
-    - **Polarised structure functions** (\(g_1\), \(g_4\), \(g_L\)) are not exposed
-      through `build_grid()`, although APFEL++ does provide initializers for them.
     - **QCD+QED** coefficient functions are not implemented in grid filling (QED corrections
       are only available in the evolution step).
 
@@ -61,7 +71,7 @@ for evolving grids that were filled externally with polarised coefficient functi
 
 ### Perturbative orders
 
-#### DIS and SIA
+#### DIS and SIA (unpolarized)
 
 The coefficient functions are available at the following perturbative orders:
 
@@ -71,7 +81,18 @@ The coefficient functions are available at the following perturbative orders:
 | 1 | NLO | \(C_{2,\mathrm{NS}}^{(1)}\), \(C_{2,g}^{(1)}\) | \(C_{3,\mathrm{NS}}^{(1)}\), no gluon |
 | 2 | NNLO | \(C_{2,\mathrm{NS}}^{(2)}\), \(C_{2,\mathrm{PS}}^{(2)}\), \(C_{2,g}^{(2)}\) | \(C_{3,\mathrm{NS}}^{(2)}\), no gluon |
 
-#### SIDIS
+#### DIS (polarized)
+
+For polarized DIS (`Polarized: true`), the structure functions \(g_1\), \(g_L\), and \(g_4\)
+are selected instead. The available coefficient functions mirror the unpolarized case:
+
+| `alpha_s` power | Label | \(g_1\) / \(g_L\) content | \(g_4\) content |
+|:-:|:--:|---|---|
+| 0 | LO | \(\delta(1-x)\) for quarks, 0 for gluon | \(\delta(1-x)\) for quarks, 0 for gluon |
+| 1 | NLO | \(G_{1,\mathrm{NS}}^{(1)}\), \(G_{1,g}^{(1)}\) | \(G_{4,\mathrm{NS}}^{(1)}\), no gluon |
+| 2 | NNLO | \(G_{1,\mathrm{NS}}^{(2)}\), \(G_{1,\mathrm{PS}}^{(2)}\), \(G_{1,g}^{(2)}\) | \(G_{4,\mathrm{NS}}^{(2)}\), no gluon |
+
+#### SIDIS (unpolarized)
 
 SIDIS coefficient functions depend on two momentum-fraction variables (\(x\) and \(z\)) and are
 provided as `DoubleObject<Operator>` instances by APFEL++. The available terms per channel type
@@ -87,6 +108,17 @@ The channel labels refer to the convolution pair (PDF flavour, FF flavour):
 \(qq\) = quark PDF ⊗ quark FF, \(gq\) = quark PDF ⊗ gluon FF,
 \(qg\) = gluon PDF ⊗ quark FF. The same coefficient functions apply to \(F_L\)
 with \(C_{L,qq/gq/qg}\) replacing \(C_{2,\ldots}\); \(F_L\) has no LO contribution.
+
+#### SIDIS (polarized)
+
+For polarized SIDIS (`Polarized: true`), only \(G_1\) is available (set `Observable: F2`).
+The coefficient function structure mirrors the unpolarized \(F_2\) case:
+
+| `alpha_s` power | Label | \(qq\) | \(gq\) | \(qg\) |
+|:-:|:--:|:--:|:--:|:--:|
+| 0 | LO | \(G_{1,qq}^{(0)}\) | — | — |
+| 1 | NLO | \(G_{1,qq}^{(1)}\) | \(G_{1,gq}^{(1)}\) | \(G_{1,qg}^{(1)}\) |
+| 2 | NNLO | \(G_{1,qq}^{(2)}\) (\(n_f\)-dependent) | — | — |
 
 The orders are specified in the grid card via the `Orders` field. Each order entry is a
 5-element array `[alpha_s, alpha, log_xir, log_xif, log_xia]`. For pure QCD coefficient
@@ -214,6 +246,14 @@ Current: NC
 # Optional, defaults to Plus.
 # CCSign: Plus
 
+# Longitudinal polarization flag.
+# When true, the polarized structure functions are computed:
+#   DIS:   F2 -> g1,  FL -> gL,  F3 -> g4  (NC only)
+#   SIDIS: F2 -> G1                          (NC only, F2 observable required)
+# Polarized CC and polarized SIA are not supported.
+# Optional, defaults to false.
+# Polarized: false
+
 # PID basis for the channel definitions.
 # Supported values: PDG, EVOL
 PidBasis: PDG
@@ -338,6 +378,59 @@ ConvolutionTypes: [UNPOL_PDF, UNPOL_FF]
 Orders:
   - [0, 0, 0, 0, 0]   # LO
   - [1, 0, 0, 0, 0]   # NLO
+
+Bins:
+  - lower: [10.0, 0.001, 0.2]
+    upper: [100.0, 0.01, 0.4]
+  - lower: [100.0, 0.01, 0.4]
+    upper: [1000.0, 0.1, 0.6]
+
+Normalizations: [1.0, 1.0]
+```
+
+#### Polarized DIS example
+
+A polarized DIS \(g_1\) grid up to NLO. The `Observable: F2` field selects the
+analogue structure function (\(g_1\)) when `Polarized: true`:
+
+```yaml
+Process: DIS
+Observable: F2
+Current: NC
+Polarized: true
+PidBasis: PDG
+HadronPids: [2212]
+ConvolutionTypes: [UNPOL_PDF]
+
+Orders:
+  - [0, 0, 0, 0, 0]
+  - [1, 0, 0, 0, 0]
+
+Bins:
+  - lower: [10.0, 0.001]
+    upper: [100.0, 0.01]
+  - lower: [100.0, 0.01]
+    upper: [1000.0, 0.1]
+
+Normalizations: [1.0, 1.0]
+```
+
+#### Polarized SIDIS example
+
+A polarized SIDIS \(G_1\) grid up to NLO. Only `Observable: F2` is valid here:
+
+```yaml
+Process: SIDIS
+Observable: F2
+Current: NC
+Polarized: true
+PidBasis: PDG
+HadronPids: [2212, 211]
+ConvolutionTypes: [UNPOL_PDF, UNPOL_FF]
+
+Orders:
+  - [0, 0, 0, 0, 0]
+  - [1, 0, 0, 0, 0]
 
 Bins:
   - lower: [10.0, 0.001, 0.2]

@@ -19,12 +19,25 @@ static auto select_initializer(ProcessType process,
     Observable                             observable,
     Current                                current,
     CCSign                                 cc_sign,
+    bool                                   polarized,
     const apfel::Grid                     &g,
     const std::vector<double>             &thresholds)
     -> std::function<apfel::StructureFunctionObjects(double const &,
         std::vector<double> const &)> {
     if (process == ProcessType::DIS) {
-        if (current == Current::NC) {
+        if (polarized) {
+            if (current == Current::CC)
+                throw std::runtime_error("build_grid: CC current is not "
+                                         "supported for polarized DIS");
+            switch (observable) {
+            case Observable::F2:
+                return apfel::Initializeg1NCObjectsZM(g, thresholds);
+            case Observable::FL:
+                return apfel::InitializegLNCObjectsZM(g, thresholds);
+            case Observable::F3:
+                return apfel::Initializeg4NCObjectsZM(g, thresholds);
+            }
+        } else if (current == Current::NC) {
             switch (observable) {
             case Observable::F2:
                 return apfel::InitializeF2NCObjectsZM(g, thresholds);
@@ -59,6 +72,9 @@ static auto select_initializer(ProcessType process,
         if (current == Current::CC)
             throw std::runtime_error(
                 "build_grid: CC current is not supported for SIA");
+        if (polarized)
+            throw std::runtime_error(
+                "build_grid: polarized SIA is not supported");
         switch (observable) {
         case Observable::F2:
             return apfel::InitializeF2NCObjectsZMT(g, thresholds);
@@ -202,6 +218,32 @@ static const apfel::DoubleObject<apfel::Operator> *select_sidis_coeff(
     return nullptr;
 }
 
+// Select the appropriate polarized DoubleObject from SidisPolCoeffs.
+static const apfel::DoubleObject<apfel::Operator> *select_sidis_pol_coeff(
+    const pineapfel::SidisPolCoeffs &sobj,
+    int                              alpha_s,
+    int                              channel_type, // 0=qq, 1=gq, 2=qg
+    Observable                       observable,
+    int                              nf) {
+    // Only F2 (G1) is available for polarized SIDIS in APFEL++
+    if (observable != Observable::F2) return nullptr;
+    if (alpha_s == 0) {
+        if (channel_type == 0) return &sobj.G10qq;
+        return nullptr; // gq, qg start at NLO
+    } else if (alpha_s == 1) {
+        if (channel_type == 0) return &sobj.G11qq;
+        if (channel_type == 1) return &sobj.G11gq;
+        if (channel_type == 2) return &sobj.G11qg;
+    } else if (alpha_s == 2) {
+        if (channel_type == 0) {
+            auto it = sobj.G12qq.find(nf);
+            if (it != sobj.G12qq.end()) return &it->second;
+        }
+        return nullptr; // gq, qg not available at NNLO
+    }
+    return nullptr;
+}
+
 static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
     const TheoryCard                                 &theory,
     const OperatorCard                               &op_card) {
@@ -211,9 +253,13 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
     if (grid_def_in.current == Current::CC)
         throw std::runtime_error(
             "build_grid_sidis: CC current is not supported for SIDIS");
+    if (grid_def_in.polarized && grid_def_in.observable == Observable::FL)
+        throw std::runtime_error(
+            "build_grid_sidis: FL is not supported for polarized SIDIS");
 
-    std::cout << "Building APFEL++ SIDIS coefficient function grid..."
-              << std::endl;
+    std::cout << "Building APFEL++ "
+              << (grid_def_in.polarized ? "polarized " : "")
+              << "SIDIS coefficient function grid..." << std::endl;
 
     // Auto-derive channels
     GridDef grid_def = grid_def_in;
@@ -235,14 +281,41 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
         subgrids.emplace_back(sg.n_knots, sg.x_min, sg.poly_degree);
     const apfel::Grid g{subgrids};
 
-    // 2. Initialize SIDIS objects
-    auto              sobj = pineapfel::init_sidis(g, theory.quark_thresholds);
+    // 2. Initialize SIDIS coefficient functions and build a unified selector.
+    // The selector lambda captures the right coefficient struct by value so
+    // that the fill loop below is identical for polarized and unpolarized
+    // cases.
+    using CoeffPtr = const apfel::DoubleObject<apfel::Operator> *;
+    std::function<CoeffPtr(int, int, Observable, int)> get_coeff;
+    if (grid_def_in.polarized) {
+        auto sobj = std::make_shared<SidisPolCoeffs>(
+            init_sidis_pol(g, theory.quark_thresholds));
+        get_coeff = [sobj](int     alpha_s,
+                        int        channel_type,
+                        Observable obs,
+                        int        nf) -> CoeffPtr {
+            return select_sidis_pol_coeff(*sobj,
+                alpha_s,
+                channel_type,
+                obs,
+                nf);
+        };
+    } else {
+        auto sobj = std::make_shared<SidisCoeffs>(
+            init_sidis(g, theory.quark_thresholds));
+        get_coeff = [sobj](int     alpha_s,
+                        int        channel_type,
+                        Observable obs,
+                        int        nf) -> CoeffPtr {
+            return select_sidis_coeff(*sobj, alpha_s, channel_type, obs, nf);
+        };
+    }
 
     // 3. Create empty PineAPPL grid
-    pineappl_grid    *grid = create_grid(grid_def);
+    pineappl_grid      *grid           = create_grid(grid_def);
 
     // 4. Determine grid nodes
-    const auto       &joint_grid_vec = g.GetJointGrid().GetGrid();
+    const auto         &joint_grid_vec = g.GetJointGrid().GetGrid();
     std::vector<double> x_nodes(joint_grid_vec.begin(), joint_grid_vec.end());
     const std::size_t   nx = x_nodes.size();
     // Same grid for z
@@ -310,8 +383,7 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                     // Skip if quark is not active at this Q²
                     if (quark_idx + 1 > nf) continue;
 
-                    const auto *coeff = select_sidis_coeff(sobj,
-                        alpha_s,
+                    const auto *coeff = get_coeff(alpha_s,
                         channel_type,
                         grid_def.observable,
                         nf);
@@ -385,6 +457,7 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
         grid_def.observable,
         grid_def.current,
         grid_def.cc_sign,
+        grid_def.polarized,
         g,
         theory.quark_thresholds);
 

@@ -47,15 +47,39 @@ int main() {
 }
 ```
 
-The same `build_grid()` call works unchanged for SIDIS — the process type is read from
-the grid card:
+The same `build_grid()` call works unchanged for SIDIS and for polarized grids — the
+process type and polarization flag are read from the grid card:
 
 ```cpp
+// SIDIS (two-convolution: PDF ⊗ FF)
 auto grid_def = pineapfel::load_grid_def("grid_sidis.yaml");  // Process: SIDIS
 auto* grid    = pineapfel::build_grid(grid_def, theory, op_card);
-// grid is now a two-convolution (PDF ⊗ FF) PineAPPL grid
 pineappl_grid_write(grid, "sidis_f2.pineappl.lz4");
 pineappl_grid_delete(grid);
+
+// Polarized DIS g1 (Polarized: true in card)
+auto pol_def = pineapfel::load_grid_def("grid_dis_pol.yaml");
+auto* pol_grid = pineapfel::build_grid(pol_def, theory, op_card);
+pineappl_grid_write(pol_grid, "dis_g1.pineappl.lz4");
+pineappl_grid_delete(pol_grid);
+```
+
+When building programmatically, set `grid_def.polarized = true`:
+
+```cpp
+pineapfel::GridDef def;
+def.process    = pineapfel::ProcessType::DIS;
+def.observable = pineapfel::Observable::F2;  // interpreted as g1
+def.current    = pineapfel::Current::NC;
+def.polarized  = true;
+def.pid_basis  = PINEAPPL_PID_BASIS_PDG;
+def.hadron_pids       = {2212};
+def.convolution_types = {PINEAPPL_CONV_TYPE_UNPOL_PDF};
+def.orders = {{0, 0, 0, 0, 0}, {1, 0, 0, 0, 0}};
+def.bins = {{{10.0, 0.001}, {100.0, 0.01}}};
+def.normalizations = {1.0};
+
+auto* grid = pineapfel::build_grid(def, theory, op_card);
 ```
 
 See [Grid creation](grid-creation.md) for details on the grid card format and
