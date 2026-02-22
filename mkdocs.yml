@@ -7,9 +7,10 @@ theme:
   favicon: assets/pineapfel.svg
   palette:
     scheme: slate
-    primary: custom
-    accent: custom
+    primary: indigo
+    accent: indigo
   features:
+    - navigation.footer
     - navigation.sections
     - navigation.top
     - search.suggest
@@ -63,3 +64,13 @@ markdown_extensions:
   - def_list
   - pymdownx.tasklist:
       custom_checkbox: true
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com
+      name: GitHub
+    - icon: fontawesome/solid/comments
+      link: https://zulipchat.com
+      name: Zulip Chat
