@@ -31,6 +31,15 @@ pineapfel-build runcards/grid_sia.yaml runcards/theory.yaml runcards/operator.ya
 # Build a SIDIS F2 grid (two-convolution: PDF ⊗ FF)
 pineapfel-build runcards/grid_sidis.yaml runcards/theory.yaml runcards/operator.yaml \
     -o sidis_f2.pineappl.lz4
+
+# Build a DIS F2 grid in the FFN massive scheme
+# (requires MassScheme: FFN in the grid card and HeavyQuarkMasses in the theory card)
+pineapfel-build runcards/grid_dis_ffn.yaml runcards/theory.yaml runcards/operator.yaml \
+    -o dis_f2_ffn.pineappl.lz4
+
+# Build a DIS F2 FONLL grid (F_ZM + F_FFN)
+pineapfel-build runcards/grid_dis_fonll.yaml runcards/theory.yaml runcards/operator.yaml \
+    -o dis_f2_fonll.pineappl.lz4
 ```
 
 ### `pineapfel-evolve`

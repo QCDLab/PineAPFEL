@@ -29,10 +29,42 @@ AlphaQCDRef: 0.118
 # of active flavors (nf_max).
 QuarkThresholds: [0.0, 0.0, 0.0, 1.4, 4.75]
 
+# Physical heavy-quark masses for massive coefficient functions, all 6
+# flavors required (up, down, strange, charm, bottom, top) in GeV.
+# Used when MassScheme: FFN or MassScheme: FONLL is set in the grid card.
+# Defaults to QuarkThresholds padded to 6 entries (top = 172.0 GeV) if absent.
+HeavyQuarkMasses: [0.0, 0.0, 0.0, 1.4, 4.75, 172.0]
+
+# CKM squared matrix elements |Vij|^2, 9 entries in row-major order:
+# [Vud^2, Vus^2, Vub^2, Vcd^2, Vcs^2, Vcb^2, Vtd^2, Vts^2, Vtb^2]
+# Only used for CC grids. Optional: defaults to standard PDG values if absent.
+CKM: [0.94922, 0.05077, 0.00001, 0.05073, 0.94760, 0.00168, 0.00007, 0.00162, 0.99831]
+
 # Output flavor PIDs written to the FK table.
 # These define the pids_out dimension of the evolution operator.
 # Standard PDG codes: 1=d, 2=u, 3=s, 4=c, 5=b, -1=dbar, ..., 21=gluon, 22=photon
 Flavors: [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 21]
+
+# --- Massive coefficient function tabulation parameters ---
+# These control the xi = Q^2/m^2 interpolation grid built by APFEL++ when
+# MassScheme: FFN or MassScheme: FONLL is set in the grid card.
+# All fields are optional; the values shown are the defaults.
+
+# Number of xi interpolation points.
+MassNxi: 150
+
+# xi range [MassXiMin, MassXiMax] over which massive CFs are tabulated.
+MassXiMin: 0.05
+MassXiMax: 10000.0
+
+# Polynomial interpolation degree in xi.
+MassIntDeg: 3
+
+# Lambda parameter for the xi-grid density (controls spacing near xi = 0).
+MassLambda: 0.0005
+
+# Interpolation mode passed to TabulateObject (0 = default).
+MassIMod: 0
 
 # Set to true to use combined QCD+QED evolution.
 # When false (default), pure QCD evolution is used.

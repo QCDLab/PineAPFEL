@@ -47,8 +47,8 @@ int main() {
 }
 ```
 
-The same `build_grid()` call works unchanged for SIDIS and for polarized grids — the
-process type and polarization flag are read from the grid card:
+The same `build_grid()` call works unchanged for SIDIS, polarized grids, and massive
+schemes — the relevant flags are read from the grid card:
 
 ```cpp
 // SIDIS (two-convolution: PDF ⊗ FF)
@@ -62,11 +62,25 @@ auto pol_def = pineapfel::load_grid_def("grid_dis_pol.yaml");
 auto* pol_grid = pineapfel::build_grid(pol_def, theory, op_card);
 pineappl_grid_write(pol_grid, "dis_g1.pineappl.lz4");
 pineappl_grid_delete(pol_grid);
+
+// FFN DIS F2 (MassScheme: FFN in card, HeavyQuarkMasses in theory card)
+auto ffn_def = pineapfel::load_grid_def("grid_dis_ffn.yaml");
+auto* ffn_grid = pineapfel::build_grid(ffn_def, theory, op_card);
+pineappl_grid_write(ffn_grid, "dis_f2_ffn.pineappl.lz4");
+pineappl_grid_delete(ffn_grid);
+
+// FONLL DIS F2 (MassScheme: FONLL in card)
+auto fonll_def = pineapfel::load_grid_def("grid_dis_fonll.yaml");
+auto* fonll_grid = pineapfel::build_grid(fonll_def, theory, op_card);
+pineappl_grid_write(fonll_grid, "dis_f2_fonll.pineappl.lz4");
+pineappl_grid_delete(fonll_grid);
 ```
 
-When building programmatically, set `grid_def.polarized = true`:
+When building programmatically, set `grid_def.polarized = true` or
+`grid_def.mass_scheme`:
 
 ```cpp
+// Polarized DIS g1
 pineapfel::GridDef def;
 def.process    = pineapfel::ProcessType::DIS;
 def.observable = pineapfel::Observable::F2;  // interpreted as g1
@@ -79,7 +93,22 @@ def.orders = {{0, 0, 0, 0, 0}, {1, 0, 0, 0, 0}};
 def.bins = {{{10.0, 0.001}, {100.0, 0.01}}};
 def.normalizations = {1.0};
 
-auto* grid = pineapfel::build_grid(def, theory, op_card);
+auto* pol_grid = pineapfel::build_grid(def, theory, op_card);
+
+// FFN DIS F2 (theory card must contain HeavyQuarkMasses with 6 entries)
+pineapfel::GridDef ffn_def;
+ffn_def.process      = pineapfel::ProcessType::DIS;
+ffn_def.observable   = pineapfel::Observable::F2;
+ffn_def.current      = pineapfel::Current::NC;
+ffn_def.mass_scheme  = pineapfel::MassScheme::FFN;   // <-- key field
+ffn_def.pid_basis    = PINEAPPL_PID_BASIS_PDG;
+ffn_def.hadron_pids       = {2212};
+ffn_def.convolution_types = {PINEAPPL_CONV_TYPE_UNPOL_PDF};
+ffn_def.orders = {{0, 0, 0, 0, 0}, {1, 0, 0, 0, 0}, {2, 0, 0, 0, 0}};
+ffn_def.bins = {{{10.0, 0.001}, {100.0, 0.01}}};
+ffn_def.normalizations = {1.0};
+
+auto* ffn_grid = pineapfel::build_grid(ffn_def, theory, op_card);
 ```
 
 See [Grid creation](grid-creation.md) for details on the grid card format and

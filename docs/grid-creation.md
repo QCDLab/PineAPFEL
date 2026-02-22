@@ -15,34 +15,35 @@ The grid creation workflow requires three YAML configuration files:
 
 The `build_grid()` function currently supports the following combinations:
 
-| Process | Observable | Current | APFEL++ initializer | Mass scheme |
-|---------|-----------|---------|---------------------|-------------|
-| DIS | \(F_2\) | NC | `InitializeF2NCObjectsZM` | Zero-mass |
-| DIS | \(F_L\) | NC | `InitializeFLNCObjectsZM` | Zero-mass |
-| DIS | \(F_3\) | NC | `InitializeF3NCObjectsZM` | Zero-mass |
-| DIS | \(F_2\) | CC\(+\) | `InitializeF2CCPlusObjectsZM` | Zero-mass |
-| DIS | \(F_L\) | CC\(+\) | `InitializeFLCCPlusObjectsZM` | Zero-mass |
-| DIS | \(F_3\) | CC\(+\) | `InitializeF3CCPlusObjectsZM` | Zero-mass |
-| DIS | \(F_2\) | CC\(-\) | `InitializeF2CCMinusObjectsZM` | Zero-mass |
-| DIS | \(F_L\) | CC\(-\) | `InitializeFLCCMinusObjectsZM` | Zero-mass |
-| DIS | \(F_3\) | CC\(-\) | `InitializeF3CCMinusObjectsZM` | Zero-mass |
-| SIA | \(F_2\) | NC | `InitializeF2NCObjectsZMT` | Zero-mass |
-| SIA | \(F_L\) | NC | `InitializeFLNCObjectsZMT` | Zero-mass |
-| SIA | \(F_3\) | NC | `InitializeF3NCObjectsZMT` | Zero-mass |
-| SIDIS | \(F_2\) | NC | `InitializeSIDIS` | Zero-mass |
-| SIDIS | \(F_L\) | NC | `InitializeSIDIS` | Zero-mass |
-| DIS (polarized) | \(F_2\) → \(g_1\) | NC | `Initializeg1NCObjectsZM` | Zero-mass |
-| DIS (polarized) | \(F_L\) → \(g_L\) | NC | `InitializegLNCObjectsZM` | Zero-mass |
-| DIS (polarized) | \(F_3\) → \(g_4\) | NC | `Initializeg4NCObjectsZM` | Zero-mass |
-| SIDIS (polarized) | \(F_2\) → \(G_1\) | NC | `InitializeSIDISpol` | Zero-mass |
+| Process | Observable | Current | APFEL++ initializer (ZM) | Mass schemes |
+|---------|-----------|---------|--------------------------|-------------|
+| DIS | \(F_2\) | NC | `InitializeF2NCObjectsZM` | ZM, FFN, FONLL |
+| DIS | \(F_L\) | NC | `InitializeFLNCObjectsZM` | ZM, FFN, FONLL |
+| DIS | \(F_3\) | NC | `InitializeF3NCObjectsZM` | ZM only |
+| DIS | \(F_2\) | CC\(+\) | `InitializeF2CCPlusObjectsZM` | ZM only |
+| DIS | \(F_L\) | CC\(+\) | `InitializeFLCCPlusObjectsZM` | ZM only |
+| DIS | \(F_3\) | CC\(+\) | `InitializeF3CCPlusObjectsZM` | ZM only |
+| DIS | \(F_2\) | CC\(-\) | `InitializeF2CCMinusObjectsZM` | ZM only |
+| DIS | \(F_L\) | CC\(-\) | `InitializeFLCCMinusObjectsZM` | ZM only |
+| DIS | \(F_3\) | CC\(-\) | `InitializeF3CCMinusObjectsZM` | ZM only |
+| SIA | \(F_2\) | NC | `InitializeF2NCObjectsZMT` | ZM only |
+| SIA | \(F_L\) | NC | `InitializeFLNCObjectsZMT` | ZM only |
+| SIA | \(F_3\) | NC | `InitializeF3NCObjectsZMT` | ZM only |
+| SIDIS | \(F_2\) | NC | `InitializeSIDIS` | ZM only |
+| SIDIS | \(F_L\) | NC | `InitializeSIDIS` | ZM only |
+| DIS (polarized) | \(g_1\) | NC | `Initializeg1NCObjectsZM` | ZM only |
+| DIS (polarized) | \(g_L\) | NC | `InitializegLNCObjectsZM` | ZM only |
+| DIS (polarized) | \(g_4\) | NC | `Initializeg4NCObjectsZM` | ZM only |
+| SIDIS (polarized) | \(G_1\) | NC | `InitializeSIDISpol` | ZM only |
 
 Polarized grids are selected by setting `Polarized: true` in the grid card. The
 `Observable` field retains its unpolarized name (`F2`, `FL`, `F3`) and is interpreted
 as the corresponding polarized observable (\(g_1\), \(g_L\), \(g_4\), or \(G_1\) for
 SIDIS) when `Polarized: true`.
 
-All combinations use the **zero-mass variable-flavour-number scheme** (ZM-VFNS), where
-quarks are treated as massless above their respective thresholds.
+The mass scheme is selected with the `MassScheme` field in the grid card (see
+[Mass scheme](#mass-scheme) below). Combinations that only support ZM will emit a
+warning and fall back to ZM when a non-ZM scheme is requested.
 
 !!! info "What is not yet supported"
     - **SIA + CC** is not supported (APFEL++ only provides CC initializers for DIS).
@@ -51,7 +52,6 @@ quarks are treated as massless above their respective thresholds.
     - **Polarized + CC** is not supported.
     - **Polarized SIA** is not supported (APFEL++ does not provide time-like polarized SF initializers).
     - **Polarized SIDIS + FL** is not supported (only \(G_1\) is available).
-    - **Massive coefficient functions** (FONLL, ACOT, S-ACOT) are not available.
     - **QCD+QED** coefficient functions are not implemented in grid filling (QED corrections
       are only available in the evolution step).
 
@@ -65,6 +65,28 @@ non-perturbative input the grid will be convoluted with:
 | DIS | `[(UN)POL_PDF]` | (Un)polarised parton distribution functions |
 | SIA | `[(UN)POL_FF]` | (Un)polarised fragmentation functions |
 | SIDIS | `[(UN)POL_PDF, (UN)POL_FF]` | PDF for the initial state, FF for the final state |
+
+### Mass scheme
+
+The heavy-quark mass scheme is set via the `MassScheme` field in the grid card:
+
+| Value | Description |
+|-------|-------------|
+| `ZM` | **Zero-mass Variable Flavor Number** `(default)`. Quarks are massless above their thresholds. Applies to all processes and observables. |
+| `FFN` | **Fixed-Flavor Number**. Uses `InitializeF2/FLNCObjectsMassive` from APFEL++. Massive charm and bottom coefficient functions depending on \(\xi = Q^2/m^2\) are included. DIS NC \(F_2\)/\(F_L\) only. |
+| `FONLL` | **FONLL** scheme. Implemented as \(F_\mathrm{FONLL} = F_\mathrm{ZM} + F_\mathrm{FFN}\), following APFEL++ conventions. Available for DIS NC \(F_2\)/\(F_L\) only. |
+| `MassiveZero` | Massless limit of FFN (`InitializeF2/FLNCObjectsMassiveZero`). In APFEL++ the total channel is set to zero for this initializer, so the resulting grid carries zero coefficient functions. Included for completeness. |
+
+
+!!! warning
+    When a non-ZM scheme is requested for an unsupported combination (CC current, \(F_3\),
+    polarized, SIA, SIDIS), PineAPFEL prints a warning and falls back to ZM automatically.
+
+The heavy-quark masses used by FFN and FONLL are read from the `HeavyQuarkMasses` field
+in the theory card (6 entries, all flavors including top). The ξ-grid tabulation is
+controlled by the `MassNxi`, `MassXiMin`, `MassXiMax`, `MassIntDeg`, `MassLambda`, and
+`MassIMod` theory-card fields. See [Configuration cards](configuration-cards.md) for
+the full list.
 
 ### Perturbative orders
 
@@ -175,7 +197,7 @@ For example, with 5 active flavours and observable F2 NC, the auto-derived chann
 | \(s + \bar{s}\) | `[[3], [-3]]` | `[1.0, 1.0]` |
 | \(c + \bar{c}\) | `[[4], [-4]]` | `[1.0, 1.0]` |
 | \(b + \bar{b}\) | `[[5], [-5]]` | `[1.0, 1.0]` |
-| gluon | `[[21]]` | `[1.0]` |
+| \(g\) | `[[21]]` | `[1.0]` |
 
 The per-channel coefficient functions are constructed from the APFEL++ operators
 \(C_\mathrm{NS}\), \(C_\mathrm{S}\), and \(C_\mathrm{G}\) using the general formula:
@@ -186,10 +208,20 @@ The per-channel coefficient functions are constructed from the APFEL++ operators
 | Gluon | \(\mathcal{C}_g = \Sigma_w \, C_\mathrm{G}\) |
 
 where \(w_q\) is the per-quark weight (electroweak charge \(e_q^2\) for NC, or CKM
-weight for CC), \(\Sigma_w = \sum_{i=1}^{n_f} w_i\), and the factor of 6 matches the
-internal normalisation convention used in APFEL++'s `DISNCBasis`/`DISCCBasis`.
-APFEL++ sets \(C_\mathrm{S} = C_\mathrm{NS}\) and/or \(C_\mathrm{G} = 0\) where
-the physics requires it, so the same formula works for all observables and currents.
+weight for CC), \(\Sigma_w = \sum_{i=1}^{n_f^\mathrm{light}} w_i\) sums over light quarks
+only, and the factor of 6 matches the internal normalisation convention used in APFEL++'s
+`DISNCBasis`/`DISCCBasis`. APFEL++ sets \(C_\mathrm{S} = C_\mathrm{NS}\) and/or
+\(C_\mathrm{G} = 0\) where the physics requires it, so the same formula works for all
+observables and currents.
+
+For the **FFN and FONLL** schemes, all \(n_f^\mathrm{max}\) quark channels contribute to
+the pure-singlet (PS) term \(\frac{\Sigma_w}{6}(C_\mathrm{S}-C_\mathrm{NS})\): light
+quarks \((q \leq n_f^\mathrm{light})\) also receive the non-singlet (NS) weight \(w_q\),
+while heavy quarks \((q > n_f^\mathrm{light})\) have \(w_q = 0\) for the NS term. This
+ensures that the summed PS contribution is proportional to the full SIGMA distribution
+\(\sum_{i=1}^{n_f^\mathrm{max}} 2f_i\) as required by APFEL++. Additionally, heavy-quark
+massive gluon coefficients \(C_\mathrm{G}^{(\mathrm{h})}\) are accumulated into the gluon
+channel weighted by \(e_{q_h}^2\).
 
 #### SIDIS channels
 
@@ -249,6 +281,16 @@ Current: NC
 #   SIDIS: F2 -> G1                        (NC only, F2 observable required)
 # Polarized CC and polarized SIA are not supported.
 # Optional, defaults to false, ie. `Polarized: false`
+
+# Heavy-quark mass treatment scheme.
+# Supported values: ZM, FFN, FONLL, MassiveZero
+#   ZM          — zero-mass VFN scheme (default for all processes)
+#   FFN         — fixed-flavor-number scheme with massive CFs (DIS NC F2/FL only)
+#   FONLL       — FONLL = F_ZM + F_FFN (DIS NC F2/FL only)
+#   MassiveZero — massless limit of FFN; outputs zero CFs (APFEL++ convention)
+# For unsupported combinations the scheme falls back to ZM with a warning.
+# Optional, defaults to ZM.
+# MassScheme: ZM
 
 # PID basis for the channel definitions.
 # Supported values: PDG, EVOL
@@ -432,6 +474,64 @@ Bins:
     upper: [100.0, 0.01, 0.4]
   - lower: [100.0, 0.01, 0.4]
     upper: [1000.0, 0.1, 0.6]
+
+Normalizations: [1.0, 1.0]
+```
+
+#### FFN DIS example
+
+A DIS \(F_2\) grid in the fixed-flavor-number scheme. Requires `HeavyQuarkMasses` in the
+theory card (6 entries). The massive coefficient functions are tabulated internally on a
+\(\xi = Q^2/m^2\) grid; the tabulation parameters can be tuned with `MassNxi` etc. in
+the theory card.
+
+```yaml
+Process: DIS
+Observable: F2
+Current: NC
+MassScheme: FFN
+PidBasis: PDG
+HadronPids: [2212]
+ConvolutionTypes: [UNPOL_PDF]
+
+Orders:
+  - [0, 0, 0, 0, 0]
+  - [1, 0, 0, 0, 0]
+  - [2, 0, 0, 0, 0]
+
+Bins:
+  - lower: [10.0, 0.001]
+    upper: [100.0, 0.01]
+  - lower: [100.0, 0.01]
+    upper: [1000.0, 0.1]
+
+Normalizations: [1.0, 1.0]
+```
+
+#### FONLL DIS example
+
+A DIS \(F_2\) FONLL grid. PineAPFEL computes \(F_\mathrm{FONLL} = F_\mathrm{ZM} + F_\mathrm{FFN}\)
+following APFEL++ conventions. The same theory card as for FFN is required.
+
+```yaml
+Process: DIS
+Observable: F2
+Current: NC
+MassScheme: FONLL
+PidBasis: PDG
+HadronPids: [2212]
+ConvolutionTypes: [UNPOL_PDF]
+
+Orders:
+  - [0, 0, 0, 0, 0]
+  - [1, 0, 0, 0, 0]
+  - [2, 0, 0, 0, 0]
+
+Bins:
+  - lower: [10.0, 0.001]
+    upper: [100.0, 0.01]
+  - lower: [100.0, 0.01]
+    upper: [1000.0, 0.1]
 
 Normalizations: [1.0, 1.0]
 ```
