@@ -575,10 +575,10 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
     //    handled separately to correctly incorporate heavy-quark
     //    contributions in the massive scheme.
     struct Q2Data {
-        int nf;
-        std::vector<double>
-            charges; // 6-entry EW charges (NC) or nf-entry CKM (CC)
+        int                                           nf;
+        // 6-entry EW charges (NC) or nf-entry CKM (CC):
         // channel_ops[order][channel_idx] = accumulated operator
+        std::vector<double>                           charges;
         std::map<int, std::map<int, apfel::Operator>> channel_ops;
     };
 
@@ -675,15 +675,12 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                 // all nf_max quark channels and convoluted with the full SIGMA
                 // distribution.  Heavy channels (ich >= nf_local) get ch_k=0
                 // so they do not contribute the NS term.
+                //
                 // At NNLO CS-CNS = 6*O22ps, so each of the 5 channels adds
                 // (sum_ch_light/6)*6*O22ps ⊗ 2*f = sum_ch_light*O22ps ⊗ 2*f,
                 // giving 5*sum_ch_light*O22ps ⊗ 2*f = sum_ch_light*O22ps ⊗
                 // 10*f, which matches APFEL++'s (sum_ch_light/6)*CS ⊗ SIGMA
                 // (SIGMA=10*f).
-                //
-                // IMPORTANT: APFEL++ Operator::operator= is infinitely
-                // recursive. Only use operator+=, operator*= and
-                // copy-initialization (auto).
                 for (int ich = 0; ich < num_quark_channels; ich++) {
                     double ch_k;
                     if (wi.actnf < 0) {
