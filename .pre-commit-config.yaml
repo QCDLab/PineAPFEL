@@ -1,4 +1,21 @@
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        # `.rs` files are taken care of by `cargo fmt`
+        exclude: ^.*\.rs$
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # A fast Python linter and code formatter. See
+    # https://docs.astral.sh/ruff/ for more details.
+    rev: v0.6.5
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+        args: []
   - repo: https://github.com/pocc/pre-commit-hooks
     rev: v1.3.5
     hooks:

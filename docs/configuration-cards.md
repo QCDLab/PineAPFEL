@@ -114,4 +114,3 @@ tabulation:
 # Use [1.0, 1.0, 1.0] for central predictions.
 xi: [1.0, 1.0, 1.0]
 ```
-

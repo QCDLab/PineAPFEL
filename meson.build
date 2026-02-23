@@ -99,3 +99,31 @@ install_headers(
   'pineapfel/include/sidis_api.h',
   install_dir : get_option('includedir'),
 )
+
+# ── Python bindings (optional) ────────────────────────────────────────────────
+py_mod = import('python')
+py     = py_mod.find_installation('python3', required : false)
+
+if py.found()
+  pybind11_inc = run_command(
+    py, '-c', 'import pybind11; print(pybind11.get_include())',
+    check : true,
+  ).stdout().strip()
+
+  py.extension_module('_pineapfel',
+    'pineapfel_pyapi/src/_pineapfel.cpp',
+    include_directories : [
+      include_directories('pineapfel/include'),
+      include_directories(pybind11_inc),
+    ],
+    dependencies : [pineappl_dep, yaml_cpp_dep, apfelxx_dep],
+    link_with    : pineapfel_lib,
+    install      : true,
+    subdir       : 'pineapfel',
+  )
+
+  py.install_sources(
+    'pineapfel_pyapi/pineapfel/__init__.py',
+    subdir : 'pineapfel',
+  )
+endif

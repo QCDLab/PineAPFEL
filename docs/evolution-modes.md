@@ -14,4 +14,3 @@ In **QCD mode**, PineAPFEL supports three convolution types (determined automati
 In **QCD+QED mode**, PineAPFEL currently supports:
 
 - `UNPOL_PDF` — unpolarised PDFs with QED corrections
-

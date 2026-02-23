@@ -43,4 +43,3 @@ meson install -C build-meson
     ```bash
     export LD_LIBRARY_PATH=/path/to/lib:$LD_LIBRARY_PATH
     ```
-

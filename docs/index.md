@@ -29,4 +29,3 @@ being hardcoded.
 - [CLI](cli.md)
 - [Library](library.md)
 - [QCD vs QCD⊗QED](evolution-modes.md)
-
