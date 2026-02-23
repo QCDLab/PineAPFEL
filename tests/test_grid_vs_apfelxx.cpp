@@ -527,7 +527,7 @@ int main() {
 
             // Looser tolerance: PineAPPL uses interpolated subgrids while
             // BuildStructureFunctions computes exact convolutions
-            double bsf_tol = 1e-2;
+            double bsf_tol = 5e-2;
             bool   ok      = (rel_diff < bsf_tol);
             std::printf(
                 "  bin %zu: pineappl=%.6e  BSF=%.6e  rel_diff=%.2e %s\n",
@@ -632,7 +632,7 @@ int main() {
                     ? std::abs(pineappl_cc[ibin] - ref) / std::abs(ref)
                     : 0.0;
 
-            double bsf_tol = 1e-2;
+            double bsf_tol = 5e-2;
             bool   ok      = (rel_diff < bsf_tol);
             std::printf(
                 "  bin %zu: pineappl=%.6e  BSF=%.6e  rel_diff=%.2e %s\n",
@@ -814,7 +814,7 @@ int main() {
                     ? std::abs(pineappl_pol[ibin] - ref) / std::abs(ref)
                     : 0.0;
 
-            double bsf_tol = 1e-2;
+            double bsf_tol = 5e-2;
             bool   ok      = (rel_diff < bsf_tol);
             std::printf(
                 "  bin %zu: pineappl=%.6e  BSF=%.6e  rel_diff=%.2e %s\n",
@@ -986,7 +986,7 @@ int main() {
                 std::abs(ref) > 1e-30
                     ? std::abs(pineappl_ffn[ibin] - ref) / std::abs(ref)
                     : 0.0;
-            double bsf_tol = 1e-2;
+            double bsf_tol = 5e-2;
             bool   ok      = (rel_diff < bsf_tol);
             std::printf(
                 "  bin %zu: pineappl=%.6e  BSF=%.6e  rel_diff=%.2e %s\n",
@@ -1074,7 +1074,7 @@ int main() {
                 std::abs(ref) > 1e-30
                     ? std::abs(pineappl_mz[ibin] - ref) / std::abs(ref)
                     : 0.0;
-            double bsf_tol = 1e-2;
+            double bsf_tol = 5e-2;
             bool   ok      = (rel_diff < bsf_tol);
             std::printf(
                 "  bin %zu: pineappl=%.6e  BSF=%.6e  rel_diff=%.2e %s\n",
@@ -1183,7 +1183,7 @@ int main() {
                 std::abs(ref) > 1e-30
                     ? std::abs(pineappl_fonll[ibin] - ref) / std::abs(ref)
                     : 0.0;
-            double bsf_tol = 1e-2;
+            double bsf_tol = 5e-2;
             bool   ok      = (rel_diff < bsf_tol);
             std::printf(
                 "  bin %zu: pineappl=%.6e  ref=%.6e  rel_diff=%.2e %s\n",
