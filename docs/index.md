@@ -28,4 +28,5 @@ being hardcoded.
 - [Grid creation](grid-creation.md)
 - [CLI](cli.md)
 - [Library](library.md)
+- [Python API](python-api.md)
 - [QCD vs QCD⊗QED](evolution-modes.md)
