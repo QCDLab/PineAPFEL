@@ -80,6 +80,16 @@ executable('create-grid-example',
   install : false,
 )
 
+test_grid_vs_apfelxx_exe = executable('test_grid_vs_apfelxx',
+  'tests/test_grid_vs_apfelxx.cpp',
+  'tests/sidis_helper.cpp',
+  dependencies : pineapfel_dep,
+)
+
+test('grid_vs_apfelxx', test_grid_vs_apfelxx_exe,
+  workdir : meson.source_root(),
+)
+
 install_headers(
   'pineapfel/include/cards.h',
   'pineapfel/include/evolution.h',
