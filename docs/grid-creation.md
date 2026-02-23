@@ -102,7 +102,7 @@ The coefficient functions are available at the following perturbative orders:
 
 #### DIS (polarized)
 
-For polarized DIS (`Polarized: true`), the structure functions \(g_1\), \(g_L\), and \(g_4\)
+For polarized DIS (`ConvolutionTypes: [POL_PDF]`), the structure functions \(g_1\), \(g_L\), and \(g_4\)
 are selected instead. The available coefficient functions mirror the unpolarized case:
 
 | `alpha_s` power | Label | \(g_1\) / \(g_L\) content | \(g_4\) content |
@@ -130,8 +130,9 @@ with \(C_{L,qq/gq/qg}\) replacing \(C_{2,\ldots}\); \(F_L\) has no LO contributi
 
 #### SIDIS (polarized)
 
-For polarized SIDIS (`Polarized: true`), only \(G_1\) is available (set `Observable: F2`).
-The coefficient function structure mirrors the unpolarized \(F_2\) case:
+For polarized SIDIS (first entry of `ConvolutionTypes` is `POL_PDF`), only \(G_1\) is
+available (set `Observable: F2`). The coefficient function structure mirrors the unpolarized
+\(F_2\) case:
 
 | `alpha_s` power | Label | \(qq\) | \(gq\) | \(qg\) |
 |:-:|:--:|:--:|:--:|:--:|
@@ -275,13 +276,6 @@ Current: NC
 # Optional, defaults to Plus.
 # CCSign: Plus
 
-# Longitudinal polarization flag.
-# When true, the polarized structure functions are computed:
-#   DIS:   F2 -> g1,  FL -> gL,  F3 -> g4  (NC only)
-#   SIDIS: F2 -> G1                        (NC only, F2 observable required)
-# Polarized CC and polarized SIA are not supported.
-# Optional, defaults to false, ie. `Polarized: false`
-
 # Heavy-quark mass treatment scheme.
 # Supported values: ZM, FFN, FONLL, MassiveZero
 #   ZM          — zero-mass VFN scheme (default for all processes)
@@ -307,6 +301,15 @@ HadronPids: [2212]
 #   POL_PDF    — longitudinally polarised parton distributions
 #   UNPOL_FF   — unpolarised fragmentation functions
 #   POL_FF     — polarised fragmentation functions
+#
+# Polarization is inferred from the first entry (the PDF slot):
+#   POL_PDF / POL_FF  → polarized coefficient functions are used
+#     DIS:   F2 -> g1,  FL -> gL,  F3 -> g4  (NC only)
+#     SIDIS: F2 -> G1                        (NC only)
+#   UNPOL_PDF / UNPOL_FF → unpolarized coefficient functions
+# Polarized CC and polarized SIA are not supported.
+# For SIDIS the PDF and FF types can differ independently
+# (e.g. [POL_PDF, UNPOL_FF] for helicity-weighted cross sections).
 ConvolutionTypes: [UNPOL_PDF]
 
 # Perturbative orders as 5-element arrays:
@@ -427,14 +430,13 @@ Normalizations: [1.0, 1.0]
 
 #### Polarized DIS example
 
-A polarized DIS \(g_1\) grid up to NLO. The `Observable: F2` field selects the
-analogue structure function (\(g_1\)) when `Polarized: true`:
+A polarized DIS \(g_1\) grid up to NLO. Setting `ConvolutionTypes: [POL_PDF]` signals
+polarized coefficient functions; `Observable: F2` then selects \(g_1\):
 
 ```yaml
 Process: DIS
 Observable: F2
 Current: NC
-Polarized: true
 PidBasis: PDG
 HadronPids: [2212]
 ConvolutionTypes: [POL_PDF]
@@ -454,16 +456,17 @@ Normalizations: [1.0, 1.0]
 
 #### Polarized SIDIS example
 
-A polarized SIDIS \(G_1\) grid up to NLO. Only `Observable: F2` is valid here:
+A polarized SIDIS \(G_1\) grid up to NLO. Only `Observable: F2` is valid here.
+Note that the PDF is polarized while the FF remains unpolarized — this distinction
+is expressed directly through `ConvolutionTypes` without any separate flag:
 
 ```yaml
 Process: SIDIS
 Observable: F2
 Current: NC
-Polarized: true
 PidBasis: PDG
 HadronPids: [2212, 211]
-ConvolutionTypes: [POL_PDF, POL_FF]
+ConvolutionTypes: [POL_PDF, UNPOL_FF]
 
 Orders:
   - [0, 0, 0, 0, 0]

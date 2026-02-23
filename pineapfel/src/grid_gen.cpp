@@ -112,9 +112,6 @@ GridDef load_grid_def(const std::string &path) {
         else throw std::runtime_error("Unknown CCSign: " + sign);
     }
 
-    // Polarization (optional, defaults to false)
-    if (config["Polarized"]) def.polarized = config["Polarized"].as<bool>();
-
     // Mass scheme (optional, defaults to ZM)
     if (config["MassScheme"]) {
         std::string ms = config["MassScheme"].as<std::string>();

@@ -316,12 +316,20 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
     if (grid_def_in.current == Current::CC)
         throw std::runtime_error(
             "build_grid_sidis: CC current is not supported for SIDIS");
-    if (grid_def_in.polarized && grid_def_in.observable == Observable::FL)
+
+    // Infer polarization from the first convolution type (PDF slot):
+    //   POL_PDF → polarized PDF coefficient functions
+    //   POL_FF  → polarized FF (not currently supported, handled below)
+    bool polarized =
+        !grid_def_in.convolution_types.empty() &&
+        (grid_def_in.convolution_types[0] == PINEAPPL_CONV_TYPE_POL_PDF ||
+            grid_def_in.convolution_types[0] == PINEAPPL_CONV_TYPE_POL_FF);
+
+    if (polarized && grid_def_in.observable == Observable::FL)
         throw std::runtime_error(
             "build_grid_sidis: FL is not supported for polarized SIDIS");
 
-    std::cout << "Building APFEL++ "
-              << (grid_def_in.polarized ? "polarized " : "")
+    std::cout << "Building APFEL++ " << (polarized ? "polarized " : "")
               << "SIDIS coefficient function grid..." << std::endl;
 
     // Auto-derive channels
@@ -350,7 +358,7 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
     // cases.
     using CoeffPtr = const apfel::DoubleObject<apfel::Operator> *;
     std::function<CoeffPtr(int, int, Observable, int)> get_coeff;
-    if (grid_def_in.polarized) {
+    if (polarized) {
         auto sobj = std::make_shared<SidisPolCoeffs>(
             init_sidis_pol(g, theory.quark_thresholds));
         get_coeff = [sobj](int     alpha_s,
@@ -513,14 +521,20 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
     std::vector<apfel::SubGrid> subgrids;
     for (const auto &sg : op_card.xgrid)
         subgrids.emplace_back(sg.n_knots, sg.x_min, sg.poly_degree);
-    const apfel::Grid   g{subgrids};
+    const apfel::Grid g{subgrids};
 
-    // 2. Initialize structure function objects (one or more weighted inits)
+    // 2. Initialize structure function objects (one or more weighted inits).
+    // Infer polarization from the first convolution type (PDF slot): POL_PDF or
+    // POL_FF signals that polarized coefficient functions should be used.
+    bool              polarized =
+        !grid_def.convolution_types.empty() &&
+        (grid_def.convolution_types[0] == PINEAPPL_CONV_TYPE_POL_PDF ||
+            grid_def.convolution_types[0] == PINEAPPL_CONV_TYPE_POL_FF);
     auto                weighted_inits = select_initializers(grid_def.process,
         grid_def.observable,
         grid_def.current,
         grid_def.cc_sign,
-        grid_def.polarized,
+        polarized,
         grid_def.mass_scheme,
         g,
         theory);

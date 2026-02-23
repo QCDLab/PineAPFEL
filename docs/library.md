@@ -76,19 +76,19 @@ pineappl_grid_write(fonll_grid, "dis_f2_fonll.pineappl.lz4");
 pineappl_grid_delete(fonll_grid);
 ```
 
-When building programmatically, set `grid_def.polarized = true` or
-`grid_def.mass_scheme`:
+When building programmatically, polarization is inferred from `convolution_types`:
+setting the first entry to `PINEAPPL_CONV_TYPE_POL_PDF` selects polarized coefficient
+functions. Use `grid_def.mass_scheme` to select a heavy-quark scheme:
 
 ```cpp
-// Polarized DIS g1
+// Polarized DIS g1: POL_PDF in convolution_types drives the coefficient function choice
 pineapfel::GridDef def;
 def.process    = pineapfel::ProcessType::DIS;
 def.observable = pineapfel::Observable::F2;  // interpreted as g1
 def.current    = pineapfel::Current::NC;
-def.polarized  = true;
 def.pid_basis  = PINEAPPL_PID_BASIS_PDG;
 def.hadron_pids       = {2212};
-def.convolution_types = {PINEAPPL_CONV_TYPE_UNPOL_PDF};
+def.convolution_types = {PINEAPPL_CONV_TYPE_POL_PDF};
 def.orders = {{0, 0, 0, 0, 0}, {1, 0, 0, 0, 0}};
 def.bins = {{{10.0, 0.001}, {100.0, 0.01}}};
 def.normalizations = {1.0};

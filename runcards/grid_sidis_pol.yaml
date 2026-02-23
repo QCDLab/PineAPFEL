@@ -1,7 +1,6 @@
 Process: SIDIS
 Observable: F2
 Current: NC
-Polarized: true
 PidBasis: PDG
 HadronPids: [2212, 211]
 ConvolutionTypes: [POL_PDF, UNPOL_FF]
