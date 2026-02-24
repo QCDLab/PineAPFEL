@@ -203,8 +203,17 @@ static std::vector<WeightedSFInit> select_initializers(ProcessType process,
 
     case MassScheme::FONLL: {
         auto ffn = make_massive_init(observable, false, g, theory);
-        // F_MassiveZero = 0 from APFEL++ (total channel set to zero), so
-        // FONLL = F_ZM + F_FFN - 0 = F_ZM + F_FFN.
+        // Standard FONLL = F_ZM + F_FFN - F_MassiveZero. APFEL++ sets the total
+        // channel (k=0) of InitializeF2NCObjectsMassiveZero to zero ("Not") at
+        // all orders, so F_MassiveZero = 0 here and the double-counting
+        // subtraction is missing. The result is F_ZM + F_FFN, which over-counts
+        // the light-quark ZM contribution.
+        std::cerr
+            << "Warning: FONLL is not fully implemented. "
+               "The MassiveZero subtraction term (massless limit of F_FFN) "
+               "is missing because APFEL++ does not expose it via the total "
+               "channel (k=0). The grid will contain F_ZM + F_FFN instead "
+               "of the correct F_ZM + F_FFN - F_MassiveZero.\n";
         return {
             { zm, +1.0,            -1},
             {ffn, +1.0, actnf_massive}
