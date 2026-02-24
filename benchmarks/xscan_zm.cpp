@@ -138,7 +138,7 @@ int main() {
 
     constexpr int                 NX = 50;
     constexpr double X_MIN = 1e-6, X_MAX = 1.0; // DIS / SIDIS x range
-    constexpr double Z_MIN = 1e-2, Z_MAX = 1.0; // SIA z range
+    constexpr double Z_MIN = 1e-6, Z_MAX = 1.0; // SIA z range
 
     auto             make_edges = [](int n, double lo, double hi) {
         std::vector<double> e(n + 1);
