@@ -90,6 +90,17 @@ test('grid_vs_apfelxx', test_grid_vs_apfelxx_exe,
   workdir : meson.source_root(),
 )
 
+executable('xscan_zm',
+  'benchmarks/xscan_zm.cpp',
+  'tests/sidis_helper.cpp',
+  include_directories : [
+    include_directories('pineapfel/include'),
+    include_directories('tests'),
+  ],
+  dependencies : pineapfel_dep,
+  install : false,
+)
+
 install_headers(
   'pineapfel/include/cards.h',
   'pineapfel/include/evolution.h',

@@ -457,39 +457,47 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
 
                 std::vector<double> subgrid(nq * nx * nz, 0.0);
 
-                for (std::size_t iq = 0; iq < nq; iq++) {
-                    int nf = q2_data[iq].nf;
+                // NOTE: Skip bins where `x_center` or `z_center` are outside
+                // APFEL++ interpolation range to avoid undefined behaviour in
+                // Operator::Evaluate().  The subgrid stays zero, consistent
+                // with PineAPPL returning zero for convolutions below x_min.
+                if (x_center >= x_nodes.front() && x_center <= x_nodes.back() &&
+                    z_center >= x_nodes.front() && z_center <= x_nodes.back()) {
+                    for (std::size_t iq = 0; iq < nq; iq++) {
+                        int nf = q2_data[iq].nf;
 
-                    // Skip if quark is not active at this Q²
-                    if (quark_idx + 1 > nf) continue;
+                        // Skip if quark is not active at this Q²
+                        if (quark_idx + 1 > nf) continue;
 
-                    const auto *coeff = get_coeff(alpha_s,
-                        channel_type,
-                        grid_def.observable,
-                        nf);
-                    if (coeff == nullptr) continue;
+                        const auto *coeff = get_coeff(alpha_s,
+                            channel_type,
+                            grid_def.observable,
+                            nf);
+                        if (coeff == nullptr) continue;
 
-                    // e_q² weight for this quark
-                    double      e_q_sq = q2_data[iq].charges[quark_idx];
+                        // e_q² weight for this quark
+                        double      e_q_sq = q2_data[iq].charges[quark_idx];
 
-                    // Evaluate via outer product of the DoubleObject terms
-                    const auto &terms  = coeff->GetTerms();
-                    for (const auto &term : terms) {
-                        double              c = term.coefficient;
-                        apfel::Distribution dist_x =
-                            term.object1.Evaluate(x_center);
-                        apfel::Distribution dist_z =
-                            term.object2.Evaluate(z_center);
+                        // Evaluate via outer product of the DoubleObject terms
+                        const auto &terms  = coeff->GetTerms();
+                        for (const auto &term : terms) {
+                            double              c = term.coefficient;
+                            apfel::Distribution dist_x =
+                                term.object1.Evaluate(x_center);
+                            apfel::Distribution dist_z =
+                                term.object2.Evaluate(z_center);
 
-                        const auto &vx = dist_x.GetDistributionJointGrid();
-                        const auto &vz = dist_z.GetDistributionJointGrid();
+                            const auto &vx = dist_x.GetDistributionJointGrid();
+                            const auto &vz = dist_z.GetDistributionJointGrid();
 
-                        for (std::size_t ix = 0; ix < nx && ix < vx.size();
-                             ix++) {
-                            for (std::size_t iz = 0; iz < nz && iz < vz.size();
-                                 iz++) {
-                                subgrid[iq * nx * nz + ix * nz + iz] +=
-                                    e_q_sq * c * vx[ix] * vz[iz];
+                            for (std::size_t ix = 0; ix < nx && ix < vx.size();
+                                 ix++) {
+                                for (std::size_t iz = 0;
+                                     iz < nz && iz < vz.size();
+                                     iz++) {
+                                    subgrid[iq * nx * nz + ix * nz + iz] +=
+                                        e_q_sq * c * vx[ix] * vz[iz];
+                                }
                             }
                         }
                     }
@@ -791,19 +799,26 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
 
                 std::vector<double> subgrid(nq * nx, 0.0);
 
-                for (std::size_t iq = 0; iq < nq; iq++) {
-                    auto it_ord = q2_data[iq].channel_ops.find(alpha_s);
-                    if (it_ord == q2_data[iq].channel_ops.end()) continue;
+                // NOTE: Skip bins outside the APFEL++ interpolation range; the
+                // operator Evaluate() has undefined behaviour for x outside
+                // [x_nodes.front(), x_nodes.back()].
+                if (x_center >= x_nodes.front() && x_center <= x_nodes.back()) {
+                    for (std::size_t iq = 0; iq < nq; iq++) {
+                        auto it_ord = q2_data[iq].channel_ops.find(alpha_s);
+                        if (it_ord == q2_data[iq].channel_ops.end()) continue;
 
-                    auto it_ch = it_ord->second.find((int)ich);
-                    if (it_ch == it_ord->second.end()) continue;
+                        auto it_ch = it_ord->second.find((int)ich);
+                        if (it_ch == it_ord->second.end()) continue;
 
-                    apfel::Distribution dist = it_ch->second.Evaluate(x_center);
-                    const std::vector<double> &vals =
-                        dist.GetDistributionJointGrid();
+                        apfel::Distribution dist =
+                            it_ch->second.Evaluate(x_center);
+                        const std::vector<double> &vals =
+                            dist.GetDistributionJointGrid();
 
-                    for (std::size_t ix = 0; ix < nx && ix < vals.size(); ix++)
-                        subgrid[iq * nx + ix] = vals[ix];
+                        for (std::size_t ix = 0; ix < nx && ix < vals.size();
+                             ix++)
+                            subgrid[iq * nx + ix] = vals[ix];
+                    }
                 }
 
                 set_subgrid(grid, ibin, iord, ich, node_values, subgrid, shape);
