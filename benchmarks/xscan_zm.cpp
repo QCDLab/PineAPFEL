@@ -4,6 +4,8 @@
 // 50 narrow log-spaced bins in x (or z for SIA) at Q²=[10.0, 10.001], then
 // compares the convolved PineAPPL result against the APFEL++ reference obtained
 // via direct operator convolution (same method as fill.cpp / sidis_helper).
+// The comparison is performed at each perturbative order separately (LO, NLO,
+// NNLO for DIS/SIA; LO, NLO for SIDIS).
 //
 // Output: benchmarks/xscan_zm.dat
 
@@ -19,6 +21,7 @@
 #include <iostream>
 #include <map>
 #include <set>
+#include <string>
 #include <vector>
 
 // TODO: Replace with a proper LHAPDF/NeoPDF call.
@@ -184,12 +187,15 @@ int main() {
         {1, 0, 0, 0, 0}
     };
 
+    // Perturbative order labels shared across sections
+    const char   *ord_labels[] = {"LO", "NLO", "NNLO"};
+
     std::ofstream out("benchmarks/xscan_zm.dat");
-    out << "# process  x_or_z  pineappl  apfelxx  rel_diff\n";
+    out << "# process_order  x_or_z  pineappl  apfelxx  rel_diff\n";
     out << std::scientific;
 
     // =========================================================================
-    // DIS NC F2 ZM — x-scan
+    // DIS NC F2 ZM — x-scan, looped over perturbative orders
     // =========================================================================
     std::cout << "\n=== DIS NC F2 ZM — x-scan ===" << std::endl;
     {
@@ -221,78 +227,88 @@ int main() {
         }
         std::size_t nchan = gd.channels.size();
 
-        // APFEL++ reference via direct operator convolution (same as fill.cpp)
+        // APFEL++ reference objects (built once, reused across orders)
         auto        zm_sf_init =
             apfel::InitializeF2NCObjectsZM(g, theory.quark_thresholds);
-
         auto q2_nodes = derive_q2_nodes(gd.bins, theory.quark_thresholds);
 
-        std::vector<double> result(NX, 0.0);
-        pineappl_grid_convolve_with_one(grid,
-            2212,
-            xfx_callback,
-            alphas_callback,
-            static_cast<void *>(&as_tab),
-            nullptr,
-            nullptr,
-            1.0,
-            1.0,
-            result.data());
+        for (int max_ord = 0; max_ord < 3; max_ord++) {
+            // Order mask: include orders 0..max_ord
+            bool ord_mask[3] = {};
+            for (int k = 0; k <= max_ord; k++) ord_mask[k] = true;
 
-        for (int i = 0; i < NX; i++) {
-            double xc  = std::sqrt(x_edges[i] * x_edges[i + 1]);
-            double ref = 0.0;
-            for (double q2 : q2_nodes) {
-                double Q       = std::sqrt(q2);
-                int    nf      = apfel::NF(Q, theory.quark_thresholds);
-                auto   charges = apfel::ElectroWeakCharges(Q, false);
-                auto   FObjQ   = zm_sf_init(Q, charges);
-                double as_val  = as_tab.Evaluate(Q);
-                for (int iord = 0; iord < 3; iord++) {
-                    const auto &C = (iord == 0)   ? FObjQ.C0
-                                    : (iord == 1) ? FObjQ.C1
-                                                  : FObjQ.C2;
-                    if (C.count(1) == 0) continue;
-                    double as_power = std::pow(as_val, iord);
-                    auto   ops      = C.at(1).GetObjects();
-                    for (std::size_t ich = 0; ich < nchan; ich++) {
-                        apfel::Operator C_ch =
-                            build_channel_operator(gd.channels[ich],
-                                ops,
-                                charges,
-                                nf);
-                        const auto         &ch = gd.channels[ich];
-                        apfel::Distribution pdf_ch(g,
-                            [&](double const &z) -> double {
-                                double sum = 0;
-                                for (std::size_t ic = 0;
-                                     ic < ch.pid_combinations.size();
-                                     ic++) {
-                                    double f_val = 1.0;
-                                    for (int pid : ch.pid_combinations[ic])
-                                        f_val *= toy_f(pid, z);
-                                    sum += ch.factors[ic] * f_val;
-                                }
-                                return sum;
-                            });
-                        ref += as_power * (C_ch * pdf_ch).Evaluate(xc);
+            std::vector<double> result(NX, 0.0);
+            pineappl_grid_convolve_with_one(grid,
+                2212,
+                xfx_callback,
+                alphas_callback,
+                static_cast<void *>(&as_tab),
+                ord_mask,
+                nullptr,
+                1.0,
+                1.0,
+                result.data());
+
+            std::string ord_tag = std::string("DIS_") + ord_labels[max_ord];
+            std::cout << "  --- " << ord_tag << " ---" << std::endl;
+
+            for (int i = 0; i < NX; i++) {
+                double xc  = std::sqrt(x_edges[i] * x_edges[i + 1]);
+                double ref = 0.0;
+                for (double q2 : q2_nodes) {
+                    double Q       = std::sqrt(q2);
+                    int    nf      = apfel::NF(Q, theory.quark_thresholds);
+                    auto   charges = apfel::ElectroWeakCharges(Q, false);
+                    auto   FObjQ   = zm_sf_init(Q, charges);
+                    double as_val  = as_tab.Evaluate(Q);
+                    for (int iord = 0; iord <= max_ord; iord++) {
+                        const auto &C = (iord == 0)   ? FObjQ.C0
+                                        : (iord == 1) ? FObjQ.C1
+                                                      : FObjQ.C2;
+                        if (C.count(1) == 0) continue;
+                        double as_power = std::pow(as_val, iord);
+                        auto   ops      = C.at(1).GetObjects();
+                        for (std::size_t ich = 0; ich < nchan; ich++) {
+                            apfel::Operator C_ch =
+                                build_channel_operator(gd.channels[ich],
+                                    ops,
+                                    charges,
+                                    nf);
+                            const auto         &ch = gd.channels[ich];
+                            apfel::Distribution pdf_ch(g,
+                                [&](double const &z) -> double {
+                                    double sum = 0;
+                                    for (std::size_t ic = 0;
+                                         ic < ch.pid_combinations.size();
+                                         ic++) {
+                                        double f_val = 1.0;
+                                        for (int pid : ch.pid_combinations[ic])
+                                            f_val *= toy_f(pid, z);
+                                        sum += ch.factors[ic] * f_val;
+                                    }
+                                    return sum;
+                                });
+                            ref += as_power * (C_ch * pdf_ch).Evaluate(xc);
+                        }
                     }
                 }
+                double rd = rel_diff(result[i], ref);
+                std::printf(
+                    "  [%s] x=%.4e  pineappl=%.6e  apfel++=%.6e  rd=%.2e\n",
+                    ord_labels[max_ord],
+                    xc,
+                    result[i],
+                    ref,
+                    rd);
+                out << ord_tag << "  " << xc << "  " << result[i] << "  " << ref
+                    << "  " << rd << "\n";
             }
-            double rd = rel_diff(result[i], ref);
-            std::printf("  x=%.4e  pineappl=%.6e  apfel++=%.6e  rd=%.2e\n",
-                xc,
-                result[i],
-                ref,
-                rd);
-            out << "DIS  " << xc << "  " << result[i] << "  " << ref << "  "
-                << rd << "\n";
         }
         pineappl_grid_delete(grid);
     }
 
     // =========================================================================
-    // SIA NC F2 ZM — z-scan
+    // SIA NC F2 ZM — z-scan, looped over perturbative orders
     // =========================================================================
     std::cout << "\n=== SIA NC F2 ZM — z-scan ===" << std::endl;
     {
@@ -324,80 +340,90 @@ int main() {
         }
         std::size_t nchan = gd.channels.size();
 
-        // APFEL++ reference via direct operator convolution (timelike ZM)
+        // APFEL++ reference objects (timelike ZM, built once)
         auto        sia_sf_init =
             apfel::InitializeF2NCObjectsZMT(g, theory.quark_thresholds);
-
         auto q2_nodes = derive_q2_nodes(gd.bins, theory.quark_thresholds);
 
-        std::vector<double> result(NX, 0.0);
-        void               *sia_state[1] = {nullptr};
-        pineappl_grid_convolve(grid,
-            xfx_callback,
-            alphas_callback,
-            sia_state,
-            static_cast<void *>(&as_tab),
-            nullptr,
-            nullptr,
-            nullptr,
-            0,
-            nullptr,
-            result.data());
+        for (int max_ord = 0; max_ord < 3; max_ord++) {
+            bool ord_mask[3] = {};
+            for (int k = 0; k <= max_ord; k++) ord_mask[k] = true;
 
-        for (int i = 0; i < NX; i++) {
-            double zc  = std::sqrt(z_edges[i] * z_edges[i + 1]);
-            double ref = 0.0;
-            for (double q2 : q2_nodes) {
-                double Q       = std::sqrt(q2);
-                int    nf      = apfel::NF(Q, theory.quark_thresholds);
-                auto   charges = apfel::ElectroWeakCharges(Q, true); // timelike
-                auto   FObjQ   = sia_sf_init(Q, charges);
-                double as_val  = as_tab.Evaluate(Q);
-                for (int iord = 0; iord < 3; iord++) {
-                    const auto &C = (iord == 0)   ? FObjQ.C0
-                                    : (iord == 1) ? FObjQ.C1
-                                                  : FObjQ.C2;
-                    if (C.count(1) == 0) continue;
-                    double as_power = std::pow(as_val, iord);
-                    auto   ops      = C.at(1).GetObjects();
-                    for (std::size_t ich = 0; ich < nchan; ich++) {
-                        apfel::Operator C_ch =
-                            build_channel_operator(gd.channels[ich],
-                                ops,
-                                charges,
-                                nf);
-                        const auto         &ch = gd.channels[ich];
-                        apfel::Distribution ff_ch(g,
-                            [&](double const &z) -> double {
-                                double sum = 0;
-                                for (std::size_t ic = 0;
-                                     ic < ch.pid_combinations.size();
-                                     ic++) {
-                                    double f_val = 1.0;
-                                    for (int pid : ch.pid_combinations[ic])
-                                        f_val *= toy_f(pid, z);
-                                    sum += ch.factors[ic] * f_val;
-                                }
-                                return sum;
-                            });
-                        ref += as_power * (C_ch * ff_ch).Evaluate(zc);
+            std::vector<double> result(NX, 0.0);
+            void               *sia_state[1] = {nullptr};
+            pineappl_grid_convolve(grid,
+                xfx_callback,
+                alphas_callback,
+                sia_state,
+                static_cast<void *>(&as_tab),
+                ord_mask,
+                nullptr,
+                nullptr,
+                0,
+                nullptr,
+                result.data());
+
+            std::string ord_tag = std::string("SIA_") + ord_labels[max_ord];
+            std::cout << "  --- " << ord_tag << " ---" << std::endl;
+
+            for (int i = 0; i < NX; i++) {
+                double zc  = std::sqrt(z_edges[i] * z_edges[i + 1]);
+                double ref = 0.0;
+                for (double q2 : q2_nodes) {
+                    double Q  = std::sqrt(q2);
+                    int    nf = apfel::NF(Q, theory.quark_thresholds);
+                    auto   charges =
+                        apfel::ElectroWeakCharges(Q, true); // timelike
+                    auto   FObjQ  = sia_sf_init(Q, charges);
+                    double as_val = as_tab.Evaluate(Q);
+                    for (int iord = 0; iord <= max_ord; iord++) {
+                        const auto &C = (iord == 0)   ? FObjQ.C0
+                                        : (iord == 1) ? FObjQ.C1
+                                                      : FObjQ.C2;
+                        if (C.count(1) == 0) continue;
+                        double as_power = std::pow(as_val, iord);
+                        auto   ops      = C.at(1).GetObjects();
+                        for (std::size_t ich = 0; ich < nchan; ich++) {
+                            apfel::Operator C_ch =
+                                build_channel_operator(gd.channels[ich],
+                                    ops,
+                                    charges,
+                                    nf);
+                            const auto         &ch = gd.channels[ich];
+                            apfel::Distribution ff_ch(g,
+                                [&](double const &z) -> double {
+                                    double sum = 0;
+                                    for (std::size_t ic = 0;
+                                         ic < ch.pid_combinations.size();
+                                         ic++) {
+                                        double f_val = 1.0;
+                                        for (int pid : ch.pid_combinations[ic])
+                                            f_val *= toy_f(pid, z);
+                                        sum += ch.factors[ic] * f_val;
+                                    }
+                                    return sum;
+                                });
+                            ref += as_power * (C_ch * ff_ch).Evaluate(zc);
+                        }
                     }
                 }
+                double rd = rel_diff(result[i], ref);
+                std::printf(
+                    "  [%s] z=%.4e  pineappl=%.6e  apfel++=%.6e  rd=%.2e\n",
+                    ord_labels[max_ord],
+                    zc,
+                    result[i],
+                    ref,
+                    rd);
+                out << ord_tag << "  " << zc << "  " << result[i] << "  " << ref
+                    << "  " << rd << "\n";
             }
-            double rd = rel_diff(result[i], ref);
-            std::printf("  z=%.4e  pineappl=%.6e  apfel++=%.6e  rd=%.2e\n",
-                zc,
-                result[i],
-                ref,
-                rd);
-            out << "SIA  " << zc << "  " << result[i] << "  " << ref << "  "
-                << rd << "\n";
         }
         pineappl_grid_delete(grid);
     }
 
     // =========================================================================
-    // SIDIS NC F2 ZM — x-scan at fixed z=[0.005, 0.015]
+    // SIDIS NC F2 ZM — x-scan at fixed z=[0.005, 0.015], looped over orders
     // =========================================================================
     std::cout << "\n=== SIDIS NC F2 ZM — x-scan ===" << std::endl;
     {
@@ -416,7 +442,7 @@ int main() {
 
         pineappl_grid *grid  = pineapfel::build_grid(gd, theory, op_card);
 
-        // APFEL++ reference via sidis_helper
+        // Precompute bin bounds for sidis_helper
         auto q2_nodes = derive_q2_nodes(gd.bins, theory.quark_thresholds);
         std::vector<std::vector<double>> bx(NX), bz(NX);
         for (int i = 0; i < NX; i++) {
@@ -424,41 +450,53 @@ int main() {
             bz[i] = {SIDIS_Z_LO, SIDIS_Z_HI};
         }
         auto alphas_func = [&](double Q) { return as_tab.Evaluate(Q); };
-        auto ref_vals    = compute_sidis_reference(g,
-            theory.quark_thresholds,
-            q2_nodes,
-            bx,
-            bz,
-               {},
-            1 /*LO+NLO*/,
-            toy_f,
-            alphas_func);
 
-        std::vector<double> result(NX, 0.0);
-        void               *pdfs_state[2] = {nullptr, nullptr};
-        pineappl_grid_convolve(grid,
-            xfx_callback,
-            alphas_callback,
-            pdfs_state,
-            static_cast<void *>(&as_tab),
-            nullptr,
-            nullptr,
-            nullptr,
-            0,
-            nullptr,
-            result.data());
+        for (int max_ord = 0; max_ord < 2; max_ord++) {
+            bool ord_mask[2] = {};
+            for (int k = 0; k <= max_ord; k++) ord_mask[k] = true;
 
-        for (int i = 0; i < NX; i++) {
-            double xc  = std::sqrt(x_edges[i] * x_edges[i + 1]);
-            double ref = ref_vals[i];
-            double rd  = rel_diff(result[i], ref);
-            std::printf("  x=%.4e  pineappl=%.6e  apfel++=%.6e  rd=%.2e\n",
-                xc,
-                result[i],
-                ref,
-                rd);
-            out << "SIDIS  " << xc << "  " << result[i] << "  " << ref << "  "
-                << rd << "\n";
+            // APFEL++ reference capped at max_ord via max_alpha_s
+            auto                ref_vals = compute_sidis_reference(g,
+                theory.quark_thresholds,
+                q2_nodes,
+                bx,
+                bz,
+                               {},
+                max_ord /*max_alpha_s*/,
+                toy_f,
+                alphas_func);
+
+            std::vector<double> result(NX, 0.0);
+            void               *pdfs_state[2] = {nullptr, nullptr};
+            pineappl_grid_convolve(grid,
+                xfx_callback,
+                alphas_callback,
+                pdfs_state,
+                static_cast<void *>(&as_tab),
+                ord_mask,
+                nullptr,
+                nullptr,
+                0,
+                nullptr,
+                result.data());
+
+            std::string ord_tag = std::string("SIDIS_") + ord_labels[max_ord];
+            std::cout << "  --- " << ord_tag << " ---" << std::endl;
+
+            for (int i = 0; i < NX; i++) {
+                double xc  = std::sqrt(x_edges[i] * x_edges[i + 1]);
+                double ref = ref_vals[i];
+                double rd  = rel_diff(result[i], ref);
+                std::printf(
+                    "  [%s] x=%.4e  pineappl=%.6e  apfel++=%.6e  rd=%.2e\n",
+                    ord_labels[max_ord],
+                    xc,
+                    result[i],
+                    ref,
+                    rd);
+                out << ord_tag << "  " << xc << "  " << result[i] << "  " << ref
+                    << "  " << rd << "\n";
+            }
         }
         pineappl_grid_delete(grid);
     }
