@@ -1,7 +1,7 @@
 <h1 align="center">PineAPFEL</h1>
 
 <p align="justify">
-  `PineAPFEL` is a C++ library and CLI tool for creating and evolving
+  PineAPFEL is a C++ library and CLI tool for creating and evolving
   <a href="https://github.com/NNPDF/pineappl">PineAPPL</a> interpolation
   grids using <a href="https://github.com/vbertone/apfelxx">APFEL++</a>.
   It can fill grids with analytically computed coefficient functions for

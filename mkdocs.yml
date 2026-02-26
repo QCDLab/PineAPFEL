@@ -30,7 +30,7 @@ extra_javascript:
 nav:
   - HOME: index.md
   - GETTING STARTED:
-      - Building: building.md
+      - Building & Installing: building.md
   - USAGE:
       - Configuration cards: configuration-cards.md
       - Grid creation: grid-creation.md
