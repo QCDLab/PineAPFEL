@@ -1,11 +1,9 @@
 The following provides detailed instructions for building and installing `PineAPFEL`
-and its APIs and tools. `PineAPFEL` depends on the following libraries:
-
-- [PineAPPL](https://github.com/NNPDF/pineappl) for producing and reading fast interpolation
-    grids
-- [APFEL++](https://github.com/vbertone/apfelxx) for the DGLAP evolution kernels
-- [YAML-CPP](https://github.com/jbeder/yaml-cpp) for parsing the theory and operator YAML
-    cards
+and its APIs and tools. `PineAPFEL` depends on the following **libraries**:
+[PineAPPL](https://github.com/NNPDF/pineappl) for producing and reading fast interpolation
+grids, [APFEL++](https://github.com/vbertone/apfelxx) for the DGLAP evolution kernels
+and [YAML-CPP](https://github.com/jbeder/yaml-cpp) for parsing the theory and operator
+YAML cards.
 
 ## C++ library and CLI
 
@@ -83,7 +81,7 @@ pip install pybind11 pineappl numpy
     meson install -C builddir
     ```
 
-=== ":simple-python: In-tree (development)"
+=== ":simple-python: In-tree Development"
 
     Symlink the built extension into the source package so `import pineapfel` works
     without installation:

@@ -31,12 +31,11 @@ nav:
   - Home: index.md
   - Getting started:
       - Building: building.md
-      - Quick start: quick-start.md
   - Usage:
       - Configuration cards: configuration-cards.md
       - Grid creation: grid-creation.md
-      - CLI: cli.md
-      - Library: library.md
+      - CLI Interface: cli.md
+      - Using as a Library: library.md
       - Python API: python-api.md
       - QCD vs QCD⊗QED: evolution-modes.md
 
