@@ -23,3 +23,7 @@ repos:
         entry: clang-format -i
         args: ["--style=file", "--fallback-style=none"]
         files: \.(c|cpp|h|hpp)$
+  - repo: https://github.com/rvben/rumdl-pre-commit
+    rev: v0.1.21
+    hooks:
+      - id: rumdl-fmt

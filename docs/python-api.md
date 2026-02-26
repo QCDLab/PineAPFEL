@@ -2,7 +2,7 @@
 
 `PineAPFEL` ships a Python package — `pineapfel` — built with
 [pybind11](https://github.com/pybind/pybind11) and compiled as part of the normal
-Meson build.  It exposes the same card-loading, grid-building, and evolution
+Meson build. It exposes the same card-loading, grid-building, and evolution
 functions as the C++ library, and returns grids that can be directly handed to
 [PineAPPL](https://github.com/NNPDF/pineappl) for convolution and analysis.
 

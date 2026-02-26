@@ -54,9 +54,7 @@ They are built automatically by Meson when Python 3 and `pybind11` are found.
 
 ### Prerequisites
 
-```bash
-pip install pybind11 pineappl numpy
-```
+    pip install pybind11 pineappl numpy
 
 ### Building
 

@@ -77,7 +77,6 @@ The heavy-quark mass scheme is set via the `MassScheme` field in the grid card:
 | `FONLL` | **FONLL** scheme. Implemented as \(F_\mathrm{FONLL} = F_\mathrm{ZM} + F_\mathrm{FFN}\), following APFEL++ conventions. Available for DIS NC \(F_2\)/\(F_L\) only. |
 | `MassiveZero` | Massless limit of FFN (`InitializeF2/FLNCObjectsMassiveZero`). In APFEL++ the total channel is set to zero for this initializer, so the resulting grid carries zero coefficient functions. Included for completeness. |
 
-
 !!! warning
     When a non-ZM scheme is requested for an unsupported combination (CC current, \(F_3\),
     polarized, SIA, SIDIS), PineAPFEL prints a warning and falls back to ZM automatically.
@@ -659,7 +658,7 @@ Each subgrid (one per combination of bin, perturbative order, and channel) is a
 two-dimensional array of shape `[n_Q2, n_x]`, stored in row-major order. The
 `node_values` vector concatenates the \(Q^2\) nodes followed by the \(x\)/\(z\) nodes:
 
-```
+```text
 node_values = [Q^2_0, ..., Q^2_{nq-1}, x_0, ..., x_{nx-1}]
 ```
 
@@ -673,7 +672,7 @@ SIDIS subgrids are three-dimensional arrays of shape `[n_Q2, n_x, n_z]`, stored 
 row-major order. The same APFEL++ joint grid is used for both the \(x\) (PDF) and
 \(z\) (FF) dimensions. The `node_values` vector concatenates three segments:
 
-```
+```text
 node_values = [Q^2_0, ..., Q^2_{nq-1}, x_0, ..., x_{nx-1}, z_0, ..., z_{nz-1}]
 ```
 
@@ -683,7 +682,7 @@ at the bin's \(z\)-centre (both geometric means). The subgrid entry at `[iq, ix,
 is the outer product of these two distributions, weighted by \(e_q^2\) and the term
 coefficient:
 
-```
+```text
 subgrid[iq, ix, iz] = e_q^2 * sum_terms { c_term * K_x(x[ix]; x_centre) * K_z(z[iz]; z_centre) }
 ```
 
