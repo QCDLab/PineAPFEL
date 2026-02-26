@@ -35,7 +35,8 @@ jobs:
       - name: Install PineAPPL C API
         if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://nnpdf.github.io/pineappl/install-capi.sh | sh -s -- --prefix "$HOME/.local" --version $PINEAPPL_VERSION
+          curl -fL --retry 5 --retry-delay 2 --retry-connrefused https://nnpdf.github.io/pineappl/install-capi.sh -o install.sh
+          sh install.sh --prefix "$HOME/.local" --version $PINEAPPL_VERSION
 
       # ---- Build APFEL++ from source (if not cached) ----
       - name: Build and install APFEL++
