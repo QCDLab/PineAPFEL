@@ -1,10 +1,8 @@
 ---
 title: ""
-hide:
-  - title
 ---
 
-<div style="display: flex; justify-content: center;">
+<div class="home-page-logo" style="display: flex; justify-content: center;">
   <img src="./assets/pineapfel.svg" width="650" />
 </div>
 
