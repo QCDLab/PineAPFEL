@@ -1,0 +1,2434 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../configuration-cards/">
+      
+      
+        <link rel="next" href="../cli/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/pineapfel.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
+    
+    
+      
+        <title>Grid creation - PineAPFEL</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../custom.css">
+    
+      <link rel="stylesheet" href="../assets/stylesheets/notebooks.css">
+    
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#creating-grids" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="PineAPFEL" class="md-header__button md-logo" aria-label="PineAPFEL" data-md-component="logo">
+      
+  <img src="../assets/pineapfel.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PineAPFEL
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Grid creation
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__social">
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com" target="_blank" rel="noopener" title="GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://zulipchat.com" target="_blank" rel="noopener" title="Zulip Chat" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M384 144c0 97.2-86 176-192 176-26.7 0-52.1-5-75.2-14l-81.6 43.2c-9.3 4.9-20.7 3.2-28.2-4.2s-9.2-18.9-4.2-28.2l35.6-67.2C14.3 220.2 0 183.6 0 144 0 46.8 86-32 192-32s192 78.8 192 176m0 368c-94.1 0-172.4-62.1-188.8-144 120-1.5 224.3-86.9 235.8-202.7 83.3 19.2 145 88.3 145 170.7 0 39.6-14.3 76.2-38.4 105.6l35.6 67.2c4.9 9.3 3.2 20.7-4.2 28.2s-18.9 9.2-28.2 4.2L459.2 498c-23.1 9-48.5 14-75.2 14"/></svg>
+    </a>
+  
+</div>
+      </div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="PineAPFEL" class="md-nav__button md-logo" aria-label="PineAPFEL" data-md-component="logo">
+      
+  <img src="../assets/pineapfel.svg" alt="logo">
+
+    </a>
+    PineAPFEL
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HOME
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GETTING STARTED
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    GETTING STARTED
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../building/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building & Installing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    USAGE
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    USAGE
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration-cards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration cards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grid creation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Grid creation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#creating-grids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating grids
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Creating grids">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#supported-processes-and-observables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported processes and observables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#convolution-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Convolution types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mass-scheme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mass scheme
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#perturbative-orders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Perturbative orders
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Perturbative orders">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dis-and-sia-unpolarized" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DIS and SIA (unpolarized)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dis-polarized" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DIS (polarized)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sidis-unpolarized" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIDIS (unpolarized)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sidis-polarized" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIDIS (polarized)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#channel-decomposition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channel decomposition
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Channel decomposition">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dis-and-sia-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DIS and SIA channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sidis-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIDIS channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-grid-card" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The grid card
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The grid card">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DIS example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sia-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIA example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sidis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIDIS example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#polarized-dis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Polarized DIS example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#polarized-sidis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Polarized SIDIS example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ffn-dis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FFN DIS example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fonll-dis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FONLL DIS example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cc-dis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CC DIS example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using the CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-library" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using the library
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#grid-structure-internals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grid structure internals
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Grid structure internals">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#node-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Node selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#subgrid-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subgrid layout
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Subgrid layout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dis-and-sia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DIS and SIA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sidis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIDIS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#programmatic-grid-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Programmatic grid definition
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../library/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using as a Library
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../python-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evolution-modes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    QCD vs QCD⊗QED
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#creating-grids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating grids
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Creating grids">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#supported-processes-and-observables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported processes and observables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#convolution-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Convolution types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mass-scheme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mass scheme
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#perturbative-orders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Perturbative orders
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Perturbative orders">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dis-and-sia-unpolarized" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DIS and SIA (unpolarized)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dis-polarized" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DIS (polarized)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sidis-unpolarized" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIDIS (unpolarized)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sidis-polarized" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIDIS (polarized)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#channel-decomposition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channel decomposition
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Channel decomposition">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dis-and-sia-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DIS and SIA channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sidis-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIDIS channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-grid-card" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The grid card
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The grid card">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DIS example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sia-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIA example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sidis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIDIS example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#polarized-dis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Polarized DIS example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#polarized-sidis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Polarized SIDIS example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ffn-dis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FFN DIS example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fonll-dis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FONLL DIS example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cc-dis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CC DIS example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using the CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-library" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using the library
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#grid-structure-internals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grid structure internals
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Grid structure internals">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#node-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Node selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#subgrid-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subgrid layout
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Subgrid layout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dis-and-sia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DIS and SIA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sidis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIDIS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#programmatic-grid-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Programmatic grid definition
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+  <h1>Grid creation</h1>
+
+<h2 id="creating-grids">Creating grids</h2>
+<p>PineAPFEL can create PineAPPL interpolation grids pre-filled with analytically computed
+coefficient functions from APFEL++. This is useful for structure function computations
+where the hard-scattering kernels are known analytically and only the non-perturbative
+input (PDFs or Fragmentation Functions) needs to be provided at convolution time.</p>
+<p>The grid creation workflow requires three YAML configuration files:</p>
+<ol>
+<li>A <strong>grid card</strong> that defines the process, observable, binning, and perturbative orders</li>
+<li>A <strong>theory card</strong> that specifies the QCD parameters (coupling, thresholds, perturbative order)</li>
+<li>An <strong>operator card</strong> that defines the x-space interpolation grid and tabulation parameters</li>
+</ol>
+<h3 id="supported-processes-and-observables">Supported processes and observables</h3>
+<p>The <code>build_grid()</code> function currently supports the following combinations:</p>
+<table>
+<thead>
+<tr>
+<th>Process</th>
+<th>Observable</th>
+<th>Current</th>
+<th>APFEL++ initializer (ZM)</th>
+<th>Mass schemes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DIS</td>
+<td><span class="arithmatex">\(F_2\)</span></td>
+<td>NC</td>
+<td><code>InitializeF2NCObjectsZM</code></td>
+<td>ZM, FFN, FONLL</td>
+</tr>
+<tr>
+<td>DIS</td>
+<td><span class="arithmatex">\(F_L\)</span></td>
+<td>NC</td>
+<td><code>InitializeFLNCObjectsZM</code></td>
+<td>ZM, FFN, FONLL</td>
+</tr>
+<tr>
+<td>DIS</td>
+<td><span class="arithmatex">\(F_3\)</span></td>
+<td>NC</td>
+<td><code>InitializeF3NCObjectsZM</code></td>
+<td>ZM only</td>
+</tr>
+<tr>
+<td>DIS</td>
+<td><span class="arithmatex">\(F_2\)</span></td>
+<td>CC<span class="arithmatex">\(+\)</span></td>
+<td><code>InitializeF2CCPlusObjectsZM</code></td>
+<td>ZM only</td>
+</tr>
+<tr>
+<td>DIS</td>
+<td><span class="arithmatex">\(F_L\)</span></td>
+<td>CC<span class="arithmatex">\(+\)</span></td>
+<td><code>InitializeFLCCPlusObjectsZM</code></td>
+<td>ZM only</td>
+</tr>
+<tr>
+<td>DIS</td>
+<td><span class="arithmatex">\(F_3\)</span></td>
+<td>CC<span class="arithmatex">\(+\)</span></td>
+<td><code>InitializeF3CCPlusObjectsZM</code></td>
+<td>ZM only</td>
+</tr>
+<tr>
+<td>DIS</td>
+<td><span class="arithmatex">\(F_2\)</span></td>
+<td>CC<span class="arithmatex">\(-\)</span></td>
+<td><code>InitializeF2CCMinusObjectsZM</code></td>
+<td>ZM only</td>
+</tr>
+<tr>
+<td>DIS</td>
+<td><span class="arithmatex">\(F_L\)</span></td>
+<td>CC<span class="arithmatex">\(-\)</span></td>
+<td><code>InitializeFLCCMinusObjectsZM</code></td>
+<td>ZM only</td>
+</tr>
+<tr>
+<td>DIS</td>
+<td><span class="arithmatex">\(F_3\)</span></td>
+<td>CC<span class="arithmatex">\(-\)</span></td>
+<td><code>InitializeF3CCMinusObjectsZM</code></td>
+<td>ZM only</td>
+</tr>
+<tr>
+<td>SIA</td>
+<td><span class="arithmatex">\(F_2\)</span></td>
+<td>NC</td>
+<td><code>InitializeF2NCObjectsZMT</code></td>
+<td>ZM only</td>
+</tr>
+<tr>
+<td>SIA</td>
+<td><span class="arithmatex">\(F_L\)</span></td>
+<td>NC</td>
+<td><code>InitializeFLNCObjectsZMT</code></td>
+<td>ZM only</td>
+</tr>
+<tr>
+<td>SIA</td>
+<td><span class="arithmatex">\(F_3\)</span></td>
+<td>NC</td>
+<td><code>InitializeF3NCObjectsZMT</code></td>
+<td>ZM only</td>
+</tr>
+<tr>
+<td>SIDIS</td>
+<td><span class="arithmatex">\(F_2\)</span></td>
+<td>NC</td>
+<td><code>InitializeSIDIS</code></td>
+<td>ZM only</td>
+</tr>
+<tr>
+<td>SIDIS</td>
+<td><span class="arithmatex">\(F_L\)</span></td>
+<td>NC</td>
+<td><code>InitializeSIDIS</code></td>
+<td>ZM only</td>
+</tr>
+<tr>
+<td>DIS (polarized)</td>
+<td><span class="arithmatex">\(g_1\)</span></td>
+<td>NC</td>
+<td><code>Initializeg1NCObjectsZM</code></td>
+<td>ZM only</td>
+</tr>
+<tr>
+<td>DIS (polarized)</td>
+<td><span class="arithmatex">\(g_L\)</span></td>
+<td>NC</td>
+<td><code>InitializegLNCObjectsZM</code></td>
+<td>ZM only</td>
+</tr>
+<tr>
+<td>DIS (polarized)</td>
+<td><span class="arithmatex">\(g_4\)</span></td>
+<td>NC</td>
+<td><code>Initializeg4NCObjectsZM</code></td>
+<td>ZM only</td>
+</tr>
+<tr>
+<td>SIDIS (polarized)</td>
+<td><span class="arithmatex">\(G_1\)</span></td>
+<td>NC</td>
+<td><code>InitializeSIDISpol</code></td>
+<td>ZM only</td>
+</tr>
+</tbody>
+</table>
+<p>Polarized grids are selected by setting <code>Polarized: true</code> in the grid card. The
+<code>Observable</code> field retains its unpolarized name (<code>F2</code>, <code>FL</code>, <code>F3</code>) and is interpreted
+as the corresponding polarized observable (<span class="arithmatex">\(g_1\)</span>, <span class="arithmatex">\(g_L\)</span>, <span class="arithmatex">\(g_4\)</span>, or <span class="arithmatex">\(G_1\)</span> for
+SIDIS) when <code>Polarized: true</code>.</p>
+<p>The mass scheme is selected with the <code>MassScheme</code> field in the grid card (see
+<a href="#mass-scheme">Mass scheme</a> below). Combinations that only support ZM will emit a
+warning and fall back to ZM when a non-ZM scheme is requested.</p>
+<div class="admonition info">
+<p class="admonition-title">What is not yet supported</p>
+<ul>
+<li><strong>SIA + CC</strong> is not supported (APFEL++ only provides CC initializers for DIS).</li>
+<li><strong>SIDIS + CC</strong> is not supported.</li>
+<li><strong>SIDIS + F3</strong> is not supported (APFEL++ does not provide SIDIS F3 coefficient functions).</li>
+<li><strong>Polarized + CC</strong> is not supported.</li>
+<li><strong>Polarized SIA</strong> is not supported (APFEL++ does not provide time-like polarized SF initializers).</li>
+<li><strong>Polarized SIDIS + FL</strong> is not supported (only <span class="arithmatex">\(G_1\)</span> is available).</li>
+<li><strong>QCD+QED</strong> coefficient functions are not implemented in grid filling (QED corrections
+  are only available in the evolution step).</li>
+</ul>
+</div>
+<h3 id="convolution-types">Convolution types</h3>
+<p>Each process type requires a specific convolution type, which determines the type of
+non-perturbative input the grid will be convoluted with:</p>
+<table>
+<thead>
+<tr>
+<th>Process</th>
+<th><code>ConvolutionTypes</code></th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DIS</td>
+<td><code>[(UN)POL_PDF]</code></td>
+<td>(Un)polarised parton distribution functions</td>
+</tr>
+<tr>
+<td>SIA</td>
+<td><code>[(UN)POL_FF]</code></td>
+<td>(Un)polarised fragmentation functions</td>
+</tr>
+<tr>
+<td>SIDIS</td>
+<td><code>[(UN)POL_PDF, (UN)POL_FF]</code></td>
+<td>PDF for the initial state, FF for the final state</td>
+</tr>
+</tbody>
+</table>
+<h3 id="mass-scheme">Mass scheme</h3>
+<p>The heavy-quark mass scheme is set via the <code>MassScheme</code> field in the grid card:</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ZM</code></td>
+<td><strong>Zero-mass Variable Flavor Number</strong> <code>(default)</code>. Quarks are massless above their thresholds. Applies to all processes and observables.</td>
+</tr>
+<tr>
+<td><code>FFN</code></td>
+<td><strong>Fixed-Flavor Number</strong>. Uses <code>InitializeF2/FLNCObjectsMassive</code> from APFEL++. Massive charm and bottom coefficient functions depending on <span class="arithmatex">\(\xi = Q^2/m^2\)</span> are included. DIS NC <span class="arithmatex">\(F_2\)</span>/<span class="arithmatex">\(F_L\)</span> only.</td>
+</tr>
+<tr>
+<td><code>FONLL</code></td>
+<td><strong>FONLL</strong> scheme. Implemented as <span class="arithmatex">\(F_\mathrm{FONLL} = F_\mathrm{ZM} + F_\mathrm{FFN}\)</span>, following APFEL++ conventions. Available for DIS NC <span class="arithmatex">\(F_2\)</span>/<span class="arithmatex">\(F_L\)</span> only.</td>
+</tr>
+<tr>
+<td><code>MassiveZero</code></td>
+<td>Massless limit of FFN (<code>InitializeF2/FLNCObjectsMassiveZero</code>). In APFEL++ the total channel is set to zero for this initializer, so the resulting grid carries zero coefficient functions. Included for completeness.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>When a non-ZM scheme is requested for an unsupported combination (CC current, <span class="arithmatex">\(F_3\)</span>,
+polarized, SIA, SIDIS), PineAPFEL prints a warning and falls back to ZM automatically.</p>
+</div>
+<p>The heavy-quark masses used by FFN and FONLL are read from the <code>HeavyQuarkMasses</code> field
+in the theory card (6 entries, all flavors including top). The ξ-grid tabulation is
+controlled by the <code>MassNxi</code>, <code>MassXiMin</code>, <code>MassXiMax</code>, <code>MassIntDeg</code>, <code>MassLambda</code>, and
+<code>MassIMod</code> theory-card fields. See <a href="../configuration-cards/">Configuration cards</a> for
+the full list.</p>
+<h3 id="perturbative-orders">Perturbative orders</h3>
+<h4 id="dis-and-sia-unpolarized">DIS and SIA (unpolarized)</h4>
+<p>The coefficient functions are available at the following perturbative orders:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;"><code>alpha_s</code> power</th>
+<th style="text-align: center;">Label</th>
+<th><span class="arithmatex">\(F_2\)</span>/<span class="arithmatex">\(F_L\)</span> content</th>
+<th><span class="arithmatex">\(F_3\)</span> content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">LO</td>
+<td><span class="arithmatex">\(\delta(1-x)\)</span> for quarks, 0 for gluon</td>
+<td><span class="arithmatex">\(\delta(1-x)\)</span> for quarks, 0 for gluon</td>
+</tr>
+<tr>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">NLO</td>
+<td><span class="arithmatex">\(C_{2,\mathrm{NS}}^{(1)}\)</span>, <span class="arithmatex">\(C_{2,g}^{(1)}\)</span></td>
+<td><span class="arithmatex">\(C_{3,\mathrm{NS}}^{(1)}\)</span>, no gluon</td>
+</tr>
+<tr>
+<td style="text-align: center;">2</td>
+<td style="text-align: center;">NNLO</td>
+<td><span class="arithmatex">\(C_{2,\mathrm{NS}}^{(2)}\)</span>, <span class="arithmatex">\(C_{2,\mathrm{PS}}^{(2)}\)</span>, <span class="arithmatex">\(C_{2,g}^{(2)}\)</span></td>
+<td><span class="arithmatex">\(C_{3,\mathrm{NS}}^{(2)}\)</span>, no gluon</td>
+</tr>
+</tbody>
+</table>
+<h4 id="dis-polarized">DIS (polarized)</h4>
+<p>For polarized DIS (<code>ConvolutionTypes: [POL_PDF]</code>), the structure functions <span class="arithmatex">\(g_1\)</span>, <span class="arithmatex">\(g_L\)</span>, and <span class="arithmatex">\(g_4\)</span>
+are selected instead. The available coefficient functions mirror the unpolarized case:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;"><code>alpha_s</code> power</th>
+<th style="text-align: center;">Label</th>
+<th><span class="arithmatex">\(g_1\)</span> / <span class="arithmatex">\(g_L\)</span> content</th>
+<th><span class="arithmatex">\(g_4\)</span> content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">LO</td>
+<td><span class="arithmatex">\(\delta(1-x)\)</span> for quarks, 0 for gluon</td>
+<td><span class="arithmatex">\(\delta(1-x)\)</span> for quarks, 0 for gluon</td>
+</tr>
+<tr>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">NLO</td>
+<td><span class="arithmatex">\(G_{1,\mathrm{NS}}^{(1)}\)</span>, <span class="arithmatex">\(G_{1,g}^{(1)}\)</span></td>
+<td><span class="arithmatex">\(G_{4,\mathrm{NS}}^{(1)}\)</span>, no gluon</td>
+</tr>
+<tr>
+<td style="text-align: center;">2</td>
+<td style="text-align: center;">NNLO</td>
+<td><span class="arithmatex">\(G_{1,\mathrm{NS}}^{(2)}\)</span>, <span class="arithmatex">\(G_{1,\mathrm{PS}}^{(2)}\)</span>, <span class="arithmatex">\(G_{1,g}^{(2)}\)</span></td>
+<td><span class="arithmatex">\(G_{4,\mathrm{NS}}^{(2)}\)</span>, no gluon</td>
+</tr>
+</tbody>
+</table>
+<h4 id="sidis-unpolarized">SIDIS (unpolarized)</h4>
+<p>SIDIS coefficient functions depend on two momentum-fraction variables (<span class="arithmatex">\(x\)</span> and <span class="arithmatex">\(z\)</span>) and are
+provided as <code>DoubleObject&lt;Operator&gt;</code> instances by APFEL++. The available terms per channel type
+at each order are:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;"><code>alpha_s</code> power</th>
+<th style="text-align: center;">Label</th>
+<th style="text-align: center;"><span class="arithmatex">\(qq\)</span></th>
+<th style="text-align: center;"><span class="arithmatex">\(gq\)</span></th>
+<th style="text-align: center;"><span class="arithmatex">\(qg\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">LO</td>
+<td style="text-align: center;"><span class="arithmatex">\(C_{2,qq}^{(0)}\)</span></td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">NLO</td>
+<td style="text-align: center;"><span class="arithmatex">\(C_{2,qq}^{(1)}\)</span></td>
+<td style="text-align: center;"><span class="arithmatex">\(C_{2,gq}^{(1)}\)</span></td>
+<td style="text-align: center;"><span class="arithmatex">\(C_{2,qg}^{(1)}\)</span></td>
+</tr>
+<tr>
+<td style="text-align: center;">2</td>
+<td style="text-align: center;">NNLO</td>
+<td style="text-align: center;"><span class="arithmatex">\(C_{2,qq}^{(2)}\)</span> (<span class="arithmatex">\(n_f\)</span>-dependent)</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+</tbody>
+</table>
+<p>The channel labels refer to the convolution pair (PDF flavour, FF flavour):
+<span class="arithmatex">\(qq\)</span> = quark PDF ⊗ quark FF, <span class="arithmatex">\(gq\)</span> = quark PDF ⊗ gluon FF,
+<span class="arithmatex">\(qg\)</span> = gluon PDF ⊗ quark FF. The same coefficient functions apply to <span class="arithmatex">\(F_L\)</span>
+with <span class="arithmatex">\(C_{L,qq/gq/qg}\)</span> replacing <span class="arithmatex">\(C_{2,\ldots}\)</span>; <span class="arithmatex">\(F_L\)</span> has no LO contribution.</p>
+<h4 id="sidis-polarized">SIDIS (polarized)</h4>
+<p>For polarized SIDIS (first entry of <code>ConvolutionTypes</code> is <code>POL_PDF</code>), only <span class="arithmatex">\(G_1\)</span> is
+available (set <code>Observable: F2</code>). The coefficient function structure mirrors the unpolarized
+<span class="arithmatex">\(F_2\)</span> case:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;"><code>alpha_s</code> power</th>
+<th style="text-align: center;">Label</th>
+<th style="text-align: center;"><span class="arithmatex">\(qq\)</span></th>
+<th style="text-align: center;"><span class="arithmatex">\(gq\)</span></th>
+<th style="text-align: center;"><span class="arithmatex">\(qg\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">LO</td>
+<td style="text-align: center;"><span class="arithmatex">\(G_{1,qq}^{(0)}\)</span></td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">NLO</td>
+<td style="text-align: center;"><span class="arithmatex">\(G_{1,qq}^{(1)}\)</span></td>
+<td style="text-align: center;"><span class="arithmatex">\(G_{1,gq}^{(1)}\)</span></td>
+<td style="text-align: center;"><span class="arithmatex">\(G_{1,qg}^{(1)}\)</span></td>
+</tr>
+<tr>
+<td style="text-align: center;">2</td>
+<td style="text-align: center;">NNLO</td>
+<td style="text-align: center;"><span class="arithmatex">\(G_{1,qq}^{(2)}\)</span> (<span class="arithmatex">\(n_f\)</span>-dependent)</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+</tbody>
+</table>
+<p>The orders are specified in the grid card via the <code>Orders</code> field. Each order entry is a
+5-element array <code>[alpha_s, alpha, log_xir, log_xif, log_xia]</code>. For pure QCD coefficient
+functions, only the <code>alpha_s</code> power matters; the remaining entries should be set to 0.</p>
+<p>Each entry stores the coefficient function at that <strong>specific</strong> power of <span class="arithmatex">\(\alpha_s\)</span>,
+not the cumulative sum. For a complete NNLO prediction, all three orders (LO, NLO, NNLO)
+must be listed so that the grid contains separate subgrids for each perturbative contribution.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Orders beyond NNLO (<code>alpha_s &gt; 2</code>) are silently skipped during grid filling, even
+though APFEL++ provides N3LO coefficient functions for some observables. This is a
+current limitation that may be lifted in a future release.</p>
+</div>
+<h3 id="channel-decomposition">Channel decomposition</h3>
+<p>Channels are <strong>automatically derived</strong> by <code>build_grid()</code> from the process, observable, and
+the number of active flavours. You do not need to specify them in the grid card. The number
+of active flavours <span class="arithmatex">\(n_{f}^{\mathrm{max}}\)</span> is determined from the maximum <span class="arithmatex">\(Q^2\)</span> across
+all bins using the quark thresholds from the theory card.</p>
+<p>The <code>derive_channels()</code> function generates channels in the <strong>physical (PDG) basis</strong>.</p>
+<h4 id="dis-and-sia-channels">DIS and SIA channels</h4>
+<p>For <strong><span class="arithmatex">\(F_2\)</span></strong> and <strong><span class="arithmatex">\(F_L\)</span></strong> (C-even, Neutral Current):</p>
+<ul>
+<li>One quark channel per active flavour <span class="arithmatex">\(q = 1, \ldots, n_{f}^{\mathrm{max}}\)</span>:
+  <code>pids: [[q], [-q]]</code>, <code>factors: [1.0, 1.0]</code> (i.e. <span class="arithmatex">\(q + \bar{q}\)</span>)</li>
+<li>One gluon channel: <code>pids: [[21]]</code>, <code>factors: [1.0]</code></li>
+</ul>
+<p>For <strong><span class="arithmatex">\(F_3\)</span></strong> (C-odd, Neutral Current):</p>
+<ul>
+<li>One quark channel per active flavour <span class="arithmatex">\(q = 1, \ldots, n_{f}^{\mathrm{max}}\)</span>:
+  <code>pids: [[q], [-q]]</code>, <code>factors: [1.0, -1.0]</code> (i.e. <span class="arithmatex">\(q - \bar{q}\)</span>)</li>
+<li><strong>No gluon channel</strong> (<span class="arithmatex">\(C_\mathrm{G} = 0\)</span> at all perturbative orders)</li>
+</ul>
+<p>For <strong>Charged-Current (CC)</strong> processes, the channel structure depends on both the
+observable and the CC sign variant. The C-parity of the observable determines the
+quark combination:</p>
+<ul>
+<li><strong>C-even</strong> (factors <span class="arithmatex">\([1, 1]\)</span>, i.e. <span class="arithmatex">\(q + \bar{q}\)</span>):
+  <span class="arithmatex">\(F_2\)</span>/<span class="arithmatex">\(F_L\)</span> CC<span class="arithmatex">\(+\)</span>, <span class="arithmatex">\(F_3\)</span> CC<span class="arithmatex">\(-\)</span></li>
+<li><strong>C-odd</strong> (factors <span class="arithmatex">\([1, -1]\)</span>, i.e. <span class="arithmatex">\(q - \bar{q}\)</span>):
+  <span class="arithmatex">\(F_2\)</span>/<span class="arithmatex">\(F_L\)</span> CC<span class="arithmatex">\(-\)</span>, <span class="arithmatex">\(F_3\)</span> CC<span class="arithmatex">\(+\)</span></li>
+</ul>
+<p>A gluon channel is present only for <span class="arithmatex">\(F_2/F_L\)</span> with NC or CC<span class="arithmatex">\(+\)</span>. For CC, the per-quark
+weights <span class="arithmatex">\(w_q\)</span> are the sum of CKM² elements where quark <span class="arithmatex">\(q\)</span> participates
+(filtered by active partner flavours), replacing the electroweak charges used in NC.</p>
+<p>For example, with 5 active flavours and observable F2 NC, the auto-derived channels are:</p>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>PIDs</th>
+<th>Factors</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(d + \bar{d}\)</span></td>
+<td><code>[[1], [-1]]</code></td>
+<td><code>[1.0, 1.0]</code></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(u + \bar{u}\)</span></td>
+<td><code>[[2], [-2]]</code></td>
+<td><code>[1.0, 1.0]</code></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(s + \bar{s}\)</span></td>
+<td><code>[[3], [-3]]</code></td>
+<td><code>[1.0, 1.0]</code></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(c + \bar{c}\)</span></td>
+<td><code>[[4], [-4]]</code></td>
+<td><code>[1.0, 1.0]</code></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(b + \bar{b}\)</span></td>
+<td><code>[[5], [-5]]</code></td>
+<td><code>[1.0, 1.0]</code></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(g\)</span></td>
+<td><code>[[21]]</code></td>
+<td><code>[1.0]</code></td>
+</tr>
+</tbody>
+</table>
+<p>The per-channel coefficient functions are constructed from the APFEL++ operators
+<span class="arithmatex">\(C_\mathrm{NS}\)</span>, <span class="arithmatex">\(C_\mathrm{S}\)</span>, and <span class="arithmatex">\(C_\mathrm{G}\)</span> using the general formula:</p>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>Coefficient function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Quark <span class="arithmatex">\(q\)</span></td>
+<td><span class="arithmatex">\(\mathcal{C}_q = w_q \, C_\mathrm{NS} + \frac{\Sigma_w}{6}\,(C_\mathrm{S} - C_\mathrm{NS})\)</span></td>
+</tr>
+<tr>
+<td>Gluon</td>
+<td><span class="arithmatex">\(\mathcal{C}_g = \Sigma_w \, C_\mathrm{G}\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>where <span class="arithmatex">\(w_q\)</span> is the per-quark weight (electroweak charge <span class="arithmatex">\(e_q^2\)</span> for NC, or CKM
+weight for CC), <span class="arithmatex">\(\Sigma_w = \sum_{i=1}^{n_f^\mathrm{light}} w_i\)</span> sums over light quarks
+only, and the factor of 6 matches the internal normalisation convention used in APFEL++'s
+<code>DISNCBasis</code>/<code>DISCCBasis</code>. APFEL++ sets <span class="arithmatex">\(C_\mathrm{S} = C_\mathrm{NS}\)</span> and/or
+<span class="arithmatex">\(C_\mathrm{G} = 0\)</span> where the physics requires it, so the same formula works for all
+observables and currents.</p>
+<p>For the <strong>FFN and FONLL</strong> schemes, all <span class="arithmatex">\(n_f^\mathrm{max}\)</span> quark channels contribute to
+the pure-singlet (PS) term <span class="arithmatex">\(\frac{\Sigma_w}{6}(C_\mathrm{S}-C_\mathrm{NS})\)</span>: light
+quarks <span class="arithmatex">\((q \leq n_f^\mathrm{light})\)</span> also receive the non-singlet (NS) weight <span class="arithmatex">\(w_q\)</span>,
+while heavy quarks <span class="arithmatex">\((q &gt; n_f^\mathrm{light})\)</span> have <span class="arithmatex">\(w_q = 0\)</span> for the NS term. This
+ensures that the summed PS contribution is proportional to the full SIGMA distribution
+<span class="arithmatex">\(\sum_{i=1}^{n_f^\mathrm{max}} 2f_i\)</span> as required by APFEL++. Additionally, heavy-quark
+massive gluon coefficients <span class="arithmatex">\(C_\mathrm{G}^{(\mathrm{h})}\)</span> are accumulated into the gluon
+channel weighted by <span class="arithmatex">\(e_{q_h}^2\)</span>.</p>
+<h4 id="sidis-channels">SIDIS channels</h4>
+<p>SIDIS grids carry <strong>two convolutions</strong> (PDF ⊗ FF), so each channel entry specifies a pair of
+PIDs rather than a single one. Three channel types are generated per active quark
+<span class="arithmatex">\(q = 1, \ldots, n_{f}^{\mathrm{max}}\)</span>:</p>
+<table>
+<thead>
+<tr>
+<th>Channel type</th>
+<th>PIDs</th>
+<th style="text-align: center;">Factors</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(qq\)</span></td>
+<td><code>[[q, q], [-q, -q]]</code></td>
+<td style="text-align: center;"><code>[1.0, 1.0]</code></td>
+<td>Quark PDF ⊗ quark FF (and anti-quark)</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(gq\)</span></td>
+<td><code>[[q, 21], [-q, 21]]</code></td>
+<td style="text-align: center;"><code>[1.0, 1.0]</code></td>
+<td>Quark PDF ⊗ gluon FF</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(qg\)</span></td>
+<td><code>[[21, q], [21, -q]]</code></td>
+<td style="text-align: center;"><code>[1.0, 1.0]</code></td>
+<td>Gluon PDF ⊗ quark FF</td>
+</tr>
+</tbody>
+</table>
+<p>The channel ordering in the grid is <code>qq</code>, <code>gq</code>, <code>qg</code> for quark 1, then <code>qq</code>, <code>gq</code>, <code>qg</code>
+for quark 2, and so on. With 5 active flavours this gives 15 channels in total.</p>
+<p>The electroweak weight <span class="arithmatex">\(e_q^2\)</span> is applied per-quark directly to the subgrid values
+during filling; the channel PIDs themselves are charge-neutral in the grid card.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>Channels</code> field in the grid card is still accepted for backward compatibility,
+but it is <strong>always overridden</strong> by the auto-derived channels in <code>build_grid()</code>.
+It is recommended to omit <code>Channels</code> from the grid card entirely.</p>
+</div>
+<hr />
+<h3 id="the-grid-card">The grid card</h3>
+<p>The grid card defines the structure of the PineAPPL grid. Below is a complete reference
+with all fields.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># The scattering process.</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># Supported values: DIS, SIA, SIDIS</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">Process</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DIS</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># The structure function observable.</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># Supported values: F2, FL, F3</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Optional, defaults to F2.</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="nt">Observable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">F2</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># The electroweak current type.</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># Supported values: NC, CC</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># Optional, defaults to NC.</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="nt">Current</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NC</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="c1"># CC sign variant (only used when Current: CC).</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="c1"># Supported values: Plus, Minus</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="c1"># Plus  = (F(nu) + F(nubar)) / 2</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="c1"># Minus = (F(nu) - F(nubar)) / 2</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="c1"># Optional, defaults to Plus.</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="c1"># CCSign: Plus</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="c1"># Heavy-quark mass treatment scheme.</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="c1"># Supported values: ZM, FFN, FONLL, MassiveZero</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="c1">#   ZM          — zero-mass VFN scheme (default for all processes)</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="c1">#   FFN         — fixed-flavor-number scheme with massive CFs (DIS NC F2/FL only)</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="c1">#   FONLL       — FONLL = F_ZM + F_FFN (DIS NC F2/FL only)</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="c1">#   MassiveZero — massless limit of FFN; outputs zero CFs (APFEL++ convention)</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="c1"># For unsupported combinations the scheme falls back to ZM with a warning.</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="c1"># Optional, defaults to ZM.</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="c1"># MassScheme: ZM</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="c1"># PID basis for the channel definitions.</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="c1"># Supported values: PDG, EVOL</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="nt">PidBasis</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PDG</span>
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="c1"># Hadron PIDs involved in the process (one per convolution).</span>
+</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="c1">#   DIS:   [2212]        (proton)</span>
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="c1">#   SIA:   [211]         (pion)</span>
+</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="c1">#   SIDIS: [2212, 211]   (proton + pion)</span>
+</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="nt">HadronPids</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2212</span><span class="p p-Indicator">]</span>
+</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>
+</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a><span class="c1"># Convolution types (one per convolution).</span>
+</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a><span class="c1">#   UNPOL_PDF  — unpolarised parton distributions</span>
+</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a><span class="c1">#   POL_PDF    — longitudinally polarised parton distributions</span>
+</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a><span class="c1">#   UNPOL_FF   — unpolarised fragmentation functions</span>
+</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a><span class="c1">#   POL_FF     — polarised fragmentation functions</span>
+</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a><span class="c1">#</span>
+</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a><span class="c1"># Polarization is inferred from the first entry (the PDF slot):</span>
+</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a><span class="c1">#   POL_PDF / POL_FF  → polarized coefficient functions are used</span>
+</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a><span class="c1">#     DIS:   F2 -&gt; g1,  FL -&gt; gL,  F3 -&gt; g4  (NC only)</span>
+</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a><span class="c1">#     SIDIS: F2 -&gt; G1                        (NC only)</span>
+</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a><span class="c1">#   UNPOL_PDF / UNPOL_FF → unpolarized coefficient functions</span>
+</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a><span class="c1"># Polarized CC and polarized SIA are not supported.</span>
+</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a><span class="c1"># For SIDIS the PDF and FF types can differ independently</span>
+</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a><span class="c1"># (e.g. [POL_PDF, UNPOL_FF] for helicity-weighted cross sections).</span>
+</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a><span class="nt">ConvolutionTypes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">UNPOL_PDF</span><span class="p p-Indicator">]</span>
+</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>
+</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a><span class="c1"># Perturbative orders as 5-element arrays:</span>
+</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a><span class="c1"># [alpha_s, alpha, log(xi_R), log(xi_F), log(xi_A)]</span>
+</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a><span class="c1"># For QCD-only coefficient functions, set all but alpha_s to 0.</span>
+</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a><span class="nt">Orders</span><span class="p">:</span>
+</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># O(alpha_s^0) = LO</span>
+</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># O(alpha_s^1) = NLO</span>
+</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># O(alpha_s^2) = NNLO</span>
+</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a>
+</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a><span class="c1"># Partonic channels (optional).</span>
+</span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a><span class="c1"># Channels are automatically derived by build_grid() from the observable</span>
+</span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a><span class="c1"># and the number of active flavours. You do not need to specify this field.</span>
+</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a><span class="c1"># If present, it will be overridden during grid building.</span>
+</span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a><span class="c1">#</span>
+</span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71" href="#__codelineno-0-71"></a><span class="c1"># Channels:</span>
+</span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72" href="#__codelineno-0-72"></a><span class="c1">#   - pids: [[2], [-2]]     # u + ubar</span>
+</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73" href="#__codelineno-0-73"></a><span class="c1">#     factors: [1.0, 1.0]</span>
+</span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74" href="#__codelineno-0-74"></a><span class="c1">#   - pids: [[1], [-1]]     # d + dbar</span>
+</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75" href="#__codelineno-0-75"></a><span class="c1">#     factors: [1.0, 1.0]</span>
+</span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76" href="#__codelineno-0-76"></a><span class="c1">#   - pids: [[21]]          # gluon</span>
+</span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77" href="#__codelineno-0-77"></a><span class="c1">#     factors: [1.0]</span>
+</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78" href="#__codelineno-0-78"></a>
+</span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79" href="#__codelineno-0-79"></a><span class="c1"># Kinematic bins. Each bin is defined by lower and upper edges</span>
+</span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80" href="#__codelineno-0-80"></a><span class="c1"># in each dimension:</span>
+</span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81" href="#__codelineno-0-81"></a><span class="c1">#   DIS:   [Q^2, x]        (2 dimensions)</span>
+</span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82" href="#__codelineno-0-82"></a><span class="c1">#   SIA:   [Q^2, z]        (2 dimensions)</span>
+</span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83" href="#__codelineno-0-83"></a><span class="c1">#   SIDIS: [Q^2, x, z]     (3 dimensions)</span>
+</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84" href="#__codelineno-0-84"></a><span class="nt">Bins</span><span class="p">:</span>
+</span><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85" href="#__codelineno-0-85"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">]</span>
+</span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86" href="#__codelineno-0-86"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">]</span>
+</span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87" href="#__codelineno-0-87"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">]</span>
+</span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88" href="#__codelineno-0-88"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1000.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">]</span>
+</span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89" href="#__codelineno-0-89"></a>
+</span><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90" href="#__codelineno-0-90"></a><span class="c1"># Bin normalisation factors (one per bin).</span>
+</span><span id="__span-0-91"><a id="__codelineno-0-91" name="__codelineno-0-91" href="#__codelineno-0-91"></a><span class="nt">Normalizations</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">]</span>
+</span></code></pre></div>
+<h4 id="dis-example">DIS example</h4>
+<p>A DIS <span class="arithmatex">\(F_2\)</span> grid up to NNLO with two <span class="arithmatex">\((Q^2, x)\)</span> bins.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">Process</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DIS</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">Observable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">F2</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">Current</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NC</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">PidBasis</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PDG</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">HadronPids</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2212</span><span class="p p-Indicator">]</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nt">ConvolutionTypes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">UNPOL_PDF</span><span class="p p-Indicator">]</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nt">Orders</span><span class="p">:</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="nt">Bins</span><span class="p">:</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">]</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">]</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">]</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1000.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">]</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="nt">Normalizations</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">]</span>
+</span></code></pre></div>
+<h4 id="sia-example">SIA example</h4>
+<p>An SIA <span class="arithmatex">\(F_2\)</span> grid for pion production up to NNLO. Note that the second kinematic
+dimension is the hadron momentum fraction <span class="arithmatex">\(z\)</span> instead of Bjorken <span class="arithmatex">\(x\)</span>,
+and the convolution type is <code>UNPOL_FF</code>. Channels are auto-derived as for DIS:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">Process</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SIA</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">Observable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">F2</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">Current</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NC</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nt">PidBasis</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PDG</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nt">HadronPids</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">211</span><span class="p p-Indicator">]</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nt">ConvolutionTypes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">UNPOL_FF</span><span class="p p-Indicator">]</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nt">Orders</span><span class="p">:</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="nt">Bins</span><span class="p">:</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.2</span><span class="p p-Indicator">]</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.4</span><span class="p p-Indicator">]</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.4</span><span class="p p-Indicator">]</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1000.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.6</span><span class="p p-Indicator">]</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="nt">Normalizations</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">]</span>
+</span></code></pre></div>
+<h4 id="sidis-example">SIDIS example</h4>
+<p>A SIDIS <span class="arithmatex">\(F_2\)</span> grid for proton→pion semi-inclusive production up to NLO. Bins are
+three-dimensional <span class="arithmatex">\((Q^2, x, z)\)</span> and two convolution types are required (PDF and FF):</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">Process</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SIDIS</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">Observable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">F2</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">Current</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NC</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nt">PidBasis</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PDG</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">HadronPids</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2212</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">211</span><span class="p p-Indicator">]</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nt">ConvolutionTypes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">UNPOL_PDF</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">UNPOL_FF</span><span class="p p-Indicator">]</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="nt">Orders</span><span class="p">:</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># LO</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># NLO</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="nt">Bins</span><span class="p">:</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.2</span><span class="p p-Indicator">]</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.4</span><span class="p p-Indicator">]</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.4</span><span class="p p-Indicator">]</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1000.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.6</span><span class="p p-Indicator">]</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="nt">Normalizations</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">]</span>
+</span></code></pre></div>
+<h4 id="polarized-dis-example">Polarized DIS example</h4>
+<p>A polarized DIS <span class="arithmatex">\(g_1\)</span> grid up to NLO. Setting <code>ConvolutionTypes: [POL_PDF]</code> signals
+polarized coefficient functions; <code>Observable: F2</code> then selects <span class="arithmatex">\(g_1\)</span>:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">Process</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DIS</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">Observable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">F2</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nt">Current</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NC</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nt">PidBasis</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PDG</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nt">HadronPids</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2212</span><span class="p p-Indicator">]</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nt">ConvolutionTypes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">POL_PDF</span><span class="p p-Indicator">]</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nt">Orders</span><span class="p">:</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="nt">Bins</span><span class="p">:</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">]</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">]</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">]</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1000.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">]</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="nt">Normalizations</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">]</span>
+</span></code></pre></div>
+<h4 id="polarized-sidis-example">Polarized SIDIS example</h4>
+<p>A polarized SIDIS <span class="arithmatex">\(G_1\)</span> grid up to NLO. Only <code>Observable: F2</code> is valid here.
+Note that the PDF is polarized while the FF remains unpolarized — this distinction
+is expressed directly through <code>ConvolutionTypes</code> without any separate flag:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">Process</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SIDIS</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nt">Observable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">F2</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nt">Current</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NC</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="nt">PidBasis</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PDG</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="nt">HadronPids</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2212</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">211</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="nt">ConvolutionTypes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">POL_PDF</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">UNPOL_FF</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="nt">Orders</span><span class="p">:</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="nt">Bins</span><span class="p">:</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.2</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.4</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.4</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1000.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.6</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="nt">Normalizations</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">]</span>
+</span></code></pre></div>
+<h4 id="ffn-dis-example">FFN DIS example</h4>
+<p>A DIS <span class="arithmatex">\(F_2\)</span> grid in the fixed-flavor-number scheme. Requires <code>HeavyQuarkMasses</code> in the
+theory card (6 entries). The massive coefficient functions are tabulated internally on a
+<span class="arithmatex">\(\xi = Q^2/m^2\)</span> grid; the tabulation parameters can be tuned with <code>MassNxi</code> etc. in
+the theory card.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">Process</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DIS</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">Observable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">F2</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nt">Current</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NC</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nt">MassScheme</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FFN</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nt">PidBasis</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PDG</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nt">HadronPids</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2212</span><span class="p p-Indicator">]</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="nt">ConvolutionTypes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">UNPOL_PDF</span><span class="p p-Indicator">]</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="nt">Orders</span><span class="p">:</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="nt">Bins</span><span class="p">:</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">]</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">]</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">]</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1000.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">]</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="nt">Normalizations</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">]</span>
+</span></code></pre></div>
+<h4 id="fonll-dis-example">FONLL DIS example</h4>
+<p>A DIS <span class="arithmatex">\(F_2\)</span> FONLL grid. PineAPFEL computes <span class="arithmatex">\(F_\mathrm{FONLL} = F_\mathrm{ZM} + F_\mathrm{FFN}\)</span>
+following APFEL++ conventions. The same theory card as for FFN is required.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">Process</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DIS</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nt">Observable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">F2</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nt">Current</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NC</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nt">MassScheme</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FONLL</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nt">PidBasis</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PDG</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="nt">HadronPids</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2212</span><span class="p p-Indicator">]</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="nt">ConvolutionTypes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">UNPOL_PDF</span><span class="p p-Indicator">]</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="nt">Orders</span><span class="p">:</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="nt">Bins</span><span class="p">:</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">]</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">]</span>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">]</span>
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1000.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">]</span>
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="nt">Normalizations</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">]</span>
+</span></code></pre></div>
+<h4 id="cc-dis-example">CC DIS example</h4>
+<p>A DIS <span class="arithmatex">\(F_2\)</span> charged-current (CC) grid with the Plus variant <span class="arithmatex">\((F(\nu) + F(\bar\nu))/2\)</span>.
+The <code>CCSign</code> field selects between Plus and Minus. The CKM matrix elements are specified
+in the theory card (see below):</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">Process</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DIS</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nt">Observable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">F2</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nt">Current</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CC</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="nt">CCSign</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Plus</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="nt">PidBasis</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PDG</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="nt">HadronPids</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2212</span><span class="p p-Indicator">]</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="nt">ConvolutionTypes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">UNPOL_PDF</span><span class="p p-Indicator">]</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="nt">Orders</span><span class="p">:</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="nt">Bins</span><span class="p">:</span>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.001</span><span class="p p-Indicator">]</span>
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">]</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lower</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">]</span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="w">    </span><span class="nt">upper</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1000.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.1</span><span class="p p-Indicator">]</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="nt">Normalizations</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">]</span>
+</span></code></pre></div>
+<p>The theory card should include a <code>CKM</code> field with 9 squared CKM matrix elements
+<span class="arithmatex">\(|V_{ij}|^2\)</span> in row-major order: <span class="arithmatex">\([V_{ud}^2, V_{us}^2, V_{ub}^2, V_{cd}^2,
+V_{cs}^2, V_{cb}^2, V_{td}^2, V_{ts}^2, V_{tb}^2]\)</span>. If absent, standard PDG
+values are used.</p>
+<hr />
+<h3 id="using-the-cli">Using the CLI</h3>
+<p>The <code>pineapfel-build</code> executable creates a filled PineAPPL grid from three YAML cards:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pineapfel-build &lt;grid.yaml&gt; &lt;theory.yaml&gt; &lt;operator.yaml&gt; [-o output.pineappl.lz4]
+</span></code></pre></div>
+<p>If <code>-o</code> is not specified, the output filename is derived from the grid card by replacing
+<code>.yaml</code> with <code>.pineappl.lz4</code>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Build a DIS F2 grid</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>pineapfel-build<span class="w"> </span>runcards/grid_dis.yaml<span class="w"> </span>runcards/theory.yaml<span class="w"> </span>runcards/operator.yaml
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Build an SIA grid with a custom output name</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>pineapfel-build<span class="w"> </span>runcards/grid_sia.yaml<span class="w"> </span>runcards/theory.yaml<span class="w"> </span>runcards/operator.yaml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">    </span>-o<span class="w"> </span>sia_f2.pineappl.lz4
+</span></code></pre></div>
+<h3 id="using-the-library">Using the library</h3>
+<p>The same functionality is available programmatically through the <code>build_grid()</code> function:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;pineapfel.h&gt;</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;pineappl_capi.h&gt;</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">    </span><span class="c1">// 1. Load all three cards</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">grid_def</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">load_grid_def</span><span class="p">(</span><span class="s">&quot;runcards/grid_dis.yaml&quot;</span><span class="p">);</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">theory</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">load_theory_card</span><span class="p">(</span><span class="s">&quot;runcards/theory.yaml&quot;</span><span class="p">);</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">op_card</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">load_operator_card</span><span class="p">(</span><span class="s">&quot;runcards/operator.yaml&quot;</span><span class="p">);</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">    </span><span class="c1">// 2. Build and fill the grid</span>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">    </span><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">build_grid</span><span class="p">(</span><span class="n">grid_def</span><span class="p">,</span><span class="w"> </span><span class="n">theory</span><span class="p">,</span><span class="w"> </span><span class="n">op_card</span><span class="p">);</span>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="w">    </span><span class="c1">// 3. Write the grid</span>
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="w">    </span><span class="n">pineappl_grid_write</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;dis_f2.pineappl.lz4&quot;</span><span class="p">);</span>
+</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>
+</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="w">    </span><span class="c1">// 4. Cleanup</span>
+</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="w">    </span><span class="n">pineappl_grid_delete</span><span class="p">(</span><span class="n">grid</span><span class="p">);</span>
+</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-11-20"><a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>The returned grid can also be passed directly to <code>pineapfel::evolve()</code> to produce an
+FK table in the same program:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">grid</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">build_grid</span><span class="p">(</span><span class="n">grid_def</span><span class="p">,</span><span class="w"> </span><span class="n">theory</span><span class="p">,</span><span class="w"> </span><span class="n">op_card</span><span class="p">);</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">fktable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">evolve</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span><span class="w"> </span><span class="n">theory</span><span class="p">,</span><span class="w"> </span><span class="n">op_card</span><span class="p">);</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">pineappl_grid_write</span><span class="p">(</span><span class="n">fktable</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;dis_f2.fk.pineappl.lz4&quot;</span><span class="p">);</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">pineappl_grid_delete</span><span class="p">(</span><span class="n">fktable</span><span class="p">);</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">pineappl_grid_delete</span><span class="p">(</span><span class="n">grid</span><span class="p">);</span>
+</span></code></pre></div>
+<h3 id="grid-structure-internals">Grid structure internals</h3>
+<p>Understanding the internal layout of the generated grid is useful for debugging and
+for writing custom grid-filling code.</p>
+<h4 id="node-selection">Node selection</h4>
+<p>The grid nodes are defined automatically:</p>
+<ul>
+<li>
+<p><strong><span class="arithmatex">\(x/z\)</span> nodes</strong>: Taken from the APFEL++ joint interpolation grid, which is built from
+  the <code>xgrid</code> definition in the operator card. This ensures consistency between the
+  coefficient function grid and any subsequent evolution step.</p>
+</li>
+<li>
+<p><strong><span class="arithmatex">\(Q^2\)</span> nodes</strong>: Derived from the bin edges in the grid card. The bin boundaries in the
+  first dimension (<span class="arithmatex">\(Q^2\)</span>) are collected, and geometrically spaced intermediate points are
+  added within each bin. Additionally, quark threshold values (<span class="arithmatex">\(m_q^2\)</span>) that fall within
+  the overall <span class="arithmatex">\(Q^2\)</span> range are included to capture flavour-threshold effects.</p>
+</li>
+</ul>
+<h4 id="subgrid-layout">Subgrid layout</h4>
+<h5 id="dis-and-sia">DIS and SIA</h5>
+<p>Each subgrid (one per combination of bin, perturbative order, and channel) is a
+two-dimensional array of shape <code>[n_Q2, n_x]</code>, stored in row-major order. The
+<code>node_values</code> vector concatenates the <span class="arithmatex">\(Q^2\)</span> nodes followed by the <span class="arithmatex">\(x\)</span>/<span class="arithmatex">\(z\)</span> nodes:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>node_values = [Q^2_0, ..., Q^2_{nq-1}, x_0, ..., x_{nx-1}]
+</span></code></pre></div>
+<p>For each <span class="arithmatex">\(Q^2\)</span> node, the coefficient function operator is evaluated at the bin's
+<span class="arithmatex">\(x\)</span>/<span class="arithmatex">\(z\)</span> centre (geometric mean of the bin edges) to produce a distribution on the
+APFEL++ joint grid, which populates one row of the subgrid.</p>
+<h5 id="sidis">SIDIS</h5>
+<p>SIDIS subgrids are three-dimensional arrays of shape <code>[n_Q2, n_x, n_z]</code>, stored in
+row-major order. The same APFEL++ joint grid is used for both the <span class="arithmatex">\(x\)</span> (PDF) and
+<span class="arithmatex">\(z\)</span> (FF) dimensions. The <code>node_values</code> vector concatenates three segments:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>node_values = [Q^2_0, ..., Q^2_{nq-1}, x_0, ..., x_{nx-1}, z_0, ..., z_{nz-1}]
+</span></code></pre></div>
+<p>For each <span class="arithmatex">\(Q^2\)</span> node and each <code>DoubleObject</code> term in the coefficient function,
+the <span class="arithmatex">\(x\)</span>-distribution is evaluated at the bin's <span class="arithmatex">\(x\)</span>-centre and the <span class="arithmatex">\(z\)</span>-distribution
+at the bin's <span class="arithmatex">\(z\)</span>-centre (both geometric means). The subgrid entry at <code>[iq, ix, iz]</code>
+is the outer product of these two distributions, weighted by <span class="arithmatex">\(e_q^2\)</span> and the term
+coefficient:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>subgrid[iq, ix, iz] = e_q^2 * sum_terms { c_term * K_x(x[ix]; x_centre) * K_z(z[iz]; z_centre) }
+</span></code></pre></div>
+<p>where <span class="arithmatex">\(K_x\)</span> and <span class="arithmatex">\(K_z\)</span> are the APFEL++ distribution kernels in the <span class="arithmatex">\(x\)</span> and <span class="arithmatex">\(z\)</span>
+directions respectively.</p>
+<h3 id="programmatic-grid-definition">Programmatic grid definition</h3>
+<p>In addition to loading from YAML, you can construct a <code>GridDef</code> programmatically.
+Note that <code>channels</code> can be left empty — <code>build_grid()</code> will auto-derive them:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">pineapfel</span><span class="o">::</span><span class="n">GridDef</span><span class="w"> </span><span class="n">def</span><span class="p">;</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="n">def</span><span class="p">.</span><span class="n">process</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">ProcessType</span><span class="o">::</span><span class="n">DIS</span><span class="p">;</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">def</span><span class="p">.</span><span class="n">observable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">Observable</span><span class="o">::</span><span class="n">F2</span><span class="p">;</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="n">def</span><span class="p">.</span><span class="n">current</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">Current</span><span class="o">::</span><span class="n">NC</span><span class="p">;</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="n">def</span><span class="p">.</span><span class="n">pid_basis</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">PINEAPPL_PID_BASIS_PDG</span><span class="p">;</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="n">def</span><span class="p">.</span><span class="n">hadron_pids</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">2212</span><span class="p">};</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="n">def</span><span class="p">.</span><span class="n">convolution_types</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">PINEAPPL_CONV_TYPE_UNPOL_PDF</span><span class="p">};</span>
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="n">def</span><span class="p">.</span><span class="n">orders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{{</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">}};</span><span class="w">  </span><span class="c1">// LO + NLO + NNLO</span>
+</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="c1">// channels are auto-derived by build_grid() — no need to set them</span>
+</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="n">def</span><span class="p">.</span><span class="n">bins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="w">    </span><span class="p">{{</span><span class="mf">10.0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.001</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="mf">100.0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.01</span><span class="p">}},</span>
+</span><span id="__span-16-13"><a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a><span class="w">    </span><span class="p">{{</span><span class="mf">100.0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.01</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="mf">1000.0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.1</span><span class="p">}},</span>
+</span><span id="__span-16-14"><a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a><span class="p">};</span>
+</span><span id="__span-16-15"><a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a><span class="n">def</span><span class="p">.</span><span class="n">normalizations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0</span><span class="p">};</span>
+</span><span id="__span-16-16"><a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>
+</span><span id="__span-16-17"><a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a><span class="k">auto</span><span class="o">*</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">build_grid</span><span class="p">(</span><span class="n">def</span><span class="p">,</span><span class="w"> </span><span class="n">theory</span><span class="p">,</span><span class="w"> </span><span class="n">op_card</span><span class="p">);</span>
+</span></code></pre></div>
+<p>You can also call <code>derive_channels()</code> directly if you need the channels before
+calling <code>build_grid()</code>:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1">// Derive channels for DIS F2 NC with 5 active flavours</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="k">auto</span><span class="w"> </span><span class="n">channels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">derive_channels</span><span class="p">(</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">    </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">ProcessType</span><span class="o">::</span><span class="n">DIS</span><span class="p">,</span>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">    </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">Observable</span><span class="o">::</span><span class="n">F2</span><span class="p">,</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">    </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">Current</span><span class="o">::</span><span class="n">NC</span><span class="p">,</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">    </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">CCSign</span><span class="o">::</span><span class="n">Plus</span><span class="p">,</span>
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">    </span><span class="mi">5</span><span class="p">);</span>
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="c1">// Returns 6 channels: d+dbar, u+ubar, s+sbar, c+cbar, b+bbar, gluon</span>
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>
+</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="c1">// Derive channels for SIDIS F2 with 5 active flavours</span>
+</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="k">auto</span><span class="w"> </span><span class="n">sidis_channels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">derive_channels</span><span class="p">(</span>
+</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="w">    </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">ProcessType</span><span class="o">::</span><span class="n">SIDIS</span><span class="p">,</span>
+</span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a><span class="w">    </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">Observable</span><span class="o">::</span><span class="n">F2</span><span class="p">,</span>
+</span><span id="__span-17-14"><a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a><span class="w">    </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">Current</span><span class="o">::</span><span class="n">NC</span><span class="p">,</span>
+</span><span id="__span-17-15"><a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a><span class="w">    </span><span class="n">pineapfel</span><span class="o">::</span><span class="n">CCSign</span><span class="o">::</span><span class="n">Plus</span><span class="p">,</span>
+</span><span id="__span-17-16"><a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a><span class="w">    </span><span class="mi">5</span><span class="p">);</span>
+</span><span id="__span-17-17"><a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a><span class="c1">// Returns 15 channels: (qq, gq, qg) x 5 quarks</span>
+</span></code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../configuration-cards/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Configuration cards">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Configuration cards
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../cli/" class="md-footer__link md-footer__link--next" aria-label="Next: CLI Interface">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                CLI Interface
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.footer", "navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
