@@ -1,0 +1,39 @@
+axes.grid               : True
+axes.axisbelow          : True
+axes.titlesize          : medium
+axes.prop_cycle         : cycler(color=['1f77b4', 'd62728', '9467bd', '2ca02c', 'ff7f0e', '8c564b', 'e377c2', '7f7f7f', 'bcbd22', '17becf'])
+axes.labelsize          : small
+axes.formatter.use_mathtext : True
+axes.spines.top         : True
+axes.spines.right       : True
+
+errorbar.capsize        : 2
+
+font.size               : 12
+
+figure.figsize          : 5.6, 3.9
+
+text.usetex             : True
+text.latex.preamble     : \usepackage{amsmath}
+
+grid.color              : cccccc
+grid.linestyle          : -
+grid.linewidth          : 0.05
+
+legend.fontsize         : small
+legend.numpoints        : 1
+legend.scatterpoints    : 1
+legend.loc              : best
+legend.fancybox         : True
+legend.framealpha       : 0.8
+
+lines.markersize        : 4
+
+mathtext.default        : regular
+
+xtick.labelsize         : small
+ytick.labelsize         : small
+xtick.top               : False
+ytick.right             : False
+
+svg.fonttype            : none
