@@ -1,8 +1,9 @@
-/* Symbolica-inspired: clean, modern dark documentation style */
+/* Informal Systems-inspired: clean, technical light documentation style */
 
 body {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 400;
+  background-color: #FFFFFF !important;
 }
 
 .md-content__inner {
@@ -15,25 +16,27 @@ body {
   text-align: justify;
 }
 
-/* Clean typography - section titles bold and white */
+/* Clean typography - section titles bold and Informal Blue (#3b5596) */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700 !important;
   letter-spacing: -0.02em;
-  color: #fff !important;
+  color: #3b5596 !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.2rem !important;
 }
 
-h1 { font-size: 1.75rem; margin-top: 0; }
-h2 { font-size: 1.35rem; margin-top: 2rem; padding-bottom: 0.3rem; border-bottom: 1px solid rgba(255,255,255,0.12); }
-h3 { font-size: 1.15rem; margin-top: 1.5rem; }
+h1 { font-size: 1.5rem; margin-top: 0 !important; }
+h2 { font-size: 1.2rem; border-bottom: 1px solid rgba(59, 85, 150, 0.12); }
+h3 { font-size: 1.05rem; }
 
-/* Links - clean, understated */
+/* Links - Informal Systems cyan (#3b5596) */
 a {
-  color: var(--md-typeset-a-color);
+  color: #3b5596;
   text-decoration: none;
-  transition: color 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 a:hover {
-  color: var(--md-accent-fg-color);
+  opacity: 0.8;
 }
 
 /* Feature grid - clean cards with subtle borders */
@@ -45,7 +48,7 @@ a:hover {
 }
 
 .feature-card {
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(0, 43, 54, 0.12);
   border-radius: 8px;
   padding: 1.25rem;
   height: 100%;
@@ -53,12 +56,12 @@ a:hover {
   text-decoration: none;
   color: inherit;
   display: block;
-  background: var(--md-default-bg-color);
+  background: #FFFFFF;
 }
 
 .feature-card:hover {
-  border-color: rgba(99, 102, 241, 0.5);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  border-color: #3b5596;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 /* Alternative: Simple flexbox approach */
@@ -70,51 +73,51 @@ a:hover {
 
 .feature-grid-simple .feature-card {
   flex: 1 1 300px;
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(0, 43, 54, 0.12);
   border-radius: 8px;
   padding: 1.25rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  background: var(--md-default-bg-color);
+  background: #FFFFFF;
 }
 
 .feature-grid-simple .feature-card:hover {
-  border-color: rgba(99, 102, 241, 0.5);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  border-color: #3b5596;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 /* TOC: grey until selected, highlight when active */
 .md-nav__link {
-  color: var(--md-default-fg-color--light) !important;
+  color: #586E75 !important; /* Solarized base01 */
   font-weight: 400 !important;
 }
 .md-nav__link:hover {
-  color: var(--md-default-fg-color) !important;
+  color: #3b5596 !important;
 }
 .md-nav__link--active {
-  color: var(--md-accent-fg-color) !important;
-  font-weight: 500 !important;
+  color: #3b5596 !important;
+  font-weight: 600 !important;
 }
 
 /* Same for right-side TOC (page toc) */
 .md-nav--secondary .md-nav__link {
-  color: var(--md-default-fg-color--light) !important;
+  color: #586E75 !important;
   font-weight: 400 !important;
 }
 .md-nav--secondary .md-nav__link--active {
-  color: var(--md-accent-fg-color) !important;
-  font-weight: 500 !important;
+  color: #3b5596 !important;
+  font-weight: 600 !important;
 }
 
 /* Navigation section titles - grey, non-bold */
 .md-nav__title {
   font-weight: 400 !important;
-  color: var(--md-default-fg-color--light) !important;
+  color: #586E75 !important;
 }
 
 .md-nav__list .md-nav__item > .md-nav__link:not(.md-nav__link--active),
 .md-nav__list > .md-nav__item > .md-nav__link:not(.md-nav__link--active) {
   font-weight: 400 !important;
-  color: var(--md-default-fg-color--light) !important;
+  color: #586E75 !important;
 }
 
 /* Make top-level HOME, GETTING STARTED, and USAGE permanently bold */
@@ -122,7 +125,7 @@ a:hover {
 .md-nav--primary > .md-nav__list > .md-nav__item:nth-child(2) > .md-nav__link,
 .md-nav--primary > .md-nav__list > .md-nav__item:nth-child(3) > .md-nav__link {
   font-weight: 700 !important;
-  color: var(--md-default-fg-color) !important;
+  color: #3b5596 !important;
 }
 
 /* Hide the automatic H1 ("Home") on the homepage when followed by the centered logo */
@@ -152,18 +155,53 @@ pre {
     height: auto;
 }
 
-/* Header bar - grey (#6f6f6f) instead of blue */
+/* Header bar - Informal Blue (#3b5596) */
 .md-header {
-  background-color: #6f6f6f !important;
+  background-color: #3b5596 !important;
+  color: #FFFFFF !important;
 }
 
-/* Ensure header icons and social links are visible on grey background */
-.md-header .md-icon,
+/* Ensure header icons and search are visible on blue background */
+.md-header .md-icon {
+  color: #FFFFFF !important;
+}
+
+.md-header__title {
+  color: #FFFFFF !important;
+}
+
 .md-header__social .md-social__link svg {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.8);
 }
 .md-header__social .md-social__link:hover svg {
-  color: #fff;
+  color: #FFFFFF;
+}
+
+/* Footer bar - Informal Blue (#3b5596) */
+.md-footer {
+  background-color: #3b5596 !important;
+  color: #FFFFFF !important;
+}
+
+.md-footer__link {
+  color: #FFFFFF !important;
+}
+
+.md-footer__direction {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.md-footer__title {
+  color: #FFFFFF !important;
+}
+
+.md-footer-meta {
+  background-color: #3b5596 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.md-footer-meta__inner {
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 /* Header social icons - next to search, proportional size */
@@ -202,7 +240,7 @@ pre {
 /* Header logo: increase size and hide site name next to it */
 .md-header__button.md-logo img,
 .md-header__button.md-logo svg {
-  height: 2rem;
+  height: 2.2rem;
   width: auto;
 }
 
@@ -210,15 +248,14 @@ pre {
   display: none;
 }
 
-/* Code blocks - remove extra borders, clean styling */
-.highlight,
-.highlight pre,
-pre code {
-  border: none !important;
-  box-shadow: none !important;
+.md-header__title {
+  color: #FFFFFF !important;
 }
+
+/* Code blocks - clean styling */
 .highlight {
   border-radius: 6px;
+  background-color: #F8F9FA !important;
 }
 .md-typeset .highlight pre {
   border: none !important;
@@ -227,8 +264,7 @@ pre code {
 /* Tables - clean borders */
 .md-typeset table:not([class]) {
   border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.12);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  border: 1px solid rgba(0, 43, 54, 0.12);
 }
 
 /* Admonitions - subtle */
