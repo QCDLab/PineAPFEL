@@ -1,4 +1,4 @@
-#include <grid_gen.h>
+#include <pineapfel/grid_gen.h>
 #include <yaml-cpp/yaml.h>
 
 #include <numeric>

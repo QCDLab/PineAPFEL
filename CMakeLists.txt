@@ -3,40 +3,15 @@ project(pineapfel VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
+
 # Dependencies
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(PINEAPPL REQUIRED pineappl_capi)
-pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
 
-# APFEL++ via apfelxx-config
-find_program(APFELXX_CONFIG apfelxx-config REQUIRED)
-execute_process(COMMAND ${APFELXX_CONFIG} --cflags OUTPUT_VARIABLE APFELXX_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE RESULT_VARIABLE _apfel_cflags_rc)
-execute_process(COMMAND ${APFELXX_CONFIG} --ldflags OUTPUT_VARIABLE APFELXX_LDFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE RESULT_VARIABLE _apfel_ldflags_rc)
-if(NOT _apfel_cflags_rc EQUAL 0 OR NOT _apfel_ldflags_rc EQUAL 0)
-    message(FATAL_ERROR "apfelxx-config failed (cflags rc=${_apfel_cflags_rc}, ldflags rc=${_apfel_ldflags_rc})")
-endif()
-message(STATUS "APFEL++ cflags: ${APFELXX_CFLAGS}")
-message(STATUS "APFEL++ ldflags: ${APFELXX_LDFLAGS}")
-
-# Parse APFEL++ flags
-separate_arguments(APFELXX_CFLAGS_LIST UNIX_COMMAND "${APFELXX_CFLAGS}")
-separate_arguments(APFELXX_LDFLAGS_LIST UNIX_COMMAND "${APFELXX_LDFLAGS}")
-
-# Extract APFEL++ include dirs from -I flags
-set(APFELXX_INCLUDE_DIRS "")
-foreach(flag ${APFELXX_CFLAGS_LIST})
-    if(flag MATCHES "^-I(.*)")
-        list(APPEND APFELXX_INCLUDE_DIRS "${CMAKE_MATCH_1}")
-    endif()
-endforeach()
-
-# Fallback: if cflags produced no -I flags, derive include dir from apfelxx-config location
-if(NOT APFELXX_INCLUDE_DIRS)
-    get_filename_component(_apfelxx_bindir "${APFELXX_CONFIG}" DIRECTORY)
-    get_filename_component(_apfelxx_prefix "${_apfelxx_bindir}" DIRECTORY)
-    set(APFELXX_INCLUDE_DIRS "${_apfelxx_prefix}/include")
-endif()
-message(STATUS "APFEL++ include dirs: ${APFELXX_INCLUDE_DIRS}")
+find_package(yaml-cpp REQUIRED)
+find_package(apfelxx REQUIRED)
 
 # Library
 add_library(pineapfel
@@ -46,21 +21,21 @@ add_library(pineapfel
     pineapfel/src/grid_gen.cpp
     pineapfel/src/sidis_init.cpp
 )
-target_include_directories(pineapfel PUBLIC
-    pineapfel/include
-    ${PINEAPPL_INCLUDE_DIRS}
-    ${YAML_CPP_INCLUDE_DIRS}
-    ${APFELXX_INCLUDE_DIRS}
+
+target_include_directories(pineapfel
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/pineapfel/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+        ${PINEAPPL_INCLUDE_DIRS}
 )
-target_link_directories(pineapfel PUBLIC
-    ${PINEAPPL_LIBRARY_DIRS}
-    ${YAML_CPP_LIBRARY_DIRS}
+
+target_link_libraries(pineapfel
+    PUBLIC
+        yaml-cpp::yaml-cpp
+        apfelxx::apfelxx
+        ${PINEAPPL_LINK_LIBRARIES}
 )
-target_link_libraries(pineapfel PUBLIC
-    ${PINEAPPL_LIBRARIES}
-    ${YAML_CPP_LIBRARIES}
-    ${APFELXX_LDFLAGS_LIST}
-)
+
 target_compile_options(pineapfel PRIVATE -Wall -Wextra -O3)
 
 # CLI executables
@@ -82,8 +57,34 @@ add_test(NAME grid_vs_apfelxx COMMAND test_grid_vs_apfelxx
 
 # Install targets
 install(TARGETS pineapfel pineapfel-evolve pineapfel-build
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
+    EXPORT pineapfelTargets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
-install(DIRECTORY pineapfel/include/ DESTINATION include)
+install(DIRECTORY pineapfel/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(EXPORT pineapfelTargets
+    FILE pineapfelTargets.cmake
+    NAMESPACE pineapfel::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/pineapfel
+)
+
+# Package config
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/pineapfelConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/pineapfelConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/pineapfel
+)
+
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/pineapfelConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/pineapfelConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/pineapfelConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/pineapfel
+)

@@ -1,6 +1,6 @@
 #include <apfel/apfelxx.h>
-#include <fill.h>
-#include <sidis_api.h>
+#include <pineapfel/fill.h>
+#include <pineapfel/sidis_api.h>
 
 #include <cmath>
 #include <cstddef>
@@ -491,10 +491,10 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                             const auto &vz = dist_z.GetDistributionJointGrid();
 
                             for (std::size_t ix = 0; ix < nx && ix < vx.size();
-                                 ix++) {
+                                ix++) {
                                 for (std::size_t iz = 0;
-                                     iz < nz && iz < vz.size();
-                                     iz++) {
+                                    iz < nz && iz < vz.size();
+                                    iz++) {
                                     subgrid[iq * nx * nz + ix * nz + iz] +=
                                         e_q_sq * c * vx[ix] * vz[iz];
                                 }
@@ -816,7 +816,7 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                             dist.GetDistributionJointGrid();
 
                         for (std::size_t ix = 0; ix < nx && ix < vals.size();
-                             ix++)
+                            ix++)
                             subgrid[iq * nx + ix] = vals[ix];
                     }
                 }

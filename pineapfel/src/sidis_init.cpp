@@ -3,7 +3,7 @@
 // functions, so including them in multiple TUs causes ODR violations at link
 // time.  All other files use pineapfel::init_sidis() / init_sidis_pol().
 
-#include <sidis_api.h>
+#include <pineapfel/sidis_api.h>
 
 #include <apfel/SIDISpol.h>
 

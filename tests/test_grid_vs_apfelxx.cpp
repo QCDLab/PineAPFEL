@@ -1,7 +1,7 @@
 #include "sidis_helper.h"
 #include <apfel/apfelxx.h>
-#include <pineapfel.h>
-#include <pineappl_capi.h>
+#include <pineapfel/pineapfel.h>
+#include <pineappl_capi/pineappl_capi.h>
 
 #include <cmath>
 #include <cstddef>
@@ -218,8 +218,8 @@ int main() {
                         [&](double const &z) -> double {
                             double sum = 0;
                             for (std::size_t ic = 0;
-                                 ic < ch.pid_combinations.size();
-                                 ic++) {
+                                ic < ch.pid_combinations.size();
+                                ic++) {
                                 double f_val = 1.0;
                                 for (int pid : ch.pid_combinations[ic])
                                     f_val *= toy_f(pid, z);
@@ -298,8 +298,8 @@ int main() {
                             [&](double const &z) -> double {
                                 double sum = 0;
                                 for (std::size_t ic = 0;
-                                     ic < ch.pid_combinations.size();
-                                     ic++) {
+                                    ic < ch.pid_combinations.size();
+                                    ic++) {
                                     double f_val = 1.0;
                                     for (int pid : ch.pid_combinations[ic])
                                         f_val *= toy_f(pid, z);
@@ -325,8 +325,8 @@ int main() {
                             [&](double const &z) -> double {
                                 double sum = 0;
                                 for (std::size_t ic = 0;
-                                     ic < ch.pid_combinations.size();
-                                     ic++) {
+                                    ic < ch.pid_combinations.size();
+                                    ic++) {
                                     double f_val = 1.0;
                                     for (int pid : ch.pid_combinations[ic])
                                         f_val *= toy_f(pid, z);
@@ -417,8 +417,8 @@ int main() {
                             [&](double const &z) -> double {
                                 double sum = 0;
                                 for (std::size_t ic = 0;
-                                     ic < ch.pid_combinations.size();
-                                     ic++) {
+                                    ic < ch.pid_combinations.size();
+                                    ic++) {
                                     double f_val = 1.0;
                                     for (int pid : ch.pid_combinations[ic])
                                         f_val *= toy_f(pid, z);
