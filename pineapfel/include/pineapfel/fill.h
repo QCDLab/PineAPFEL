@@ -2,7 +2,7 @@
 
 #include <pineapfel/cards.h>
 #include <pineapfel/grid_gen.h>
-#include <pineappl_capi/pineappl_capi.h>
+#include <pineappl_capi.h>
 
 namespace pineapfel {
 

@@ -255,14 +255,113 @@ static std::vector<double> derive_q2_nodes(const std::vector<BinDef> &bins,
     return std::vector<double>(q2_set.begin(), q2_set.end());
 }
 
-// Select the appropriate DoubleObject<Operator> from SidisObjects for
-// a given perturbative order, channel type (qq/gq/qg), and observable.
+// Evaluate a DoubleOperator at continuous output point (x_c, z_c) and return
+// the 2D kernel column w[ix * nz + iz] for all joint-grid input nodes (ix, iz).
+// This is the 2D analogue of Operator::Evaluate(x_c) → Distribution for
+// PineAPPL subgrid filling: w[ix][iz] = K(x_c, z_c; x_{ix}, z_{iz}).
+//
+// The shift-invariant kernel K_raw[ig1][ig2](0, beta_x)(0, beta_z) stores the
+// coupling for x-separation beta_x and z-separation beta_z within subgrid pair
+// (ig1, ig2).  The output-point Lagrange weights are used to combine
+// contributions from grid nodes near (x_c, z_c).
+static std::vector<double> eval_double_op_column(
+    const apfel::DoubleOperator       &dop,
+    double                             x_c,
+    double                             z_c,
+    const apfel::LagrangeInterpolator &li1,
+    const apfel::LagrangeInterpolator &li2) {
+    const apfel::Grid &g1  = dop.GetFirstGrid();
+    const apfel::Grid &g2  = dop.GetSecondGrid();
+    const auto        &K   = dop.GetDoubleOperator();
+
+    const int          ng1 = g1.nGrids();
+    const int          ng2 = g2.nGrids();
+
+    // Total joint-grid sizes
+    int                nx  = 0;
+    for (int ig = 0; ig < ng1; ig++) nx += g1.GetSubGrid(ig).nx();
+    int nz = 0;
+    for (int ig = 0; ig < ng2; ig++) nz += g2.GetSubGrid(ig).nx();
+
+    std::vector<double> w(nx * nz, 0.0);
+
+    // Find subgrid ig1 that is the densest one still containing x_c
+    int                 ig1_xc = ng1 - 1;
+    for (int ig1 = 0; ig1 < ng1; ig1++)
+        if (g1.GetSubGrid(ig1).xMin() > x_c) {
+            ig1_xc = ig1 - 1;
+            break;
+        }
+
+    // Find subgrid ig2 containing z_c
+    int ig2_zc = ng2 - 1;
+    for (int ig2 = 0; ig2 < ng2; ig2++)
+        if (g2.GetSubGrid(ig2).xMin() > z_c) {
+            ig2_zc = ig2 - 1;
+            break;
+        }
+
+    const apfel::SubGrid &sg1    = g1.GetSubGrid(ig1_xc);
+    const apfel::SubGrid &sg2    = g2.GetSubGrid(ig2_zc);
+    const int             nx_sub = sg1.nx();
+    const int             nz_sub = sg2.nx();
+
+    // Lagrange weights for x_c within sg1
+    const auto            bx     = li1.SumBounds(x_c, sg1);
+    const int             lo_x = bx[0], hi_x = bx[1];
+    std::vector<double>   W_x(hi_x - lo_x);
+    for (int b = 0; b < hi_x - lo_x; b++)
+        W_x[b] = li1.Interpolant(lo_x + b, x_c, sg1);
+
+    // Lagrange weights for z_c within sg2
+    const auto          bz   = li2.SumBounds(z_c, sg2);
+    const int           lo_z = bz[0], hi_z = bz[1];
+    std::vector<double> W_z(hi_z - lo_z);
+    for (int b = 0; b < hi_z - lo_z; b++)
+        W_z[b] = li2.Interpolant(lo_z + b, z_c, sg2);
+
+    // Joint-grid offset for ig1_xc and ig2_zc
+    int x_jg_off = 0;
+    for (int ig = 0; ig < ig1_xc; ig++) x_jg_off += g1.GetSubGrid(ig).nx();
+    int z_jg_off = 0;
+    for (int ig = 0; ig < ig2_zc; ig++) z_jg_off += g2.GetSubGrid(ig).nx();
+
+    const auto &K_sub = K[ig1_xc][ig2_zc];
+
+    // For each output node (out_x, out_z) near (x_c, z_c), accumulate
+    // kernel weights for all connected input nodes (out_x+alpha, out_z+gamma).
+    for (int b_ox = 0; b_ox < hi_x - lo_x; b_ox++) {
+        const int    out_x = lo_x + b_ox;
+        const double wx    = W_x[b_ox];
+
+        for (int b_oz = 0; b_oz < hi_z - lo_z; b_oz++) {
+            const int    out_z = lo_z + b_oz;
+            const double wxz   = wx * W_z[b_oz];
+
+            for (int alpha = 0; alpha <= nx_sub - out_x - 1; alpha++) {
+                const int inp_x = x_jg_off + out_x + alpha;
+                if (inp_x >= nx) break;
+
+                for (int gamma = 0; gamma <= nz_sub - out_z - 1; gamma++) {
+                    const int inp_z = z_jg_off + out_z + gamma;
+                    if (inp_z >= nz) break;
+
+                    w[inp_x * nz + inp_z] += wxz * K_sub(0, alpha)(0, gamma);
+                }
+            }
+        }
+    }
+
+    return w;
+}
+
+// Select the LO/NLO DoubleObject<Operator> from SidisCoeffs.
+// Returns nullptr for NNLO (alpha_s == 2) — handled separately.
 static const apfel::DoubleObject<apfel::Operator> *select_sidis_coeff(
     const pineapfel::SidisCoeffs &sobj,
     int                           alpha_s,
     int                           channel_type, // 0=qq, 1=gq, 2=qg
-    Observable                    observable,
-    int                           nf) {
+    Observable                    observable) {
     if (observable == Observable::F2) {
         if (alpha_s == 0) {
             if (channel_type == 0) return &sobj.C20qq;
@@ -271,12 +370,6 @@ static const apfel::DoubleObject<apfel::Operator> *select_sidis_coeff(
             if (channel_type == 0) return &sobj.C21qq;
             if (channel_type == 1) return &sobj.C21gq;
             if (channel_type == 2) return &sobj.C21qg;
-        } else if (alpha_s == 2) {
-            if (channel_type == 0) {
-                auto it = sobj.C22qq.find(nf);
-                if (it != sobj.C22qq.end()) return &it->second;
-            }
-            return nullptr; // gq, qg not available at NNLO
         }
     } else if (observable == Observable::FL) {
         if (alpha_s == 0) return nullptr; // No LO FL
@@ -285,18 +378,51 @@ static const apfel::DoubleObject<apfel::Operator> *select_sidis_coeff(
             if (channel_type == 1) return &sobj.CL1gq;
             if (channel_type == 2) return &sobj.CL1qg;
         }
-        // No NNLO FL in APFEL++
     }
     return nullptr;
 }
 
-// Select the appropriate polarized DoubleObject from SidisPolCoeffs.
+// Select the NNLO DoubleOperator from SidisCoeffs.
+// Handles channel types 0 (ns/qq), 1 (gq), 2 (qg).
+// The gg, ps, qbq, qpq1/2/3 channels require a richer channel structure
+// and are not yet implemented.
+static const apfel::DoubleOperator *select_sidis_nnlo_coeff(
+    const pineapfel::SidisCoeffs &sobj,
+    int                           channel_type, // 0=qq/ns, 1=gq, 2=qg
+    Observable                    observable,
+    int                           nf) {
+    if (observable == Observable::F2) {
+        if (channel_type == 0) {
+            auto it = sobj.C2Tns.find(nf);
+            if (it != sobj.C2Tns.end()) return &it->second;
+        } else if (channel_type == 1) {
+            auto it = sobj.C2T.find("gq");
+            if (it != sobj.C2T.end()) return &it->second;
+        } else if (channel_type == 2) {
+            auto it = sobj.C2T.find("qg");
+            if (it != sobj.C2T.end()) return &it->second;
+        }
+    } else if (observable == Observable::FL) {
+        if (channel_type == 0) {
+            auto it = sobj.C2Lns.find(nf);
+            if (it != sobj.C2Lns.end()) return &it->second;
+        } else if (channel_type == 1) {
+            auto it = sobj.C2L.find("gq");
+            if (it != sobj.C2L.end()) return &it->second;
+        } else if (channel_type == 2) {
+            auto it = sobj.C2L.find("qg");
+            if (it != sobj.C2L.end()) return &it->second;
+        }
+    }
+    return nullptr;
+}
+
+// Select the LO/NLO polarized DoubleObject from SidisPolCoeffs.
 static const apfel::DoubleObject<apfel::Operator> *select_sidis_pol_coeff(
     const pineapfel::SidisPolCoeffs &sobj,
     int                              alpha_s,
     int                              channel_type, // 0=qq, 1=gq, 2=qg
-    Observable                       observable,
-    int                              nf) {
+    Observable                       observable) {
     // Only F2 (G1) is available for polarized SIDIS in APFEL++
     if (observable != Observable::F2) return nullptr;
     if (alpha_s == 0) {
@@ -306,12 +432,26 @@ static const apfel::DoubleObject<apfel::Operator> *select_sidis_pol_coeff(
         if (channel_type == 0) return &sobj.G11qq;
         if (channel_type == 1) return &sobj.G11gq;
         if (channel_type == 2) return &sobj.G11qg;
-    } else if (alpha_s == 2) {
-        if (channel_type == 0) {
-            auto it = sobj.G12qq.find(nf);
-            if (it != sobj.G12qq.end()) return &it->second;
-        }
-        return nullptr; // gq, qg not available at NNLO
+    }
+    return nullptr;
+}
+
+// Select the NNLO polarized DoubleOperator from SidisPolCoeffs.
+static const apfel::DoubleOperator *select_sidis_nnlo_pol_coeff(
+    const pineapfel::SidisPolCoeffs &sobj,
+    int                              channel_type, // 0=qq/ns, 1=gq, 2=qg
+    Observable                       observable,
+    int                              nf) {
+    if (observable != Observable::F2) return nullptr;
+    if (channel_type == 0) {
+        auto it = sobj.G12ns.find(nf);
+        if (it != sobj.G12ns.end()) return &it->second;
+    } else if (channel_type == 1) {
+        auto it = sobj.G12gq.find(nf);
+        if (it != sobj.G12gq.end()) return &it->second;
+    } else if (channel_type == 2) {
+        auto it = sobj.G12qg.find(nf);
+        if (it != sobj.G12qg.end()) return &it->second;
     }
     return nullptr;
 }
@@ -361,33 +501,36 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
         subgrids.emplace_back(sg.n_knots, sg.x_min, sg.poly_degree);
     const apfel::Grid g{subgrids};
 
-    // 2. Initialize SIDIS coefficient functions and build a unified selector.
-    // The selector lambda captures the right coefficient struct by value so
-    // that the fill loop below is identical for polarized and unpolarized
-    // cases.
-    using CoeffPtr = const apfel::DoubleObject<apfel::Operator> *;
-    std::function<CoeffPtr(int, int, Observable, int)> get_coeff;
+    // 2. Initialize SIDIS coefficient functions.
+    // Two separate selectors: one for LO/NLO (DoubleObject<Operator>),
+    // one for NNLO (DoubleOperator).
+    using CoeffPtr     = const apfel::DoubleObject<apfel::Operator> *;
+    using CoeffNNLOPtr = const apfel::DoubleOperator *;
+
+    std::function<CoeffPtr(int, int, Observable)>     get_lo_nlo;
+    std::function<CoeffNNLOPtr(int, Observable, int)> get_nnlo;
+
     if (polarized) {
         auto sobj = std::make_shared<SidisPolCoeffs>(
             init_sidis_pol(g, theory.quark_thresholds));
-        get_coeff = [sobj](int     alpha_s,
-                        int        channel_type,
-                        Observable obs,
-                        int        nf) -> CoeffPtr {
-            return select_sidis_pol_coeff(*sobj,
-                alpha_s,
-                channel_type,
-                obs,
-                nf);
+        get_lo_nlo =
+            [sobj](int alpha_s, int channel_type, Observable obs) -> CoeffPtr {
+            return select_sidis_pol_coeff(*sobj, alpha_s, channel_type, obs);
+        };
+        get_nnlo =
+            [sobj](int channel_type, Observable obs, int nf) -> CoeffNNLOPtr {
+            return select_sidis_nnlo_pol_coeff(*sobj, channel_type, obs, nf);
         };
     } else {
         auto sobj = std::make_shared<SidisCoeffs>(
             init_sidis(g, theory.quark_thresholds));
-        get_coeff = [sobj](int     alpha_s,
-                        int        channel_type,
-                        Observable obs,
-                        int        nf) -> CoeffPtr {
-            return select_sidis_coeff(*sobj, alpha_s, channel_type, obs, nf);
+        get_lo_nlo =
+            [sobj](int alpha_s, int channel_type, Observable obs) -> CoeffPtr {
+            return select_sidis_coeff(*sobj, alpha_s, channel_type, obs);
+        };
+        get_nnlo =
+            [sobj](int channel_type, Observable obs, int nf) -> CoeffNNLOPtr {
+            return select_sidis_nnlo_coeff(*sobj, channel_type, obs, nf);
         };
     }
 
@@ -430,9 +573,14 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
             apfel::ElectroWeakCharges(Q, false /* spacelike */);
     }
 
+    // Lagrange interpolators for NNLO DoubleOperator evaluation.
+    // Both x and z use the same grid g.
+    const apfel::LagrangeInterpolator li1{g};
+    const apfel::LagrangeInterpolator li2{g};
+
     // 6. Fill subgrids for each (order, channel, bin)
     // Channels are grouped: for quark q, indices are 3*(q-1)+type
-    //   type: 0=qq, 1=gq, 2=qg
+    //   type: 0=qq/ns, 1=gq, 2=qg
     for (std::size_t iord = 0; iord < grid_def.orders.size(); iord++) {
         int alpha_s = grid_def.orders[iord].alpha_s;
         if (alpha_s > 2) {
@@ -469,34 +617,61 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                         // Skip if quark is not active at this Q²
                         if (quark_idx + 1 > nf) continue;
 
-                        const auto *coeff = get_coeff(alpha_s,
-                            channel_type,
-                            grid_def.observable,
-                            nf);
-                        if (coeff == nullptr) continue;
-
                         // e_q² weight for this quark
-                        double      e_q_sq = q2_data[iq].charges[quark_idx];
+                        double e_q_sq = q2_data[iq].charges[quark_idx];
 
-                        // Evaluate via outer product of the DoubleObject terms
-                        const auto &terms  = coeff->GetTerms();
-                        for (const auto &term : terms) {
-                            double              c = term.coefficient;
-                            apfel::Distribution dist_x =
-                                term.object1.Evaluate(x_center);
-                            apfel::Distribution dist_z =
-                                term.object2.Evaluate(z_center);
+                        if (alpha_s < 2) {
+                            // ── LO / NLO: DoubleObject<Operator> path ──────
+                            const auto *coeff = get_lo_nlo(alpha_s,
+                                channel_type,
+                                grid_def.observable);
+                            if (coeff == nullptr) continue;
 
-                            const auto &vx = dist_x.GetDistributionJointGrid();
-                            const auto &vz = dist_z.GetDistributionJointGrid();
+                            const auto &terms = coeff->GetTerms();
+                            for (const auto &term : terms) {
+                                double              c = term.coefficient;
+                                apfel::Distribution dist_x =
+                                    term.object1.Evaluate(x_center);
+                                apfel::Distribution dist_z =
+                                    term.object2.Evaluate(z_center);
 
-                            for (std::size_t ix = 0; ix < nx && ix < vx.size();
-                                 ix++) {
-                                for (std::size_t iz = 0;
-                                     iz < nz && iz < vz.size();
-                                     iz++) {
+                                const auto &vx =
+                                    dist_x.GetDistributionJointGrid();
+                                const auto &vz =
+                                    dist_z.GetDistributionJointGrid();
+
+                                for (std::size_t ix = 0;
+                                     ix < nx && ix < vx.size();
+                                     ix++) {
+                                    for (std::size_t iz = 0;
+                                         iz < nz && iz < vz.size();
+                                         iz++) {
+                                        subgrid[iq * nx * nz + ix * nz + iz] +=
+                                            e_q_sq * c * vx[ix] * vz[iz];
+                                    }
+                                }
+                            }
+                        } else {
+                            // ── NNLO: DoubleOperator path ──────────────────
+                            // NOTE: Only ns (qq), gq, and qg channels are
+                            // implemented here.  The gg, ps, qbq, qpq1/2/3
+                            // channels require additional PID combinations
+                            // beyond the current 3-per-quark channel structure
+                            // and are not yet supported.
+                            const auto *coeff =
+                                get_nnlo(channel_type, grid_def.observable, nf);
+                            if (coeff == nullptr) continue;
+
+                            auto w = eval_double_op_column(*coeff,
+                                x_center,
+                                z_center,
+                                li1,
+                                li2);
+
+                            for (std::size_t ix = 0; ix < nx; ix++) {
+                                for (std::size_t iz = 0; iz < nz; iz++) {
                                     subgrid[iq * nx * nz + ix * nz + iz] +=
-                                        e_q_sq * c * vx[ix] * vz[iz];
+                                        e_q_sq * w[ix * nz + iz];
                                 }
                             }
                         }

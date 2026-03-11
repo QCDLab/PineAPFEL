@@ -102,13 +102,13 @@ executable('xscan_zm',
 )
 
 install_headers(
-  'pineapfel/include/cards.h',
-  'pineapfel/include/evolution.h',
-  'pineapfel/include/fill.h',
-  'pineapfel/include/grid_gen.h',
-  'pineapfel/include/pineapfel.h',
-  'pineapfel/include/sidis_api.h',
-  install_dir : get_option('includedir'),
+  'pineapfel/include/pineapfel/cards.h',
+  'pineapfel/include/pineapfel/evolution.h',
+  'pineapfel/include/pineapfel/fill.h',
+  'pineapfel/include/pineapfel/grid_gen.h',
+  'pineapfel/include/pineapfel/pineapfel.h',
+  'pineapfel/include/pineapfel/sidis_api.h',
+  subdir : 'pineapfel',
 )
 
 # ── Python bindings (optional) ────────────────────────────────────────────────

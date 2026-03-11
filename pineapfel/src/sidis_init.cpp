@@ -20,7 +20,10 @@ SidisCoeffs init_sidis(const apfel::Grid &g,
     c.CL1qq = s.CL1qq;
     c.CL1gq = s.CL1gq;
     c.CL1qg = s.CL1qg;
-    c.C22qq = s.C22qq;
+    c.C2Tns = s.C2Tns;
+    c.C2T   = s.C2T;
+    c.C2Lns = s.C2Lns;
+    c.C2L   = s.C2L;
     return c;
 }
 
@@ -32,7 +35,10 @@ SidisPolCoeffs init_sidis_pol(const apfel::Grid &g,
     c.G11qq = s.G11qq;
     c.G11gq = s.G11gq;
     c.G11qg = s.G11qg;
-    c.G12qq = s.G12qq;
+    c.G12ns = s.G12ns;
+    c.G12gq = s.G12gq;
+    c.G12qg = s.G12qg;
+    c.G12   = s.G12;
     return c;
 }
 

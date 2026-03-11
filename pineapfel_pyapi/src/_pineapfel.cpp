@@ -81,11 +81,11 @@ PYBIND11_MODULE(_pineapfel, m) {
                 static_cast<uint8_t>(f),
                 static_cast<uint8_t>(ax)};
         }),
-            py::arg("a_s"),
-            py::arg("a"),
-            py::arg("r"),
-            py::arg("f"),
-            py::arg("a"))
+            py::arg("alpha_s"),
+            py::arg("alpha"),
+            py::arg("log_xir"),
+            py::arg("log_xif"),
+            py::arg("log_xia"))
         .def_readwrite("alpha_s", &pineapfel::OrderDef::alpha_s)
         .def_readwrite("alpha", &pineapfel::OrderDef::alpha)
         .def_readwrite("log_xir", &pineapfel::OrderDef::log_xir)
