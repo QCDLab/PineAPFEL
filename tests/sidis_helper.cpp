@@ -68,7 +68,7 @@ std::vector<double> compute_sidis_reference(const apfel::Grid &g,
                     const auto &terms = coeff->GetTerms();
                     for (const auto &term : terms) {
                         for (size_t ic = 0; ic < ch.pid_combinations.size();
-                            ic++) {
+                             ic++) {
                             int pid_pdf = ch.pid_combinations[ic][0];
                             int pid_ff  = ch.pid_combinations[ic][1];
 
@@ -161,7 +161,7 @@ std::vector<double> compute_sidis_pol_reference(const apfel::Grid &g,
                     const auto &terms = coeff->GetTerms();
                     for (const auto &term : terms) {
                         for (size_t ic = 0; ic < ch.pid_combinations.size();
-                            ic++) {
+                             ic++) {
                             int pid_pdf = ch.pid_combinations[ic][0];
                             int pid_ff  = ch.pid_combinations[ic][1];
 
