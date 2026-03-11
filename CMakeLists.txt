@@ -14,7 +14,7 @@ find_package(yaml-cpp REQUIRED)
 find_package(apfelxx REQUIRED)
 
 # Library
-add_library(pineapfel
+add_library(pineapfel SHARED
     pineapfel/src/cards.cpp
     pineapfel/src/evolution.cpp
     pineapfel/src/fill.cpp
