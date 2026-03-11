@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cards.h>
-#include <pineappl_capi.h>
+#include <pineapfel/cards.h>
+#include <pineappl_capi/pineappl_capi.h>
 
 namespace pineapfel {
 

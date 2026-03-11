@@ -1,6 +1,6 @@
 #include <apfel/apfelxx.h>
-#include <pineapfel.h>
-#include <pineappl_capi.h>
+#include <pineapfel/pineapfel.h>
+#include <pineappl_capi/pineappl_capi.h>
 
 #include <iostream>
 #include <string>
