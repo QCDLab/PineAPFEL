@@ -1,4 +1,4 @@
-name: CI Python Tests
+name: Python API Tests 🐍
 
 on:
   push:
