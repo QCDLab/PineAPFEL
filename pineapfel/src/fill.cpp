@@ -383,35 +383,51 @@ static const apfel::DoubleObject<apfel::Operator> *select_sidis_coeff(
 }
 
 // Select the NNLO DoubleOperator from SidisCoeffs.
-// Handles channel types 0 (ns/qq), 1 (gq), 2 (qg).
-// The gg, ps, qbq, qpq1/2/3 channels require a richer channel structure
-// and are not yet implemented.
+// type_id: 0=ns/qq, 1=gq, 2=qg, 3=gg, 4=ps, 5=qbq, 6=qpq1, 7=qpq2, 8=qpq3
+// nf is only used for type_id==0 (nf-dependent non-singlet).
 static const apfel::DoubleOperator *select_sidis_nnlo_coeff(
     const pineapfel::SidisCoeffs &sobj,
-    int                           channel_type, // 0=qq/ns, 1=gq, 2=qg
+    int                           type_id,
     Observable                    observable,
     int                           nf) {
+    // Helper: look up string key in C2T or C2L map
+    const auto *FT        = &sobj.C2T;
+    const auto *FL        = &sobj.C2L;
+
+    auto        lookup_ns = [&](const std::map<int, apfel::DoubleOperator> &m)
+        -> const apfel::DoubleOperator * {
+        auto it = m.find(nf);
+        return it != m.end() ? &it->second : nullptr;
+    };
+    auto lookup = [&](const std::map<std::string, apfel::DoubleOperator> &m,
+                      const std::string &key) -> const apfel::DoubleOperator * {
+        auto it = m.find(key);
+        return it != m.end() ? &it->second : nullptr;
+    };
+
     if (observable == Observable::F2) {
-        if (channel_type == 0) {
-            auto it = sobj.C2Tns.find(nf);
-            if (it != sobj.C2Tns.end()) return &it->second;
-        } else if (channel_type == 1) {
-            auto it = sobj.C2T.find("gq");
-            if (it != sobj.C2T.end()) return &it->second;
-        } else if (channel_type == 2) {
-            auto it = sobj.C2T.find("qg");
-            if (it != sobj.C2T.end()) return &it->second;
+        switch (type_id) {
+        case 0: return lookup_ns(sobj.C2Tns);
+        case 1: return lookup(*FT, "gq");
+        case 2: return lookup(*FT, "qg");
+        case 3: return lookup(*FT, "gg");
+        case 4: return lookup(*FT, "ps");
+        case 5: return lookup(*FT, "qbq");
+        case 6: return lookup(*FT, "qpq1");
+        case 7: return lookup(*FT, "qpq2");
+        case 8: return lookup(*FT, "qpq3");
         }
     } else if (observable == Observable::FL) {
-        if (channel_type == 0) {
-            auto it = sobj.C2Lns.find(nf);
-            if (it != sobj.C2Lns.end()) return &it->second;
-        } else if (channel_type == 1) {
-            auto it = sobj.C2L.find("gq");
-            if (it != sobj.C2L.end()) return &it->second;
-        } else if (channel_type == 2) {
-            auto it = sobj.C2L.find("qg");
-            if (it != sobj.C2L.end()) return &it->second;
+        switch (type_id) {
+        case 0: return lookup_ns(sobj.C2Lns);
+        case 1: return lookup(*FL, "gq");
+        case 2: return lookup(*FL, "qg");
+        case 3: return lookup(*FL, "gg");
+        case 4: return lookup(*FL, "ps");
+        case 5: return lookup(*FL, "qbq");
+        case 6: return lookup(*FL, "qpq1");
+        case 7: return lookup(*FL, "qpq2");
+        case 8: return lookup(*FL, "qpq3");
         }
     }
     return nullptr;
@@ -437,24 +453,51 @@ static const apfel::DoubleObject<apfel::Operator> *select_sidis_pol_coeff(
 }
 
 // Select the NNLO polarized DoubleOperator from SidisPolCoeffs.
+// type_id: 0=ns/qq, 1=gq, 2=qg, 3=gg, 4=ps, 5=qbq, 6=qpq1, 7=qpq2, 8=qpq3
+// nf is used for type_id 0-2 (nf-dependent maps).
+// Only G1 (observable==F2) is available for polarized SIDIS.
 static const apfel::DoubleOperator *select_sidis_nnlo_pol_coeff(
     const pineapfel::SidisPolCoeffs &sobj,
-    int                              channel_type, // 0=qq/ns, 1=gq, 2=qg
+    int                              type_id,
     Observable                       observable,
     int                              nf) {
     if (observable != Observable::F2) return nullptr;
-    if (channel_type == 0) {
-        auto it = sobj.G12ns.find(nf);
-        if (it != sobj.G12ns.end()) return &it->second;
-    } else if (channel_type == 1) {
-        auto it = sobj.G12gq.find(nf);
-        if (it != sobj.G12gq.end()) return &it->second;
-    } else if (channel_type == 2) {
-        auto it = sobj.G12qg.find(nf);
-        if (it != sobj.G12qg.end()) return &it->second;
+
+    auto lookup_nf = [&](const std::map<int, apfel::DoubleOperator> &m)
+        -> const apfel::DoubleOperator * {
+        auto it = m.find(nf);
+        return it != m.end() ? &it->second : nullptr;
+    };
+    auto lookup = [&](const std::string &key) -> const apfel::DoubleOperator * {
+        auto it = sobj.G12.find(key);
+        return it != sobj.G12.end() ? &it->second : nullptr;
+    };
+
+    switch (type_id) {
+    case 0: return lookup_nf(sobj.G12ns);
+    case 1: return lookup_nf(sobj.G12gq);
+    case 2: return lookup_nf(sobj.G12qg);
+    case 3: return lookup("gg");
+    case 4: return lookup("ps");
+    case 5: return lookup("qbq");
+    case 6: return lookup("qpq1");
+    case 7: return lookup("qpq2");
+    case 8: return lookup("qpq3");
     }
     return nullptr;
 }
+
+// Describes the type and quark index(es) of a SIDIS channel for fill routing.
+struct SidisChannelInfo {
+    enum class Type { nn, gq, qg, gg, ps, qbq, qpq1, qpq2, qpq3 } type;
+    int quark_a = -1; // primary quark (1-based): active quark for
+                      // nn/gq/qg/ps/qbq/qpq1/qpq2
+    int quark_b = -1; // secondary quark (1-based): target for qpq3
+};
+
+// Signed EM charges for quarks 1..6 (u, d, s, c, b, t)
+static constexpr double QCh[6] =
+    {2. / 3., -1. / 3., -1. / 3., 2. / 3., -1. / 3., 2. / 3.};
 
 static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
     const TheoryCard                                 &theory,
@@ -494,6 +537,43 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
         nf_max);
     std::cout << "  Auto-derived " << grid_def.channels.size()
               << " channels for nf_max=" << nf_max << std::endl;
+
+    // Build SidisChannelInfo in the same order as derive_channels.
+    std::vector<SidisChannelInfo> channel_infos;
+    channel_infos.reserve(grid_def.channels.size());
+    // 3*nf_max existing channels: nn, gq, qg per quark
+    for (int q = 1; q <= nf_max; q++) {
+        channel_infos.push_back({SidisChannelInfo::Type::nn, q, -1});
+        channel_infos.push_back({SidisChannelInfo::Type::gq, q, -1});
+        channel_infos.push_back({SidisChannelInfo::Type::qg, q, -1});
+    }
+    // gg
+    channel_infos.push_back({SidisChannelInfo::Type::gg, -1, -1});
+    // ps per quark
+    for (int q = 1; q <= nf_max; q++)
+        channel_infos.push_back({SidisChannelInfo::Type::ps, q, -1});
+    // qbq per quark
+    for (int q = 1; q <= nf_max; q++)
+        channel_infos.push_back({SidisChannelInfo::Type::qbq, q, -1});
+    // qpq1 per source j (only when nf_max >= 2, matching derive_channels guard)
+    for (int j = 1; j <= nf_max; j++) {
+        if (nf_max < 2) continue;
+        channel_infos.push_back({SidisChannelInfo::Type::qpq1, j, -1});
+    }
+    // qpq2 per target i
+    for (int i = 1; i <= nf_max; i++) {
+        if (nf_max < 2) continue;
+        channel_infos.push_back({SidisChannelInfo::Type::qpq2, i, -1});
+    }
+    // qpq3 per ordered pair (a,b) with a≠b
+    for (int a = 1; a <= nf_max; a++)
+        for (int b = 1; b <= nf_max; b++)
+            if (a != b)
+                channel_infos.push_back({SidisChannelInfo::Type::qpq3, a, b});
+
+    if (channel_infos.size() != grid_def.channels.size())
+        throw std::runtime_error("build_grid_sidis: channel_infos size "
+                                 "mismatch with derived channels");
 
     // 1. Build APFEL++ x-space grid (same grid for x and z)
     std::vector<apfel::SubGrid> subgrids;
@@ -579,8 +659,6 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
     const apfel::LagrangeInterpolator li2{g};
 
     // 6. Fill subgrids for each (order, channel, bin)
-    // Channels are grouped: for quark q, indices are 3*(q-1)+type
-    //   type: 0=qq/ns, 1=gq, 2=qg
     for (std::size_t iord = 0; iord < grid_def.orders.size(); iord++) {
         int alpha_s = grid_def.orders[iord].alpha_s;
         if (alpha_s > 2) {
@@ -590,8 +668,32 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
         }
 
         for (std::size_t ich = 0; ich < grid_def.channels.size(); ich++) {
-            int quark_idx    = static_cast<int>(ich / 3); // 0-based quark index
-            int channel_type = static_cast<int>(ich % 3); // 0=qq, 1=gq, 2=qg
+            const SidisChannelInfo &info        = channel_infos[ich];
+
+            // Map channel type to LO/NLO selector index (-1 = unavailable)
+            // and to NNLO selector index (0..8).
+            int                     lo_nlo_type = -1;
+            int                     nnlo_type   = -1;
+            switch (info.type) {
+            case SidisChannelInfo::Type::nn:
+                lo_nlo_type = 0;
+                nnlo_type   = 0;
+                break;
+            case SidisChannelInfo::Type::gq:
+                lo_nlo_type = 1;
+                nnlo_type   = 1;
+                break;
+            case SidisChannelInfo::Type::qg:
+                lo_nlo_type = 2;
+                nnlo_type   = 2;
+                break;
+            case SidisChannelInfo::Type::gg  : nnlo_type = 3; break;
+            case SidisChannelInfo::Type::ps  : nnlo_type = 4; break;
+            case SidisChannelInfo::Type::qbq : nnlo_type = 5; break;
+            case SidisChannelInfo::Type::qpq1: nnlo_type = 6; break;
+            case SidisChannelInfo::Type::qpq2: nnlo_type = 7; break;
+            case SidisChannelInfo::Type::qpq3: nnlo_type = 8; break;
+            }
 
             for (std::size_t ibin = 0; ibin < grid_def.bins.size(); ibin++) {
                 // Bin centers: dim 0=Q², dim 1=x, dim 2=z
@@ -612,18 +714,50 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                 if (x_center >= x_nodes.front() && x_center <= x_nodes.back() &&
                     z_center >= x_nodes.front() && z_center <= x_nodes.back()) {
                     for (std::size_t iq = 0; iq < nq; iq++) {
-                        int nf = q2_data[iq].nf;
+                        int         nf          = q2_data[iq].nf;
+                        const auto &charges     = q2_data[iq].charges;
 
-                        // Skip if quark is not active at this Q²
-                        if (quark_idx + 1 > nf) continue;
+                        // Compute fill weight; skip if required quarks
+                        // inactive. For gg/ps the weight is sumch2 = Σ_q e_q²;
+                        // for qpq3 it is QCh[a-1]*QCh[b-1] (may be negative).
+                        double      fill_weight = 0.0;
+                        switch (info.type) {
+                        case SidisChannelInfo::Type::nn:
+                        case SidisChannelInfo::Type::gq:
+                        case SidisChannelInfo::Type::qg:
+                            if (info.quark_a > nf) continue;
+                            fill_weight = charges[info.quark_a - 1];
+                            break;
+                        case SidisChannelInfo::Type::gg:
+                            for (int q = 0; q < nf; q++)
+                                fill_weight += charges[q];
+                            break;
+                        case SidisChannelInfo::Type::ps:
+                            if (info.quark_a > nf) continue;
+                            for (int q = 0; q < nf; q++)
+                                fill_weight += charges[q];
+                            break;
+                        case SidisChannelInfo::Type::qbq:
+                        case SidisChannelInfo::Type::qpq1:
+                        case SidisChannelInfo::Type::qpq2:
+                            if (info.quark_a > nf) continue;
+                            fill_weight = charges[info.quark_a - 1];
+                            break;
+                        case SidisChannelInfo::Type::qpq3:
+                            if (info.quark_a > nf || info.quark_b > nf)
+                                continue;
+                            fill_weight =
+                                QCh[info.quark_a - 1] * QCh[info.quark_b - 1];
+                            break;
+                        }
 
-                        // e_q² weight for this quark
-                        double e_q_sq = q2_data[iq].charges[quark_idx];
+                        if (fill_weight == 0.0) continue;
 
                         if (alpha_s < 2) {
                             // ── LO / NLO: DoubleObject<Operator> path ──────
+                            if (lo_nlo_type < 0) continue;
                             const auto *coeff = get_lo_nlo(alpha_s,
-                                channel_type,
+                                lo_nlo_type,
                                 grid_def.observable);
                             if (coeff == nullptr) continue;
 
@@ -647,19 +781,14 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                                          iz < nz && iz < vz.size();
                                          iz++) {
                                         subgrid[iq * nx * nz + ix * nz + iz] +=
-                                            e_q_sq * c * vx[ix] * vz[iz];
+                                            fill_weight * c * vx[ix] * vz[iz];
                                     }
                                 }
                             }
                         } else {
                             // ── NNLO: DoubleOperator path ──────────────────
-                            // NOTE: Only ns (qq), gq, and qg channels are
-                            // implemented here.  The gg, ps, qbq, qpq1/2/3
-                            // channels require additional PID combinations
-                            // beyond the current 3-per-quark channel structure
-                            // and are not yet supported.
                             const auto *coeff =
-                                get_nnlo(channel_type, grid_def.observable, nf);
+                                get_nnlo(nnlo_type, grid_def.observable, nf);
                             if (coeff == nullptr) continue;
 
                             auto w = eval_double_op_column(*coeff,
@@ -671,7 +800,7 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                             for (std::size_t ix = 0; ix < nx; ix++) {
                                 for (std::size_t iz = 0; iz < nz; iz++) {
                                     subgrid[iq * nx * nz + ix * nz + iz] +=
-                                        e_q_sq * w[ix * nz + iz];
+                                        fill_weight * w[ix * nz + iz];
                                 }
                             }
                         }

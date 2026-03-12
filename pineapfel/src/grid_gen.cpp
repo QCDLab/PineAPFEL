@@ -43,6 +43,95 @@ std::vector<ChannelDef> derive_channels(ProcessType process,
             qg.factors = {1.0, 1.0};
             channels.push_back(std::move(qg));
         }
+
+        // ── NNLO-only channels ──────────────────────────────────────────────
+        // These carry zero subgrid weight at LO/NLO; the fill loop skips them
+        // when no coefficient function exists for the requested order.
+
+        // gg: PDF(g) ⊗ FF(g), weighted by Σ_q e_q² at fill time
+        {
+            ChannelDef gg;
+            gg.pid_combinations = {
+                {21, 21}
+            };
+            gg.factors = {1.0};
+            channels.push_back(std::move(gg));
+        }
+
+        // ps: per quark q — [PDF(q)+PDF(-q)] ⊗ [FF(q)+FF(-q)],
+        //   weighted by Σ_q e_q² (same for every ps_q channel)
+        for (int q = 1; q <= nf_max; q++) {
+            ChannelDef ps;
+            ps.pid_combinations = {
+                { q,  q},
+                {-q, -q}
+            };
+            ps.factors = {1.0, 1.0};
+            channels.push_back(std::move(ps));
+        }
+
+        // qbq: per quark q — [PDF(q) ⊗ FF(-q)] + [PDF(-q) ⊗ FF(q)],
+        //   weighted by e_q²
+        for (int q = 1; q <= nf_max; q++) {
+            ChannelDef qbq;
+            qbq.pid_combinations = {
+                { q, -q},
+                {-q,  q}
+            };
+            qbq.factors = {1.0, 1.0};
+            channels.push_back(std::move(qbq));
+        }
+
+        // qpq1: per source j — Σ_{k≠j} [PDF(j)±PDF(-j)] ⊗ [FF(k)±FF(-k)],
+        //   weighted by e_j²
+        for (int j = 1; j <= nf_max; j++) {
+            ChannelDef qpq1;
+            for (int k = 1; k <= nf_max; k++) {
+                if (k == j) continue;
+                qpq1.pid_combinations.push_back({j, k});
+                qpq1.pid_combinations.push_back({j, -k});
+                qpq1.pid_combinations.push_back({-j, k});
+                qpq1.pid_combinations.push_back({-j, -k});
+                qpq1.factors.insert(qpq1.factors.end(), {1.0, 1.0, 1.0, 1.0});
+            }
+            if (!qpq1.pid_combinations.empty())
+                channels.push_back(std::move(qpq1));
+        }
+
+        // qpq2: per target i — Σ_{k≠i} [PDF(k)±PDF(-k)] ⊗ [FF(i)±FF(-i)],
+        //   weighted by e_i²
+        for (int i = 1; i <= nf_max; i++) {
+            ChannelDef qpq2;
+            for (int k = 1; k <= nf_max; k++) {
+                if (k == i) continue;
+                qpq2.pid_combinations.push_back({k, i});
+                qpq2.pid_combinations.push_back({k, -i});
+                qpq2.pid_combinations.push_back({-k, i});
+                qpq2.pid_combinations.push_back({-k, -i});
+                qpq2.factors.insert(qpq2.factors.end(), {1.0, 1.0, 1.0, 1.0});
+            }
+            if (!qpq2.pid_combinations.empty())
+                channels.push_back(std::move(qpq2));
+        }
+
+        // qpq3: per ordered pair (a,b) with a≠b —
+        //   [PDF(a)-PDF(-a)] ⊗ [FF(b)-FF(-b)],
+        //   weighted by QCh[a-1]*QCh[b-1] (signed charges)
+        for (int a = 1; a <= nf_max; a++) {
+            for (int b = 1; b <= nf_max; b++) {
+                if (a == b) continue;
+                ChannelDef qpq3;
+                qpq3.pid_combinations = {
+                    { a,  b},
+                    {-a,  b},
+                    { a, -b},
+                    {-a, -b}
+                };
+                qpq3.factors = {1.0, -1.0, -1.0, 1.0};
+                channels.push_back(std::move(qpq3));
+            }
+        }
+
         return channels;
     }
 
