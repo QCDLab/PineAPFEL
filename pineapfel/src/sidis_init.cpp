@@ -1,45 +1,16 @@
-// This is the ONLY translation unit that includes <apfel/SIDISpol.h>
-// (which in turn includes <apfel/SIDIS.h>).  Both headers define non-inline
-// functions, so including them in multiple TUs causes ODR violations at link
-// time.  All other files use pineapfel::init_sidis() / init_sidis_pol().
+// This is the ONLY translation unit that includes <apfel/sidisbuilder.h>.
+// sidisbuilder.h uses #pragma once and only declares (no header-defined
+// function bodies), so there are no ODR violations.  All other files access
+// SIDIS coefficient functions through pineapfel::init_sidis_nnlo().
 
 #include <pineapfel/sidis_api.h>
 
-#include <apfel/SIDISpol.h>
-
 namespace pineapfel {
 
-SidisCoeffs init_sidis(const apfel::Grid &g,
-    const std::vector<double>            &thresholds) {
-    auto        s = apfel::InitializeSIDIS(g, thresholds);
-    SidisCoeffs c;
-    c.C20qq = s.C20qq;
-    c.C21qq = s.C21qq;
-    c.C21gq = s.C21gq;
-    c.C21qg = s.C21qg;
-    c.CL1qq = s.CL1qq;
-    c.CL1gq = s.CL1gq;
-    c.CL1qg = s.CL1qg;
-    c.C2Tns = s.C2Tns;
-    c.C2T   = s.C2T;
-    c.C2Lns = s.C2Lns;
-    c.C2L   = s.C2L;
-    return c;
-}
-
-SidisPolCoeffs init_sidis_pol(const apfel::Grid &g,
-    const std::vector<double>                   &thresholds) {
-    auto           s = apfel::InitializeSIDISpol(g, thresholds);
-    SidisPolCoeffs c;
-    c.G10qq = s.G10qq;
-    c.G11qq = s.G11qq;
-    c.G11gq = s.G11gq;
-    c.G11qg = s.G11qg;
-    c.G12ns = s.G12ns;
-    c.G12gq = s.G12gq;
-    c.G12qg = s.G12qg;
-    c.G12   = s.G12;
-    return c;
+apfel::SidisNNLOObjects init_sidis_nnlo(const apfel::Grid &g,
+    const std::vector<double>                             &thresholds,
+    double                                                 int_eps) {
+    return apfel::InitializeSidisObjects(g, g, thresholds, int_eps);
 }
 
 } // namespace pineapfel

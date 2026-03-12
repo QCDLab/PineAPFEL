@@ -1,7 +1,7 @@
 #include "sidis_helper.h"
 #include <apfel/apfelxx.h>
 #include <pineapfel/pineapfel.h>
-#include <pineappl_capi/pineappl_capi.h>
+#include <pineappl_capi.h>
 
 #include <cmath>
 #include <cstddef>
@@ -1195,6 +1195,106 @@ int main() {
             if (!ok) failures++;
         }
         pineappl_grid_delete(fonll_grid);
+    }
+
+    // ============================================================
+    // TEST 12: SIDIS F2 NNLO x-scan — PineAPPL vs DoubleOperator reference
+    //
+    // Build a SIDIS grid with all orders (LO+NLO+NNLO) and compare
+    // the NNLO-only contribution (alpha_s^2 order) against a reference
+    // that directly evaluates each DoubleOperator via
+    //   dop.MultiplyFirstBy(pdf).Evaluate(x_c) * ff .Evaluate(z_c).
+    // This tests eval_double_op_column and the new gg/ps/qbq/qpq1/2/3
+    // channel structure introduced for the APFEL++ NNLO SIDIS update.
+    // ============================================================
+    std::printf("\n--- TEST 12: SIDIS F2 NNLO x-scan PineAPPL vs "
+                "DoubleOperator ---\n");
+    {
+        auto nnlo_grid_def =
+            pineapfel::load_grid_def("runcards/grid_sidis_nnlo.yaml");
+        auto nnlo_theory = pineapfel::load_theory_card("runcards/theory.yaml");
+
+        // Determine nf_max at the grid's Q² range
+        double q2_max_nnlo = 0;
+        for (const auto &bin : nnlo_grid_def.bins)
+            q2_max_nnlo = std::max(q2_max_nnlo, bin.upper[0]);
+        int nf_max_nnlo =
+            apfel::NF(std::sqrt(q2_max_nnlo), nnlo_theory.quark_thresholds);
+
+        pineappl_grid *nnlo_grid =
+            pineapfel::build_grid(nnlo_grid_def, nnlo_theory, op_card);
+        std::size_t nnlo_nbins = pineappl_grid_bin_count(nnlo_grid);
+        std::size_t nnlo_nords = pineappl_grid_order_count(nnlo_grid);
+
+        auto        nnlo_q2_nodes =
+            derive_q2_nodes(nnlo_grid_def.bins, nnlo_theory.quark_thresholds);
+
+        // PineAPPL convolution — NNLO order only (index 2).
+        auto nnlo_mask = std::make_unique<bool[]>(nnlo_nords);
+        for (std::size_t i = 0; i < nnlo_nords; i++) nnlo_mask[i] = (i == 2);
+
+        std::vector<double> pineappl_nnlo(nnlo_nbins, 0.0);
+        void               *pdfs_state[2] = {nullptr, nullptr};
+
+        pineappl_grid_convolve(nnlo_grid,
+            xfx_callback,
+            alphas_callback,
+            pdfs_state,
+            static_cast<void *>(&as_tab),
+            nnlo_mask.get(),
+            nullptr, // all channels
+            nullptr, // no bin indices
+            0,
+            nullptr,
+            pineappl_nnlo.data());
+
+        // Reference: direct DoubleOperator evaluation (same APFEL++ grid)
+        auto nnlo_sobj =
+            pineapfel::init_sidis_nnlo(g, nnlo_theory.quark_thresholds);
+
+        std::vector<std::vector<double>> nnlo_x_bounds, nnlo_z_bounds;
+        for (const auto &bin : nnlo_grid_def.bins) {
+            nnlo_x_bounds.push_back({bin.lower[1], bin.upper[1]});
+            nnlo_z_bounds.push_back({bin.lower[2], bin.upper[2]});
+        }
+
+        auto nnlo_alphas_func = [&](double Q) -> double {
+            return as_tab.Evaluate(Q);
+        };
+
+        auto   nnlo_ref = compute_sidis_nnlo_reference(g,
+            nnlo_sobj,
+            nnlo_theory.quark_thresholds,
+            nf_max_nnlo,
+            nnlo_q2_nodes,
+            nnlo_x_bounds,
+            nnlo_z_bounds,
+            toy_f,
+            nnlo_alphas_func);
+
+        // x-scan tolerance: subgrid-boundary artifacts can reach ~1e-4
+        double nnlo_tol = 1e-3;
+
+        for (std::size_t ibin = 0; ibin < nnlo_nbins; ibin++) {
+            double x_center = std::sqrt(nnlo_grid_def.bins[ibin].lower[1] *
+                                        nnlo_grid_def.bins[ibin].upper[1]);
+            double ref      = nnlo_ref[ibin];
+            double rel_diff =
+                std::abs(ref) > 1e-30
+                    ? std::abs(pineappl_nnlo[ibin] - ref) / std::abs(ref)
+                    : std::abs(pineappl_nnlo[ibin]);
+
+            bool ok = (rel_diff < nnlo_tol);
+            std::printf("  x=%.3e  pineappl=%.6e  ref=%.6e  rel_diff=%.2e %s\n",
+                x_center,
+                pineappl_nnlo[ibin],
+                ref,
+                rel_diff,
+                ok ? "OK" : "FAIL");
+            if (!ok) failures++;
+        }
+
+        pineappl_grid_delete(nnlo_grid);
     }
 
     // ============================================================

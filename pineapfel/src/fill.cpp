@@ -355,134 +355,101 @@ static std::vector<double> eval_double_op_column(
     return w;
 }
 
-// Select the LO/NLO DoubleObject<Operator> from SidisCoeffs.
-// Returns nullptr for NNLO (alpha_s == 2) — handled separately.
-static const apfel::DoubleObject<apfel::Operator> *select_sidis_coeff(
-    const pineapfel::SidisCoeffs &sobj,
-    int                           alpha_s,
-    int                           channel_type, // 0=qq, 1=gq, 2=qg
-    Observable                    observable) {
-    if (observable == Observable::F2) {
+// Select a DoubleOperator from SidisNNLOObjects for a given
+// (alpha_s, type_id, observable, nf, polarized).
+// type_id: 0=nn/ns, 1=gq, 2=qg, 3=gg, 4=ps, 5=qbq, 6=qpq1, 7=qpq2, 8=qpq3
+// Returns nullptr when no operator exists (e.g., FL at LO, pure-NNLO channels
+// at NLO).
+static const apfel::DoubleOperator *select_sidis_coeff_nnlo(
+    const apfel::SidisNNLOObjects &obj,
+    int                            alpha_s,
+    int                            type_id,
+    Observable                     observable,
+    int                            nf,
+    bool                           polarized) {
+    const std::string snf = "_nf" + std::to_string(nf);
+    const auto       &map =
+        polarized ? obj.G1 : (observable == Observable::FL ? obj.FL : obj.FT);
+
+    auto find = [&](const std::string &key) -> const apfel::DoubleOperator * {
+        auto it = map.find(key);
+        return it != map.end() ? &it->second : nullptr;
+    };
+
+    if (polarized) {
+        // G1 polarized
         if (alpha_s == 0) {
-            if (channel_type == 0) return &sobj.C20qq;
-            return nullptr; // gq, qg start at NLO
+            return type_id == 0 ? find("DoubleIdentity") : nullptr;
         } else if (alpha_s == 1) {
-            if (channel_type == 0) return &sobj.C21qq;
-            if (channel_type == 1) return &sobj.C21gq;
-            if (channel_type == 2) return &sobj.C21qg;
+            switch (type_id) {
+            case 0 : return find("DC1Q2Q");
+            case 1 : return find("DC1Q2G");
+            case 2 : return find("DC1G2Q");
+            default: return nullptr;
+            }
+        } else {
+            switch (type_id) {
+            case 0 : return find("DC2Q2QNS" + snf);
+            case 1 : return find("DC2Q2G" + snf);
+            case 2 : return find("DC2G2Q" + snf);
+            case 3 : return find("DC2G2G");
+            case 4 : return find("DC2Q2QPS");
+            case 5 : return find("DC2Q2QB");
+            case 6 : return find("DC2Q2QP1");
+            case 7 : return find("DC2Q2QP2");
+            case 8 : return find("DC2Q2QP3");
+            default: return nullptr;
+            }
         }
-    } else if (observable == Observable::FL) {
-        if (alpha_s == 0) return nullptr; // No LO FL
+    } else if (observable == Observable::F2) {
+        // FT unpolarized
+        if (alpha_s == 0) {
+            return type_id == 0 ? find("DoubleIdentity") : nullptr;
+        } else if (alpha_s == 1) {
+            switch (type_id) {
+            case 0 : return find("C1TQ2Q");
+            case 1 : return find("C1TQ2G");
+            case 2 : return find("C1TG2Q");
+            default: return nullptr;
+            }
+        } else {
+            switch (type_id) {
+            case 0 : return find("C2TQ2QNS" + snf);
+            case 1 : return find("C2TQ2G");
+            case 2 : return find("C2TG2Q");
+            case 3 : return find("C2TG2G");
+            case 4 : return find("C2TQ2QPS");
+            case 5 : return find("C2TQ2QB");
+            case 6 : return find("C2TQ2QP1");
+            case 7 : return find("C2TQ2QP2");
+            case 8 : return find("C2TQ2QP3");
+            default: return nullptr;
+            }
+        }
+    } else {
+        // FL unpolarized — no LO contribution
+        if (alpha_s == 0) return nullptr;
         if (alpha_s == 1) {
-            if (channel_type == 0) return &sobj.CL1qq;
-            if (channel_type == 1) return &sobj.CL1gq;
-            if (channel_type == 2) return &sobj.CL1qg;
+            switch (type_id) {
+            case 0 : return find("C1LQ2Q");
+            case 1 : return find("C1LQ2G");
+            case 2 : return find("C1LG2Q");
+            default: return nullptr;
+            }
+        } else {
+            switch (type_id) {
+            case 0 : return find("C2LQ2QNS" + snf);
+            case 1 : return find("C2LQ2G");
+            case 2 : return find("C2LG2Q");
+            case 3 : return find("C2LG2G");
+            case 4 : return find("C2LQ2QPS");
+            case 5 : return find("C2LQ2QB");
+            case 6 : return find("C2LQ2QP1");
+            case 7 : return find("C2LQ2QP2");
+            case 8 : return find("C2LQ2QP3");
+            default: return nullptr;
+            }
         }
-    }
-    return nullptr;
-}
-
-// Select the NNLO DoubleOperator from SidisCoeffs.
-// type_id: 0=ns/qq, 1=gq, 2=qg, 3=gg, 4=ps, 5=qbq, 6=qpq1, 7=qpq2, 8=qpq3
-// nf is only used for type_id==0 (nf-dependent non-singlet).
-static const apfel::DoubleOperator *select_sidis_nnlo_coeff(
-    const pineapfel::SidisCoeffs &sobj,
-    int                           type_id,
-    Observable                    observable,
-    int                           nf) {
-    // Helper: look up string key in C2T or C2L map
-    const auto *FT        = &sobj.C2T;
-    const auto *FL        = &sobj.C2L;
-
-    auto        lookup_ns = [&](const std::map<int, apfel::DoubleOperator> &m)
-        -> const apfel::DoubleOperator * {
-        auto it = m.find(nf);
-        return it != m.end() ? &it->second : nullptr;
-    };
-    auto lookup = [&](const std::map<std::string, apfel::DoubleOperator> &m,
-                      const std::string &key) -> const apfel::DoubleOperator * {
-        auto it = m.find(key);
-        return it != m.end() ? &it->second : nullptr;
-    };
-
-    if (observable == Observable::F2) {
-        switch (type_id) {
-        case 0: return lookup_ns(sobj.C2Tns);
-        case 1: return lookup(*FT, "gq");
-        case 2: return lookup(*FT, "qg");
-        case 3: return lookup(*FT, "gg");
-        case 4: return lookup(*FT, "ps");
-        case 5: return lookup(*FT, "qbq");
-        case 6: return lookup(*FT, "qpq1");
-        case 7: return lookup(*FT, "qpq2");
-        case 8: return lookup(*FT, "qpq3");
-        }
-    } else if (observable == Observable::FL) {
-        switch (type_id) {
-        case 0: return lookup_ns(sobj.C2Lns);
-        case 1: return lookup(*FL, "gq");
-        case 2: return lookup(*FL, "qg");
-        case 3: return lookup(*FL, "gg");
-        case 4: return lookup(*FL, "ps");
-        case 5: return lookup(*FL, "qbq");
-        case 6: return lookup(*FL, "qpq1");
-        case 7: return lookup(*FL, "qpq2");
-        case 8: return lookup(*FL, "qpq3");
-        }
-    }
-    return nullptr;
-}
-
-// Select the LO/NLO polarized DoubleObject from SidisPolCoeffs.
-static const apfel::DoubleObject<apfel::Operator> *select_sidis_pol_coeff(
-    const pineapfel::SidisPolCoeffs &sobj,
-    int                              alpha_s,
-    int                              channel_type, // 0=qq, 1=gq, 2=qg
-    Observable                       observable) {
-    // Only F2 (G1) is available for polarized SIDIS in APFEL++
-    if (observable != Observable::F2) return nullptr;
-    if (alpha_s == 0) {
-        if (channel_type == 0) return &sobj.G10qq;
-        return nullptr; // gq, qg start at NLO
-    } else if (alpha_s == 1) {
-        if (channel_type == 0) return &sobj.G11qq;
-        if (channel_type == 1) return &sobj.G11gq;
-        if (channel_type == 2) return &sobj.G11qg;
-    }
-    return nullptr;
-}
-
-// Select the NNLO polarized DoubleOperator from SidisPolCoeffs.
-// type_id: 0=ns/qq, 1=gq, 2=qg, 3=gg, 4=ps, 5=qbq, 6=qpq1, 7=qpq2, 8=qpq3
-// nf is used for type_id 0-2 (nf-dependent maps).
-// Only G1 (observable==F2) is available for polarized SIDIS.
-static const apfel::DoubleOperator *select_sidis_nnlo_pol_coeff(
-    const pineapfel::SidisPolCoeffs &sobj,
-    int                              type_id,
-    Observable                       observable,
-    int                              nf) {
-    if (observable != Observable::F2) return nullptr;
-
-    auto lookup_nf = [&](const std::map<int, apfel::DoubleOperator> &m)
-        -> const apfel::DoubleOperator * {
-        auto it = m.find(nf);
-        return it != m.end() ? &it->second : nullptr;
-    };
-    auto lookup = [&](const std::string &key) -> const apfel::DoubleOperator * {
-        auto it = sobj.G12.find(key);
-        return it != sobj.G12.end() ? &it->second : nullptr;
-    };
-
-    switch (type_id) {
-    case 0: return lookup_nf(sobj.G12ns);
-    case 1: return lookup_nf(sobj.G12gq);
-    case 2: return lookup_nf(sobj.G12qg);
-    case 3: return lookup("gg");
-    case 4: return lookup("ps");
-    case 5: return lookup("qbq");
-    case 6: return lookup("qpq1");
-    case 7: return lookup("qpq2");
-    case 8: return lookup("qpq3");
     }
     return nullptr;
 }
@@ -581,38 +548,25 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
         subgrids.emplace_back(sg.n_knots, sg.x_min, sg.poly_degree);
     const apfel::Grid g{subgrids};
 
-    // 2. Initialize SIDIS coefficient functions.
-    // Two separate selectors: one for LO/NLO (DoubleObject<Operator>),
-    // one for NNLO (DoubleOperator).
-    using CoeffPtr     = const apfel::DoubleObject<apfel::Operator> *;
+    // 2. Initialize SIDIS coefficient functions (exact NNLO).
+    // All orders (LO, NLO, NNLO) use DoubleOperator objects from
+    // SidisNNLOObjects.
     using CoeffNNLOPtr = const apfel::DoubleOperator *;
 
-    std::function<CoeffPtr(int, int, Observable)>     get_lo_nlo;
-    std::function<CoeffNNLOPtr(int, Observable, int)> get_nnlo;
-
-    if (polarized) {
-        auto sobj = std::make_shared<SidisPolCoeffs>(
-            init_sidis_pol(g, theory.quark_thresholds));
-        get_lo_nlo =
-            [sobj](int alpha_s, int channel_type, Observable obs) -> CoeffPtr {
-            return select_sidis_pol_coeff(*sobj, alpha_s, channel_type, obs);
-        };
-        get_nnlo =
-            [sobj](int channel_type, Observable obs, int nf) -> CoeffNNLOPtr {
-            return select_sidis_nnlo_pol_coeff(*sobj, channel_type, obs, nf);
-        };
-    } else {
-        auto sobj = std::make_shared<SidisCoeffs>(
-            init_sidis(g, theory.quark_thresholds));
-        get_lo_nlo =
-            [sobj](int alpha_s, int channel_type, Observable obs) -> CoeffPtr {
-            return select_sidis_coeff(*sobj, alpha_s, channel_type, obs);
-        };
-        get_nnlo =
-            [sobj](int channel_type, Observable obs, int nf) -> CoeffNNLOPtr {
-            return select_sidis_nnlo_coeff(*sobj, channel_type, obs, nf);
-        };
-    }
+    auto sobj          = std::make_shared<apfel::SidisNNLOObjects>(
+        init_sidis_nnlo(g, theory.quark_thresholds));
+    std::function<CoeffNNLOPtr(int, int, Observable, int)> get_coeff =
+        [sobj, polarized](int alpha_s,
+            int               type_id,
+            Observable        obs,
+            int               nf) -> CoeffNNLOPtr {
+        return select_sidis_coeff_nnlo(*sobj,
+            alpha_s,
+            type_id,
+            obs,
+            nf,
+            polarized);
+    };
 
     // 3. Create empty PineAPPL grid
     pineappl_grid      *grid           = create_grid(grid_def);
@@ -668,32 +622,22 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
         }
 
         for (std::size_t ich = 0; ich < grid_def.channels.size(); ich++) {
-            const SidisChannelInfo &info        = channel_infos[ich];
+            const SidisChannelInfo &info    = channel_infos[ich];
 
-            // Map channel type to LO/NLO selector index (-1 = unavailable)
-            // and to NNLO selector index (0..8).
-            int                     lo_nlo_type = -1;
-            int                     nnlo_type   = -1;
+            // Map channel type to unified type_id (0..8).
+            int                     type_id = -1;
             switch (info.type) {
-            case SidisChannelInfo::Type::nn:
-                lo_nlo_type = 0;
-                nnlo_type   = 0;
-                break;
-            case SidisChannelInfo::Type::gq:
-                lo_nlo_type = 1;
-                nnlo_type   = 1;
-                break;
-            case SidisChannelInfo::Type::qg:
-                lo_nlo_type = 2;
-                nnlo_type   = 2;
-                break;
-            case SidisChannelInfo::Type::gg  : nnlo_type = 3; break;
-            case SidisChannelInfo::Type::ps  : nnlo_type = 4; break;
-            case SidisChannelInfo::Type::qbq : nnlo_type = 5; break;
-            case SidisChannelInfo::Type::qpq1: nnlo_type = 6; break;
-            case SidisChannelInfo::Type::qpq2: nnlo_type = 7; break;
-            case SidisChannelInfo::Type::qpq3: nnlo_type = 8; break;
+            case SidisChannelInfo::Type::nn  : type_id = 0; break;
+            case SidisChannelInfo::Type::gq  : type_id = 1; break;
+            case SidisChannelInfo::Type::qg  : type_id = 2; break;
+            case SidisChannelInfo::Type::gg  : type_id = 3; break;
+            case SidisChannelInfo::Type::ps  : type_id = 4; break;
+            case SidisChannelInfo::Type::qbq : type_id = 5; break;
+            case SidisChannelInfo::Type::qpq1: type_id = 6; break;
+            case SidisChannelInfo::Type::qpq2: type_id = 7; break;
+            case SidisChannelInfo::Type::qpq3: type_id = 8; break;
             }
+            if (type_id < 0) continue;
 
             for (std::size_t ibin = 0; ibin < grid_def.bins.size(); ibin++) {
                 // Bin centers: dim 0=Q², dim 1=x, dim 2=z
@@ -753,55 +697,23 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
 
                         if (fill_weight == 0.0) continue;
 
-                        if (alpha_s < 2) {
-                            // ── LO / NLO: DoubleObject<Operator> path ──────
-                            if (lo_nlo_type < 0) continue;
-                            const auto *coeff = get_lo_nlo(alpha_s,
-                                lo_nlo_type,
-                                grid_def.observable);
-                            if (coeff == nullptr) continue;
+                        // All orders use DoubleOperator (exact NNLO API).
+                        const auto *coeff = get_coeff(alpha_s,
+                            type_id,
+                            grid_def.observable,
+                            nf);
+                        if (coeff == nullptr) continue;
 
-                            const auto &terms = coeff->GetTerms();
-                            for (const auto &term : terms) {
-                                double              c = term.coefficient;
-                                apfel::Distribution dist_x =
-                                    term.object1.Evaluate(x_center);
-                                apfel::Distribution dist_z =
-                                    term.object2.Evaluate(z_center);
+                        auto w = eval_double_op_column(*coeff,
+                            x_center,
+                            z_center,
+                            li1,
+                            li2);
 
-                                const auto &vx =
-                                    dist_x.GetDistributionJointGrid();
-                                const auto &vz =
-                                    dist_z.GetDistributionJointGrid();
-
-                                for (std::size_t ix = 0;
-                                     ix < nx && ix < vx.size();
-                                     ix++) {
-                                    for (std::size_t iz = 0;
-                                         iz < nz && iz < vz.size();
-                                         iz++) {
-                                        subgrid[iq * nx * nz + ix * nz + iz] +=
-                                            fill_weight * c * vx[ix] * vz[iz];
-                                    }
-                                }
-                            }
-                        } else {
-                            // ── NNLO: DoubleOperator path ──────────────────
-                            const auto *coeff =
-                                get_nnlo(nnlo_type, grid_def.observable, nf);
-                            if (coeff == nullptr) continue;
-
-                            auto w = eval_double_op_column(*coeff,
-                                x_center,
-                                z_center,
-                                li1,
-                                li2);
-
-                            for (std::size_t ix = 0; ix < nx; ix++) {
-                                for (std::size_t iz = 0; iz < nz; iz++) {
-                                    subgrid[iq * nx * nz + ix * nz + iz] +=
-                                        fill_weight * w[ix * nz + iz];
-                                }
+                        for (std::size_t ix = 0; ix < nx; ix++) {
+                            for (std::size_t iz = 0; iz < nz; iz++) {
+                                subgrid[iq * nx * nz + ix * nz + iz] +=
+                                    fill_weight * w[ix * nz + iz];
                             }
                         }
                     }
