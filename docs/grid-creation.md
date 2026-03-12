@@ -29,12 +29,12 @@ The `build_grid()` function currently supports the following combinations:
 | SIA | \(F_2\) | NC | `InitializeF2NCObjectsZMT` | ZM only |
 | SIA | \(F_L\) | NC | `InitializeFLNCObjectsZMT` | ZM only |
 | SIA | \(F_3\) | NC | `InitializeF3NCObjectsZMT` | ZM only |
-| SIDIS | \(F_2\) | NC | `InitializeSIDIS` | ZM only |
-| SIDIS | \(F_L\) | NC | `InitializeSIDIS` | ZM only |
+| SIDIS | \(F_T\) | NC | `InitializeSidisObjects` | ZM only |
+| SIDIS | \(F_L\) | NC | `InitializeSidisObjects` | ZM only |
 | DIS (polarized) | \(g_1\) | NC | `Initializeg1NCObjectsZM` | ZM only |
 | DIS (polarized) | \(g_L\) | NC | `InitializegLNCObjectsZM` | ZM only |
 | DIS (polarized) | \(g_4\) | NC | `Initializeg4NCObjectsZM` | ZM only |
-| SIDIS (polarized) | \(G_1\) | NC | `InitializeSIDISpol` | ZM only |
+| SIDIS (polarized) | \(G_1\) | NC | `InitializeSidisObjects` | ZM only |
 
 Polarized grids are selected by setting `Polarized: true` in the grid card. The
 `Observable` field retains its unpolarized name (`F2`, `FL`, `F3`) and is interpreted
@@ -113,31 +113,45 @@ are selected instead. The available coefficient functions mirror the unpolarized
 #### SIDIS (unpolarized)
 
 SIDIS coefficient functions depend on two momentum-fraction variables (\(x\) and \(z\)) and are
-provided as `DoubleObject<Operator>` instances by APFEL++. The available terms per channel type
-at each order are:
+provided as `DoubleOperator` instances by APFEL++ via `InitializeSidisObjects()`. This is the
+**exact NNLO** implementation (arXiv:2401.16281), covering all nine partonic channel types.
+The available channels per perturbative order are:
 
-| `alpha_s` power | Label | \(qq\) | \(gq\) | \(qg\) |
-|:-:|:--:|:--:|:--:|:--:|
-| 0 | LO | \(C_{2,qq}^{(0)}\) | — | — |
-| 1 | NLO | \(C_{2,qq}^{(1)}\) | \(C_{2,gq}^{(1)}\) | \(C_{2,qg}^{(1)}\) |
-| 2 | NNLO | \(C_{2,qq}^{(2)}\) (\(n_f\)-dependent) | — | — |
+| `alpha_s` power | Label | \(qq\) | \(gq\) | \(qg\) | \(gg\) | \(ps\) | \(q\bar{q}\) | \(qpq\) |
+|:-:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| 0 | LO | \(C_{T,qq}^{(0)}\) | — | — | — | — | — | — |
+| 1 | NLO | \(C_{T,qq}^{(1)}\) | \(C_{T,gq}^{(1)}\) | \(C_{T,qg}^{(1)}\) | — | — | — | — |
+| 2 | NNLO | \(C_{T,\mathrm{NS}}^{(2)}\) (\(n_f\)-dep.) | \(C_{T,gq}^{(2)}\) | \(C_{T,qg}^{(2)}\) | \(C_{T,gg}^{(2)}\) | \(C_{T,\mathrm{PS}}^{(2)}\) | \(C_{T,q\bar{q}}^{(2)}\) | \(C_{T,qpq_{1,2,3}}^{(2)}\) |
 
-The channel labels refer to the convolution pair (PDF flavour, FF flavour):
-\(qq\) = quark PDF ⊗ quark FF, \(gq\) = quark PDF ⊗ gluon FF,
-\(qg\) = gluon PDF ⊗ quark FF. The same coefficient functions apply to \(F_L\)
-with \(C_{L,qq/gq/qg}\) replacing \(C_{2,\ldots}\); \(F_L\) has no LO contribution.
+The same structure applies to \(F_L\) (replacing \(C_T\) with \(C_L\)); \(F_L\) has no LO
+contribution.
+
+The nine NNLO channel labels refer to the convolution pair (PDF flavour, FF flavour):
+
+| Channel | PDF side | FF side | Notes |
+|---------|----------|---------|-------|
+| \(qq\) (NS) | quark \(q\) | quark \(q\) | \(n_f\)-dependent non-singlet |
+| \(gq\) | quark \(q\) | gluon | |
+| \(qg\) | gluon | quark \(q\) | |
+| \(gg\) | gluon | gluon | |
+| \(ps\) | quark \(q\) | quark \(q\) | pure-singlet, weight \(\sum_i e_i^2\) |
+| \(q\bar{q}\) | quark \(q\) | antiquark \(\bar{q}\) | |
+| \(qpq_1\) | quark \(j\) | quark \(k \neq j\) | sum over target FF |
+| \(qpq_2\) | quark \(k \neq i\) | quark \(i\) | sum over source PDF |
+| \(qpq_3\) | quark \(a\) | quark \(b \neq a\) | charge product \(e_a e_b\) weight |
 
 #### SIDIS (polarized)
 
 For polarized SIDIS (first entry of `ConvolutionTypes` is `POL_PDF`), only \(G_1\) is
-available (set `Observable: F2`). The coefficient function structure mirrors the unpolarized
-\(F_2\) case:
+available (set `Observable: F2`). The exact NNLO implementation (arXiv:2404.08597) covers
+the same nine channel types. Note that at NNLO the \(gq\) and \(qg\) channels become
+\(n_f\)-dependent for the polarized case:
 
-| `alpha_s` power | Label | \(qq\) | \(gq\) | \(qg\) |
-|:-:|:--:|:--:|:--:|:--:|
-| 0 | LO | \(G_{1,qq}^{(0)}\) | — | — |
-| 1 | NLO | \(G_{1,qq}^{(1)}\) | \(G_{1,gq}^{(1)}\) | \(G_{1,qg}^{(1)}\) |
-| 2 | NNLO | \(G_{1,qq}^{(2)}\) (\(n_f\)-dependent) | — | — |
+| `alpha_s` power | Label | \(qq\) | \(gq\) | \(qg\) | \(gg\) | \(ps\) | \(q\bar{q}\) | \(qpq\) |
+|:-:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| 0 | LO | \(G_{1,qq}^{(0)}\) | — | — | — | — | — | — |
+| 1 | NLO | \(G_{1,qq}^{(1)}\) | \(G_{1,gq}^{(1)}\) | \(G_{1,qg}^{(1)}\) | — | — | — | — |
+| 2 | NNLO | \(G_{1,\mathrm{NS}}^{(2)}\) (\(n_f\)-dep.) | \(G_{1,gq}^{(2)}\) (\(n_f\)-dep.) | \(G_{1,qg}^{(2)}\) (\(n_f\)-dep.) | \(G_{1,gg}^{(2)}\) | \(G_{1,\mathrm{PS}}^{(2)}\) | \(G_{1,q\bar{q}}^{(2)}\) | \(G_{1,qpq_{1,2,3}}^{(2)}\) |
 
 The orders are specified in the grid card via the `Orders` field. Each order entry is a
 5-element array `[alpha_s, alpha, log_xir, log_xif, log_xia]`. For pure QCD coefficient
@@ -226,8 +240,10 @@ channel weighted by \(e_{q_h}^2\).
 #### SIDIS channels
 
 SIDIS grids carry **two convolutions** (PDF ⊗ FF), so each channel entry specifies a pair of
-PIDs rather than a single one. Three channel types are generated per active quark
-\(q = 1, \ldots, n_{f}^{\mathrm{max}}\):
+PIDs rather than a single one. The complete set of channel types depends on the perturbative
+order requested.
+
+**LO and NLO** (3 types × \(n_f\) quarks):
 
 | Channel type | PIDs | Factors | Description |
 |---|---|:---:|---|
@@ -235,11 +251,29 @@ PIDs rather than a single one. Three channel types are generated per active quar
 | \(gq\) | `[[q, 21], [-q, 21]]` | `[1.0, 1.0]` | Quark PDF ⊗ gluon FF |
 | \(qg\) | `[[21, q], [21, -q]]` | `[1.0, 1.0]` | Gluon PDF ⊗ quark FF |
 
-The channel ordering in the grid is `qq`, `gq`, `qg` for quark 1, then `qq`, `gq`, `qg`
-for quark 2, and so on. With 5 active flavours this gives 15 channels in total.
+**Additional NNLO-only channels** (shared across all quarks):
 
-The electroweak weight \(e_q^2\) is applied per-quark directly to the subgrid values
-during filling; the channel PIDs themselves are charge-neutral in the grid card.
+| Channel type | PIDs | Factors | Description |
+|---|---|:---:|---|
+| \(gg\) | `[[21, 21]]` | `[1.0]` | Gluon PDF ⊗ gluon FF; weight \(\sum_i e_i^2\) |
+| \(ps\) (per quark \(q\)) | `[[q, q], [-q, -q]]` | `[1.0, 1.0]` | Pure-singlet; weight \(\sum_i e_i^2\) |
+| \(q\bar{q}\) (per quark \(q\)) | `[[q, -q], [-q, q]]` | `[1.0, 1.0]` | Quark PDF ⊗ antiquark FF |
+| \(qpq_1\) (per source \(j\)) | `[[j,k],[-j,k],[j,-k],[-j,-k]]` | `[1.0,...]` | Sum over \(k \neq j\); weight \(e_j^2\) |
+| \(qpq_2\) (per target \(i\)) | `[[k,i],[k,-i],[-k,i],[-k,-i]]` | `[1.0,...]` | Sum over \(k \neq i\); weight \(e_i^2\) |
+| \(qpq_3\) (per pair \(a \neq b\)) | `[[a,b],[-a,b],[a,-b],[-a,-b]]` | `[1.,-1.,-1.,1.]` | Weight \(e_a \cdot e_b\) (may be negative) |
+
+Channels are **always auto-derived** from \(n_f^{\mathrm{max}}\) regardless of the orders
+requested — the fill loop simply returns zero for channel–order combinations where no
+coefficient function exists (e.g. \(gg\) at LO or NLO).
+
+The channel ordering in the grid is: `qq`, `gq`, `qg` per quark (1…\(n_f\)), then `gg`,
+`ps` per quark, `qbq` per quark, `qpq1` per quark, `qpq2` per quark, and finally
+`qpq3` for each ordered pair \((a, b)\) with \(a \neq b\).
+With 3 active flavours this gives \(3 \times 3 + 1 + 3 + 3 + 3 + 3 + 6 = 22\) channels in total.
+
+The electroweak weight (\(e_q^2\), \(\sum_i e_i^2\), or \(e_a e_b\)) is applied per-channel
+directly to the subgrid values during filling; the channel PIDs themselves are charge-neutral
+in the grid card.
 
 !!! note
     The `Channels` field in the grid card is still accepted for backward compatibility,
@@ -403,7 +437,7 @@ Normalizations: [1.0, 1.0]
 
 #### SIDIS example
 
-A SIDIS \(F_2\) grid for proton→pion semi-inclusive production up to NLO. Bins are
+A SIDIS \(F_T\) grid for proton→pion semi-inclusive production up to NLO. Bins are
 three-dimensional \((Q^2, x, z)\) and two convolution types are required (PDF and FF):
 
 ```yaml
@@ -426,6 +460,42 @@ Bins:
 
 Normalizations: [1.0, 1.0]
 ```
+
+#### SIDIS NNLO example
+
+Adding NNLO extends the channel set from 3 per quark to 9 types (see
+[SIDIS channels](#sidis-channels)). Simply add the NNLO order entry — channels
+are auto-derived and all 9 NNLO channel types are filled automatically:
+
+```yaml
+Process: SIDIS
+Observable: F2
+Current: NC
+PidBasis: PDG
+HadronPids: [2212, 211]
+ConvolutionTypes: [UNPOL_PDF, UNPOL_FF]
+
+Orders:
+  - [0, 0, 0, 0, 0]   # LO
+  - [1, 0, 0, 0, 0]   # NLO
+  - [2, 0, 0, 0, 0]   # NNLO (exact, arXiv:2401.16281)
+
+Bins:
+  - lower: [10.0, 0.001, 0.2]
+    upper: [100.0, 0.01, 0.4]
+  - lower: [100.0, 0.01, 0.4]
+    upper: [1000.0, 0.1, 0.6]
+
+Normalizations: [1.0, 1.0]
+```
+
+!!! note
+    The NNLO SIDIS coefficient functions are computed exactly from the full 2D
+    `DoubleExpression` classes in APFEL++ via `InitializeSidisObjects()`. This replaces
+    the former approximated NNLO (non-singlet \(qq\) only, based on threshold
+    resummation). The exact implementation covers all nine partonic channels for both
+    the unpolarised \(F_T\)/\(F_L\) (arXiv:2401.16281) and the polarised \(G_1\)
+    (arXiv:2404.08597).
 
 #### Polarized DIS example
 
@@ -676,18 +746,20 @@ row-major order. The same APFEL++ joint grid is used for both the \(x\) (PDF) an
 node_values = [Q^2_0, ..., Q^2_{nq-1}, x_0, ..., x_{nx-1}, z_0, ..., z_{nz-1}]
 ```
 
-For each \(Q^2\) node and each `DoubleObject` term in the coefficient function,
-the \(x\)-distribution is evaluated at the bin's \(x\)-centre and the \(z\)-distribution
-at the bin's \(z\)-centre (both geometric means). The subgrid entry at `[iq, ix, iz]`
-is the outer product of these two distributions, weighted by \(e_q^2\) and the term
-coefficient:
+Each coefficient function is stored as a `DoubleOperator` — a full 2D kernel on the
+\((x, z)\) grid. For each \(Q^2\) node, the 2D operator is evaluated as a column at
+the bin's \((x, z)\) centre (geometric mean of the bin edges) using
+`eval_double_op_column()`, which applies 2D Lagrange interpolation weights. The
+subgrid entry at `[iq, ix, iz]` accumulates the weighted kernel:
 
 ```text
-subgrid[iq, ix, iz] = e_q^2 * sum_terms { c_term * K_x(x[ix]; x_centre) * K_z(z[iz]; z_centre) }
+subgrid[iq, ix, iz] = fill_weight * W(x[ix], z[iz]; x_centre, z_centre)
 ```
 
-where \(K_x\) and \(K_z\) are the APFEL++ distribution kernels in the \(x\) and \(z\)
-directions respectively.
+where `fill_weight` is the per-channel electroweak factor (\(e_q^2\), \(\sum_i e_i^2\),
+or \(e_a e_b\) depending on channel type) and \(W\) is the 2D interpolation kernel
+extracted from the `DoubleOperator`. This approach is used uniformly for all
+perturbative orders (LO, NLO, NNLO).
 
 ### Programmatic grid definition
 
@@ -727,12 +799,20 @@ auto channels = pineapfel::derive_channels(
     5);
 // Returns 6 channels: d+dbar, u+ubar, s+sbar, c+cbar, b+bbar, gluon
 
-// Derive channels for SIDIS F2 with 5 active flavours
+// Derive channels for SIDIS F2 with 5 active flavours (includes all NNLO types)
 auto sidis_channels = pineapfel::derive_channels(
     pineapfel::ProcessType::SIDIS,
     pineapfel::Observable::F2,
     pineapfel::Current::NC,
     pineapfel::CCSign::Plus,
     5);
-// Returns 15 channels: (qq, gq, qg) x 5 quarks
+// Returns 50 channels:
+//   15 LO/NLO  : (qq, gq, qg) x 5 quarks
+//    1 NNLO gg
+//    5 NNLO ps  (one per quark)
+//    5 NNLO qbq (one per quark)
+//    5 NNLO qpq1 (one per source quark)
+//    5 NNLO qpq2 (one per target quark)
+//   20 NNLO qpq3 (one per ordered pair a≠b, 5x4=20)
+// Channels that have no coefficient function at a given order contribute zero.
 ```
