@@ -11,7 +11,7 @@
 
 #include "sidis_helper.h"
 #include <apfel/apfelxx.h>
-#include <pineapfel.h>
+#include <pineapfel/pineapfel.h>
 #include <pineappl_capi.h>
 
 #include <cmath>

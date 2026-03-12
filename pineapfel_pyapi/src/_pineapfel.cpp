@@ -1,7 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <pineapfel.h>
+#include <pineapfel/pineapfel.h>
 #include <pineappl_capi.h>
 
 #include <string>
