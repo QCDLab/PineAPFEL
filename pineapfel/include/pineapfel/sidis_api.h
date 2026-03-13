@@ -10,7 +10,6 @@ namespace pineapfel {
 // Returns pre-computed SIDIS DoubleOperator objects (LO + NLO + exact NNLO)
 // for unpolarised FT, FL and polarised G1 structure functions.
 // Both PDF and FF use the same grid g.
-// sidisbuilder.h uses #pragma once and declares only (no ODR violations).
 apfel::SidisNNLOObjects init_sidis_nnlo(const apfel::Grid &g,
     const std::vector<double>                             &thresholds,
     double                                                 int_eps = 1e-3);

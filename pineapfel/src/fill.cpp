@@ -554,7 +554,7 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
     using CoeffNNLOPtr = const apfel::DoubleOperator *;
 
     auto sobj          = std::make_shared<apfel::SidisNNLOObjects>(
-        init_sidis_nnlo(g, theory.quark_thresholds));
+        init_sidis_nnlo(g, theory.quark_thresholds, op_card.sidis_int_eps));
     std::function<CoeffNNLOPtr(int, int, Observable, int)> get_coeff =
         [sobj, polarized](int alpha_s,
             int               type_id,

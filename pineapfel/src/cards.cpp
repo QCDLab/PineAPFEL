@@ -75,6 +75,9 @@ OperatorCard load_operator_card(const std::string &path) {
 
     oc.xi                       = config["xi"].as<std::vector<double>>();
 
+    if (config["sidis_int_eps"])
+        oc.sidis_int_eps = config["sidis_int_eps"].as<double>();
+
     return oc;
 }
 

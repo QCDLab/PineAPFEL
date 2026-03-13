@@ -6,23 +6,94 @@
 #include <utility>
 
 // Helper: evaluate a DoubleOperator contracted with a PDF and an FF at fixed
-// (x, z). Computes  (dop · MultiplyFirstBy(pdf)).Evaluate(x) · ff  evaluated at
-// z.
+// (x, z) using direct kernel access (avoids DistributionOperator::Evaluate
+// which crashes on null matrix data).
 static double eval_dop_at(const apfel::Grid &g,
+    const apfel::LagrangeInterpolator       &li,
     const apfel::DoubleOperator             &dop,
     int                                      pid_pdf,
     int                                      pid_ff,
     double                                   x,
     double                                   z,
     std::function<double(int, double)>       toy_f) {
-    apfel::Distribution pdf_d(g,
-        [&](double const &xx) { return toy_f(pid_pdf, xx); });
-    apfel::Distribution ff_d(g,
-        [&](double const &zz) { return toy_f(pid_ff, zz); });
-    return (dop.MultiplyFirstBy(pdf_d).Evaluate(x) * ff_d).Evaluate(z);
+    const apfel::Grid &g1  = dop.GetFirstGrid();
+    const apfel::Grid &g2  = dop.GetSecondGrid();
+    const auto        &K   = dop.GetDoubleOperator();
+
+    const int          ng1 = g1.nGrids();
+    const int          ng2 = g2.nGrids();
+
+    int                nx  = 0;
+    for (int ig = 0; ig < ng1; ig++) nx += g1.GetSubGrid(ig).nx();
+    int nz = 0;
+    for (int ig = 0; ig < ng2; ig++) nz += g2.GetSubGrid(ig).nx();
+
+    const auto &x_nodes = g.GetJointGrid().GetGrid();
+
+    int         ig1_xc  = ng1 - 1;
+    for (int ig = 0; ig < ng1; ig++)
+        if (g1.GetSubGrid(ig).xMin() > x) {
+            ig1_xc = ig - 1;
+            break;
+        }
+
+    int ig2_zc = ng2 - 1;
+    for (int ig = 0; ig < ng2; ig++)
+        if (g2.GetSubGrid(ig).xMin() > z) {
+            ig2_zc = ig - 1;
+            break;
+        }
+
+    const apfel::SubGrid &sg1    = g1.GetSubGrid(ig1_xc);
+    const apfel::SubGrid &sg2    = g2.GetSubGrid(ig2_zc);
+    const int             nx_sub = sg1.nx();
+    const int             nz_sub = sg2.nx();
+
+    const auto            bx     = li.SumBounds(x, sg1);
+    const int             lo_x = bx[0], hi_x = bx[1];
+    std::vector<double>   W_x(hi_x - lo_x);
+    for (int b = 0; b < hi_x - lo_x; b++)
+        W_x[b] = li.Interpolant(lo_x + b, x, sg1);
+
+    const auto          bz   = li.SumBounds(z, sg2);
+    const int           lo_z = bz[0], hi_z = bz[1];
+    std::vector<double> W_z(hi_z - lo_z);
+    for (int b = 0; b < hi_z - lo_z; b++)
+        W_z[b] = li.Interpolant(lo_z + b, z, sg2);
+
+    int x_jg_off = 0;
+    for (int ig = 0; ig < ig1_xc; ig++) x_jg_off += g1.GetSubGrid(ig).nx();
+    int z_jg_off = 0;
+    for (int ig = 0; ig < ig2_zc; ig++) z_jg_off += g2.GetSubGrid(ig).nx();
+
+    const auto &K_sub  = K[ig1_xc][ig2_zc];
+    double      result = 0.0;
+
+    for (int b_ox = 0; b_ox < hi_x - lo_x; b_ox++) {
+        const int    out_x = lo_x + b_ox;
+        const double wx    = W_x[b_ox];
+        for (int b_oz = 0; b_oz < hi_z - lo_z; b_oz++) {
+            const int    out_z = lo_z + b_oz;
+            const double wxz   = wx * W_z[b_oz];
+            for (int alpha = 0; alpha <= nx_sub - out_x - 1; alpha++) {
+                const int inp_x = x_jg_off + out_x + alpha;
+                if (inp_x >= nx) break;
+                for (int gamma = 0; gamma <= nz_sub - out_z - 1; gamma++) {
+                    const int inp_z = z_jg_off + out_z + gamma;
+                    if (inp_z >= nz) break;
+                    result += wxz * K_sub(0, alpha)(0, gamma) *
+                              toy_f(pid_pdf, x_nodes[inp_x]) *
+                              toy_f(pid_ff, x_nodes[inp_z]);
+                }
+            }
+        }
+    }
+
+    return result;
 }
 
 std::vector<double> compute_sidis_reference(const apfel::Grid &g,
+    const apfel::SidisNNLOObjects                             &sobj,
     const std::vector<double>                                 &thresholds,
     const std::vector<double>                                 &q2_nodes,
     const std::vector<std::vector<double>>                    &bin_x_bounds,
@@ -31,10 +102,11 @@ std::vector<double> compute_sidis_reference(const apfel::Grid &g,
     int                                max_alpha_s,
     std::function<double(int, double)> toy_f,
     std::function<double(double)>      alphas_func) {
-    auto   sobj       = pineapfel::init_sidis_nnlo(g, thresholds);
-    size_t nbins      = bin_x_bounds.size();
+    size_t                            nbins = bin_x_bounds.size();
 
-    double q2_max_val = 0;
+    const apfel::LagrangeInterpolator li{g};
+
+    double                            q2_max_val = 0;
     for (double q2 : q2_nodes) q2_max_val = std::max(q2_max_val, q2);
     int  nf_max   = apfel::NF(std::sqrt(q2_max_val), thresholds);
 
@@ -87,6 +159,7 @@ std::vector<double> compute_sidis_reference(const apfel::Grid &g,
                         int pid_ff    = ch.pid_combinations[ic][1];
                         result[ibin] += as_power * e_q_sq * ch.factors[ic] *
                                         eval_dop_at(g,
+                                            li,
                                             it->second,
                                             pid_pdf,
                                             pid_ff,
@@ -103,6 +176,7 @@ std::vector<double> compute_sidis_reference(const apfel::Grid &g,
 }
 
 std::vector<double> compute_sidis_pol_reference(const apfel::Grid &g,
+    const apfel::SidisNNLOObjects                                 &sobj,
     const std::vector<double>                                     &thresholds,
     const std::vector<double>                                     &q2_nodes,
     const std::vector<std::vector<double>>                        &bin_x_bounds,
@@ -110,10 +184,11 @@ std::vector<double> compute_sidis_pol_reference(const apfel::Grid &g,
     int                                                            max_alpha_s,
     std::function<double(int, double)>                             toy_f,
     std::function<double(double)> alphas_func) {
-    auto   sobj       = pineapfel::init_sidis_nnlo(g, thresholds);
-    size_t nbins      = bin_x_bounds.size();
+    size_t                            nbins = bin_x_bounds.size();
 
-    double q2_max_val = 0;
+    const apfel::LagrangeInterpolator li{g};
+
+    double                            q2_max_val = 0;
     for (double q2 : q2_nodes) q2_max_val = std::max(q2_max_val, q2);
     int  nf_max   = apfel::NF(std::sqrt(q2_max_val), thresholds);
 
@@ -166,6 +241,7 @@ std::vector<double> compute_sidis_pol_reference(const apfel::Grid &g,
                         int pid_ff    = ch.pid_combinations[ic][1];
                         result[ibin] += as_power * e_q_sq * ch.factors[ic] *
                                         eval_dop_at(g,
+                                            li,
                                             it->second,
                                             pid_pdf,
                                             pid_ff,
@@ -196,8 +272,10 @@ std::vector<double> compute_sidis_nnlo_reference(const apfel::Grid &g,
     constexpr double QCh[6] =
         {2. / 3., -1. / 3., -1. / 3., 2. / 3., -1. / 3., 2. / 3.};
 
-    size_t              nbins = bin_x_bounds.size();
-    std::vector<double> result(nbins, 0.0);
+    size_t                            nbins = bin_x_bounds.size();
+    std::vector<double>               result(nbins, 0.0);
+
+    const apfel::LagrangeInterpolator li{g};
 
     for (size_t ibin = 0; ibin < nbins; ibin++) {
         double x_c = std::sqrt(bin_x_bounds[ibin][0] * bin_x_bounds[ibin][1]);
@@ -217,7 +295,14 @@ std::vector<double> compute_sidis_nnlo_reference(const apfel::Grid &g,
             auto              eval_dop = [&](const apfel::DoubleOperator &dop,
                                 int                          pid_pdf,
                                 int                          pid_ff) -> double {
-                return eval_dop_at(g, dop, pid_pdf, pid_ff, x_c, z_c, toy_f);
+                return eval_dop_at(g,
+                    li,
+                    dop,
+                    pid_pdf,
+                    pid_ff,
+                    x_c,
+                    z_c,
+                    toy_f);
             };
 
             using Combo     = std::pair<int, int>;

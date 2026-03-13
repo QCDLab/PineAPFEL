@@ -8,7 +8,10 @@
 // Compute SIDIS F2 reference values using APFEL++ InitializeSidisObjects (exact
 // NNLO). Returns per-bin reference values for comparison with PineAPPL
 // convolution.
+// sobj must be pre-initialised (from init_sidis_nnlo) and built on the same
+// grid g used when filling the PineAPPL grid.
 std::vector<double> compute_sidis_reference(const apfel::Grid &g,
+    const apfel::SidisNNLOObjects                             &sobj,
     const std::vector<double>                                 &thresholds,
     const std::vector<double>                                 &q2_nodes,
     const std::vector<std::vector<double>> &bin_x_bounds,  // {lo, hi} per bin
@@ -21,7 +24,10 @@ std::vector<double> compute_sidis_reference(const apfel::Grid &g,
 // Compute polarized SIDIS G1 reference values using APFEL++
 // InitializeSidisObjects. Returns per-bin reference values for comparison with
 // PineAPPL convolution.
+// sobj must be pre-initialised (from init_sidis_nnlo) and built on the same
+// grid g used when filling the PineAPPL grid.
 std::vector<double> compute_sidis_pol_reference(const apfel::Grid &g,
+    const apfel::SidisNNLOObjects                                 &sobj,
     const std::vector<double>                                     &thresholds,
     const std::vector<double>                                     &q2_nodes,
     const std::vector<std::vector<double>> &bin_x_bounds, // {lo, hi} per bin

@@ -1,0 +1,24 @@
+# Coarser operator card for SIDIS NNLO tests only.
+# 20+10=30 x-nodes (vs 80+40=120 in operator.yaml) drastically reduces
+# the cost of init_sidis_nnlo (InitializeSidisObjects) which scales ~O(n^2).
+# The 1e-3 test tolerance for the NNLO comparison tolerates the coarser grid.
+xgrid:
+  - n_knots: 20
+    x_min: 1.0e-5
+    poly_degree: 3
+  - n_knots: 10
+    x_min: 1.0e-1
+    poly_degree: 3
+
+tabulation:
+  n_points: 200
+  q_min: 0.9
+  n_steps: 13001
+  interp_degree: 3
+
+xi: [1.0, 1.0, 1.0]
+
+# Looser SIDIS integration tolerance for tests (~100x faster than 1e-3).
+# Both build_grid and the reference sobj use this value, so the PineAPPL vs
+# APFEL++ comparison remains exact (deterministic quadrature).
+sidis_int_eps: 1.0e-2

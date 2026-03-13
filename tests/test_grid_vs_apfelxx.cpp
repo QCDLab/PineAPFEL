@@ -647,6 +647,27 @@ int main() {
         pineappl_grid_delete(cc_grid);
     }
 
+    // Use a coarser operator card for ALL SIDIS tests (6, 8, 12).
+    // init_sidis_nnlo (InitializeSidisObjects) scales ~O(n²) with grid size;
+    // 20+10=30 nodes instead of 80+40=120 gives ~16× speedup.
+    // Both PineAPPL and the APFEL++ reference use the same coarser grid, so
+    // their comparison remains exact (the 1e-6 / 1e-3 tolerances are met).
+    auto sidis_op_card =
+        pineapfel::load_operator_card("runcards/operator_test.yaml");
+    std::vector<apfel::SubGrid> sidis_sgs;
+    for (const auto &sg : sidis_op_card.xgrid)
+        sidis_sgs.emplace_back(sg.n_knots, sg.x_min, sg.poly_degree);
+    const apfel::Grid sidis_g{sidis_sgs};
+
+    // Pre-build once — reused by TEST 6, 8, and 12 helper functions.
+    // sidis_op_card.sidis_int_eps (0.1) is also forwarded to build_grid via
+    // op_card, so both the fill sobj and this reference sobj are built with
+    // the same tolerance → deterministic quadrature guarantees identical values
+    // → PineAPPL vs APFEL++ comparisons remain exact.
+    auto              sidis_sobj = pineapfel::init_sidis_nnlo(sidis_g,
+        theory.quark_thresholds,
+        sidis_op_card.sidis_int_eps);
+
     // ============================================================
     // TEST 6: SIDIS F2 — PineAPPL LO+NLO vs APFEL++ DoubleObject
     //
@@ -663,7 +684,7 @@ int main() {
         auto sidis_theory = pineapfel::load_theory_card("runcards/theory.yaml");
 
         pineappl_grid *sidis_grid =
-            pineapfel::build_grid(sidis_grid_def, sidis_theory, op_card);
+            pineapfel::build_grid(sidis_grid_def, sidis_theory, sidis_op_card);
         std::size_t sidis_nbins = pineappl_grid_bin_count(sidis_grid);
 
         auto        sidis_q2_nodes =
@@ -697,7 +718,8 @@ int main() {
             return as_tab.Evaluate(Q);
         };
 
-        auto ref_vals = compute_sidis_reference(g,
+        auto ref_vals = compute_sidis_reference(sidis_g,
+            sidis_sobj,
             sidis_theory.quark_thresholds,
             sidis_q2_nodes,
             bin_x_bounds,
@@ -848,7 +870,7 @@ int main() {
         pineappl_grid *pol_sidis_grid =
             pineapfel::build_grid(pol_sidis_grid_def,
                 pol_sidis_theory,
-                op_card);
+                sidis_op_card);
         std::size_t pol_sidis_nbins = pineappl_grid_bin_count(pol_sidis_grid);
 
         auto pol_sidis_q2_nodes     = derive_q2_nodes(pol_sidis_grid_def.bins,
@@ -882,7 +904,8 @@ int main() {
             return as_tab.Evaluate(Q);
         };
 
-        auto pol_ref_vals = compute_sidis_pol_reference(g,
+        auto pol_ref_vals = compute_sidis_pol_reference(sidis_g,
+            sidis_sobj,
             pol_sidis_theory.quark_thresholds,
             pol_sidis_q2_nodes,
             pol_bin_x_bounds,
@@ -1221,8 +1244,11 @@ int main() {
         int nf_max_nnlo =
             apfel::NF(std::sqrt(q2_max_nnlo), nnlo_theory.quark_thresholds);
 
+        // Reuse the coarser sidis_op_card / sidis_g / sidis_sobj set up before
+        // TEST 6.  This avoids loading operator_test.yaml a second time and
+        // keeps all SIDIS tests on the same 20+10-node grid.
         pineappl_grid *nnlo_grid =
-            pineapfel::build_grid(nnlo_grid_def, nnlo_theory, op_card);
+            pineapfel::build_grid(nnlo_grid_def, nnlo_theory, sidis_op_card);
         std::size_t nnlo_nbins = pineappl_grid_bin_count(nnlo_grid);
         std::size_t nnlo_nords = pineappl_grid_order_count(nnlo_grid);
 
@@ -1248,9 +1274,9 @@ int main() {
             nullptr,
             pineappl_nnlo.data());
 
-        // Reference: direct DoubleOperator evaluation (same APFEL++ grid)
-        auto nnlo_sobj =
-            pineapfel::init_sidis_nnlo(g, nnlo_theory.quark_thresholds);
+        // Reference: direct DoubleOperator evaluation on the same coarser grid.
+        // sidis_sobj was already computed on sidis_g (== the coarser grid used
+        // to fill nnlo_grid above), so no extra init_sidis_nnlo call needed.
 
         std::vector<std::vector<double>> nnlo_x_bounds, nnlo_z_bounds;
         for (const auto &bin : nnlo_grid_def.bins) {
@@ -1262,8 +1288,8 @@ int main() {
             return as_tab.Evaluate(Q);
         };
 
-        auto   nnlo_ref = compute_sidis_nnlo_reference(g,
-            nnlo_sobj,
+        auto   nnlo_ref = compute_sidis_nnlo_reference(sidis_g,
+            sidis_sobj,
             nnlo_theory.quark_thresholds,
             nf_max_nnlo,
             nnlo_q2_nodes,

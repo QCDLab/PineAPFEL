@@ -44,6 +44,11 @@ struct OperatorCard {
     std::vector<SubGridDef> xgrid;
     TabulationParams        tabulation;
     std::vector<double>     xi;
+    // Relative integration precision for SIDIS NNLO coefficient functions.
+    // Controls the cost of InitializeSidisObjects.
+    // Default 1e-3 gives accurate results; tests may 1e-1 for ~100× speedup
+    // while keeping PineAPPL vs APFEL++ exact (both see the same operator).
+    double                  sidis_int_eps = 1e-3;
 };
 
 TheoryCard   load_theory_card(const std::string &path);
