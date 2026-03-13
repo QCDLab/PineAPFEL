@@ -151,10 +151,18 @@ def generate(request):
 
 
 def _require_cli(name: str) -> str:
-    """Return the path to a CLI binary, skipping the if it is not found."""
+    """Return the path to a CLI binary, skipping the test if not found.
+
+    Searches PATH first, then falls back to builddir/ relative to the project
+    root (covers local dev and CI where the binary is built but not installed).
+    """
     path = shutil.which(name)
     if path is None:
-        pytest.skip(f"{name!r} not found on PATH — install pineapfel.")
+        candidate = os.path.join(PROJECT_ROOT, "builddir", name)
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            path = candidate
+    if path is None:
+        pytest.skip(f"{name!r} not found on PATH or in builddir/")
     return path
 
 
