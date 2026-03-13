@@ -119,9 +119,9 @@ def test_05_dis_cc_f2_plus(theory, op_card):
     assert_finite_nonzero(full, "DIS CC F2+")
 
 
-def test_06_sidis_f2_unpolpdf_unpolff(theory, op_card):
+def test_06_sidis_f2_unpolpdf_unpolff(theory, sidis_op_card):
     """SIDIS F2: two-convolution grid is finite and non-zero at LO+NLO."""
-    pg = build_pineappl("grid_sidis.yaml", theory, op_card)
+    pg = build_pineappl("grid_sidis.yaml", theory, sidis_op_card)
     n_conv = len(pg.convolutions)
     assert n_conv == 2, f"Expected 2 convolutions for SIDIS, got {n_conv}"
 
@@ -149,9 +149,9 @@ def test_07_dis_pol_g1(theory, op_card):
     assert_finite_nonzero(full, "Polarized DIS g1")
 
 
-def test_08_sidis_pol_g1(theory, op_card):
+def test_08_sidis_pol_g1(theory, sidis_op_card):
     """Polarized SIDIS G₁: two-convolution grid is finite and non-zero."""
-    pg = build_pineappl("grid_sidis_pol.yaml", theory, op_card)
+    pg = build_pineappl("grid_sidis_pol.yaml", theory, sidis_op_card)
     n_conv = len(pg.convolutions)
     assert n_conv == 2, f"Expected 2 convolutions for polarized SIDIS, got {n_conv}"
 

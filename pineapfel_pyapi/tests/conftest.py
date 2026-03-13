@@ -8,6 +8,7 @@ and convolved with pineappl-py instead of the C++ pineappl_capi.
 
 import math
 import os
+import shutil
 import sys
 import tempfile
 
@@ -84,6 +85,11 @@ def convolve(pg: pineappl.grid.Grid, order_mask=None) -> np.ndarray:
     )
 
 
+def convolve_path(grid_path: str, order_mask=None) -> np.ndarray:
+    """Read a PineAPPL grid from disk and convolve it with the toy distributions."""
+    return convolve(pineappl.grid.Grid.read(grid_path), order_mask=order_mask)
+
+
 @pytest.fixture(scope="session")
 def theory():
     return pf.load_theory_card(runcard("theory.yaml"))
@@ -92,6 +98,22 @@ def theory():
 @pytest.fixture(scope="session")
 def op_card():
     return pf.load_operator_card(runcard("operator.yaml"))
+
+
+@pytest.fixture(scope="session")
+def sidis_op_card():
+    """Coarser operator card for SIDIS tests (20+10 knots, sidis_int_eps=1e-2)."""
+    return pf.load_operator_card(runcard("operator_test.yaml"))
+
+
+@pytest.fixture(scope="session")
+def theory_path():
+    return runcard("theory.yaml")
+
+
+@pytest.fixture(scope="session")
+def op_path():
+    return runcard("operator.yaml")
 
 
 def build_pineappl(grid_yaml: str, theory_card, op_card_obj) -> pineappl.grid.Grid:
@@ -107,3 +129,40 @@ def build_pineappl(grid_yaml: str, theory_card, op_card_obj) -> pineappl.grid.Gr
         return pineappl.grid.Grid.read(path)
     finally:
         os.unlink(path)
+
+
+# ---------------------------------------------------------------------------
+# CLI regression fixtures
+# ---------------------------------------------------------------------------
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--generate-references",
+        action="store_true",
+        default=False,
+        help="Regenerate reference .npy files.",
+    )
+
+
+@pytest.fixture(scope="session")
+def generate(request):
+    return request.config.getoption("--generate-references")
+
+
+def _require_cli(name: str) -> str:
+    """Return the path to a CLI binary, skipping the if it is not found."""
+    path = shutil.which(name)
+    if path is None:
+        pytest.skip(f"{name!r} not found on PATH — install pineapfel.")
+    return path
+
+
+@pytest.fixture(scope="session")
+def pineapfel_build_bin():
+    return _require_cli("pineapfel-build")
+
+
+@pytest.fixture(scope="session")
+def pineapfel_evolve_bin():
+    return _require_cli("pineapfel-evolve")

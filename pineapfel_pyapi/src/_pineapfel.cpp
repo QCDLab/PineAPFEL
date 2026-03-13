@@ -159,7 +159,9 @@ PYBIND11_MODULE(_pineapfel, m) {
         .def(py::init<>())
         .def_readwrite("xgrid", &pineapfel::OperatorCard::xgrid)
         .def_readwrite("tabulation", &pineapfel::OperatorCard::tabulation)
-        .def_readwrite("xi", &pineapfel::OperatorCard::xi);
+        .def_readwrite("xi", &pineapfel::OperatorCard::xi)
+        .def_readwrite("sidis_int_eps",
+            &pineapfel::OperatorCard::sidis_int_eps);
 
     py::class_<pineapfel::GridDef>(m, "GridDef")
         .def(py::init<>())

@@ -451,12 +451,17 @@ int main() {
         }
         auto alphas_func = [&](double Q) { return as_tab.Evaluate(Q); };
 
+        auto sidis_sobj  = pineapfel::init_sidis_nnlo(g,
+            theory.quark_thresholds,
+            op_card.sidis_int_eps);
+
         for (int max_ord = 0; max_ord < 2; max_ord++) {
             bool ord_mask[2] = {};
             for (int k = 0; k <= max_ord; k++) ord_mask[k] = true;
 
             // APFEL++ reference capped at max_ord via max_alpha_s
             auto                ref_vals = compute_sidis_reference(g,
+                sidis_sobj,
                 theory.quark_thresholds,
                 q2_nodes,
                 bx,
