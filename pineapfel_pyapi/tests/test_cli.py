@@ -40,7 +40,10 @@ def _check_or_generate(
         return
     ref = np.load(path)
     np.testing.assert_allclose(
-        values, ref, rtol=rtol, err_msg=f"CLI regression failed for {filename}"
+        values,
+        ref,
+        rtol=rtol,
+        err_msg=f"CLI regression failed for {filename}",
     )
 
 
@@ -50,7 +53,14 @@ def test_cli_build_dis_nc(
     """pineapfel-build: DIS NC F2 grid matches reference convolution."""
     out = str(tmp_path / "dis_nc.pineappl.lz4")
     _run(
-        [pineapfel_build_bin, runcard("grid_dis.yaml"), theory_path, op_path, "-o", out]
+        [
+            pineapfel_build_bin,
+            runcard("grid_dis.yaml"),
+            theory_path,
+            op_path,
+            "-o",
+            out,
+        ]
     )
     values = convolve_path(out)
     _check_or_generate(values, "cli_dis_nc_f2.npy", generate)

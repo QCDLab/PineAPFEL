@@ -25,21 +25,17 @@ If `-o` is not specified, the output filename is derived from the grid card by r
 pineapfel-build runcards/grid_dis.yaml runcards/theory.yaml runcards/operator.yaml
 
 # Build an SIA grid with a custom output name
-pineapfel-build runcards/grid_sia.yaml runcards/theory.yaml runcards/operator.yaml \
-    -o sia_f2.pineappl.lz4
+pineapfel-build runcards/grid_sia.yaml runcards/theory.yaml runcards/operator.yaml -o sia_f2.pineappl.lz4
 
 # Build a SIDIS F2 grid (two-convolution: PDF ⊗ FF)
-pineapfel-build runcards/grid_sidis.yaml runcards/theory.yaml runcards/operator.yaml \
-    -o sidis_f2.pineappl.lz4
+pineapfel-build runcards/grid_sidis.yaml runcards/theory.yaml runcards/operator.yaml -o sidis_f2.pineappl.lz4
 
 # Build a DIS F2 grid in the FFN massive scheme
 # (requires MassScheme: FFN in the grid card and HeavyQuarkMasses in the theory card)
-pineapfel-build runcards/grid_dis_ffn.yaml runcards/theory.yaml runcards/operator.yaml \
-    -o dis_f2_ffn.pineappl.lz4
+pineapfel-build runcards/grid_dis_ffn.yaml runcards/theory.yaml runcards/operator.yaml -o dis_f2_ffn.pineappl.lz4
 
 # Build a DIS F2 FONLL grid (F_ZM + F_FFN)
-pineapfel-build runcards/grid_dis_fonll.yaml runcards/theory.yaml runcards/operator.yaml \
-    -o dis_f2_fonll.pineappl.lz4
+pineapfel-build runcards/grid_dis_fonll.yaml runcards/theory.yaml runcards/operator.yaml -o dis_f2_fonll.pineappl.lz4
 ```
 
 ### `pineapfel-evolve`
@@ -71,16 +67,12 @@ SIA, and SIDIS — only the grid card differs:
 
 ```bash
 # DIS F2: create and evolve
-pineapfel-build runcards/grid_dis.yaml runcards/theory.yaml runcards/operator.yaml \
-    -o dis_f2.pineappl.lz4
-pineapfel-evolve dis_f2.pineappl.lz4 runcards/theory.yaml runcards/operator.yaml \
-    -o dis_f2.fk.pineappl.lz4
+pineapfel-build runcards/grid_dis.yaml runcards/theory.yaml runcards/operator.yaml -o dis_f2.pineappl.lz4
+pineapfel-evolve dis_f2.pineappl.lz4 runcards/theory.yaml runcards/operator.yaml -o dis_f2.fk.pineappl.lz4
 
 # SIDIS F2: create and evolve (two-convolution grid)
-pineapfel-build runcards/grid_sidis.yaml runcards/theory.yaml runcards/operator.yaml \
-    -o sidis_f2.pineappl.lz4
-pineapfel-evolve sidis_f2.pineappl.lz4 runcards/theory.yaml runcards/operator.yaml \
-    -o sidis_f2.fk.pineappl.lz4
+pineapfel-build runcards/grid_sidis.yaml runcards/theory.yaml runcards/operator.yaml -o sidis_f2.pineappl.lz4
+pineapfel-evolve sidis_f2.pineappl.lz4 runcards/theory.yaml runcards/operator.yaml -o sidis_f2.fk.pineappl.lz4
 ```
 
 The resulting FK table can be convoluted with PDFs (and FFs for SIDIS) using the

@@ -27,3 +27,8 @@ exclude = [
 
 # Respect .gitignore files when scanning directories (default: true)
 respect-gitignore = true
+
+# Disable line breaks in code blocks and tables
+[MD013]
+code-blocks = false
+tables = false

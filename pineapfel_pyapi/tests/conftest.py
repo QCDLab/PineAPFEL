@@ -131,11 +131,6 @@ def build_pineappl(grid_yaml: str, theory_card, op_card_obj) -> pineappl.grid.Gr
         os.unlink(path)
 
 
-# ---------------------------------------------------------------------------
-# CLI regression fixtures
-# ---------------------------------------------------------------------------
-
-
 def pytest_addoption(parser):
     parser.addoption(
         "--generate-references",
