@@ -21,4 +21,4 @@ xi: [1.0, 1.0, 1.0]
 # Looser SIDIS integration tolerance for tests (~100x faster than 1e-3).
 # Both build_grid and the reference sobj use this value, so the PineAPPL vs
 # APFEL++ comparison remains exact (deterministic quadrature).
-sidis_int_eps: 1.0e-2
+sidis_int_eps: 1.0e-1
