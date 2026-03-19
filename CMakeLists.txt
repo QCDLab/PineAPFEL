@@ -55,6 +55,12 @@ target_compile_options(test_grid_vs_apfelxx PRIVATE -Wall -Wextra -O3)
 add_test(NAME grid_vs_apfelxx COMMAND test_grid_vs_apfelxx
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
+add_executable(test_f2nc_bsf tests/test_f2nc_lhapdf.cpp)
+target_link_libraries(test_f2nc_bsf PRIVATE pineapfel)
+target_compile_options(test_f2nc_bsf PRIVATE -Wall -Wextra -O3)
+add_test(NAME f2nc_bsf COMMAND test_f2nc_bsf
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 # Install targets
 install(TARGETS pineapfel pineapfel-evolve pineapfel-build
     EXPORT pineapfelTargets

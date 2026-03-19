@@ -903,9 +903,13 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                                              : FObjQ.C2;
                 if (C.count(1) == 0) continue;
 
-                auto                  &target    = q2_data[iq].channel_ops[ord];
+                // Scale by (1/(4π))^ord so that when PineAPPL multiplies by
+                // α_s^ord the result matches APFEL++ BSF which uses
+                // (α_s/4π)^ord.
+                const double pert_norm = std::pow(1.0 / apfel::FourPi, ord);
+                auto        &target    = q2_data[iq].channel_ops[ord];
 
-                const auto            &ops_light = C.at(1).GetObjects();
+                const auto  &ops_light = C.at(1).GetObjects();
                 const apfel::Operator &CNS =
                     ops_light.at(apfel::DISNCBasis::CNS);
                 const apfel::Operator &CS = ops_light.at(apfel::DISNCBasis::CS);
@@ -962,7 +966,7 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                         }
                     }
 
-                    add_to_channel(target, ich, C_q, wi.sign);
+                    add_to_channel(target, ich, C_q * pert_norm, wi.sign);
                 }
 
                 // ── Gluon channel ────────────────────────────────────────────
@@ -992,7 +996,10 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                         }
                     }
 
-                    add_to_channel(target, gluon_ich, CG_total, wi.sign);
+                    add_to_channel(target,
+                        gluon_ich,
+                        CG_total * pert_norm,
+                        wi.sign);
                 }
             }
         }
@@ -1031,9 +1038,15 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                         const std::vector<double> &vals =
                             dist.GetDistributionJointGrid();
 
+                        // NOTE: APFEL++: K_j satisfy (C⊗f)(x) = Σ K_j*f(x_j)
+                        // where f is the PDF *without* the x factor.  PineAPPL
+                        // with APPL_GRID_X divides xfx(x_j) by x_j, giving
+                        // Σ (stored_j) * xf(x_j)/x_j.  Multiplying the stored
+                        // kernel by x_j makes PineAPPL compute
+                        // Σ (K_j*x_j) * xf/x_j = Σ K_j * xf(x_j) = F2.
                         for (std::size_t ix = 0; ix < nx && ix < vals.size();
                              ix++)
-                            subgrid[iq * nx + ix] = vals[ix];
+                            subgrid[iq * nx + ix] = vals[ix] * x_nodes[ix];
                     }
                 }
 

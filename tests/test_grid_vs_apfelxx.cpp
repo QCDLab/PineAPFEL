@@ -225,7 +225,7 @@ int main() {
                                     f_val *= toy_f(pid, z);
                                 sum += ch.factors[ic] * f_val;
                             }
-                            return sum;
+                            return z * sum;
                         });
 
                     ref += (C_ch * pdf_ch).Evaluate(x_center);
@@ -305,7 +305,7 @@ int main() {
                                         f_val *= toy_f(pid, z);
                                     sum += ch.factors[ic] * f_val;
                                 }
-                                return sum;
+                                return z * sum; // xf convention
                             });
                         ref += (C_ch * pdf_ch).Evaluate(x_center);
                     }
@@ -332,9 +332,10 @@ int main() {
                                         f_val *= toy_f(pid, z);
                                     sum += ch.factors[ic] * f_val;
                                 }
-                                return sum;
+                                return z * sum;
                             });
-                        ref += as_val * (C_ch * pdf_ch).Evaluate(x_center);
+                        ref += (as_val / apfel::FourPi) *
+                               (C_ch * pdf_ch).Evaluate(x_center);
                     }
                 }
             }
@@ -395,7 +396,7 @@ int main() {
 
                 // We need to handle the maps carefully
                 for (int iord = 0; iord < 3; iord++) {
-                    double as_power = std::pow(as_val, iord);
+                    double as_power = std::pow(as_val / apfel::FourPi, iord);
                     std::map<int, apfel::Operator> ops_map;
 
                     if (iord == 0 && FObjQ.C0.count(1))
@@ -424,7 +425,7 @@ int main() {
                                         f_val *= toy_f(pid, z);
                                     sum += ch.factors[ic] * f_val;
                                 }
-                                return sum;
+                                return z * sum;
                             });
                         ref += as_power * (C_ch * pdf_ch).Evaluate(x_center);
                     }
@@ -472,16 +473,14 @@ int main() {
             [](int const &i, double const &x, double const & /*Q*/) -> double {
             double f     = std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
             double g_val = std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
-            if (i == 0) return g_val;     // gluon
-            if (i == 1) return 10.0 * f;  // Sigma
-            if (i == 11) return 10.0 * f; // T35
+            if (i == 0) return x * g_val;     // gluon (xf convention)
+            if (i == 1) return 10.0 * x * f;  // Sigma (xf convention)
+            if (i == 11) return 10.0 * x * f; // T35 (xf convention)
             return 0.0;
         };
 
-        // Alphas function: pass 4*pi*alpha_s to match PineAPPL convention
-        // (BuildStructureFunctions divides by 4*pi internally)
         auto alphas_func = [&](double const &Q) -> double {
-            return apfel::FourPi * as_tab.Evaluate(Q);
+            return as_tab.Evaluate(Q);
         };
 
         auto couplings_func = [&](double const &Q) -> std::vector<double> {
@@ -565,14 +564,14 @@ int main() {
             [](int const &i, double const &x, double const & /*Q*/) -> double {
             double f     = std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
             double g_val = std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
-            if (i == 0) return g_val;     // gluon
-            if (i == 1) return 10.0 * f;  // Sigma
-            if (i == 11) return 10.0 * f; // T35
+            if (i == 0) return x * g_val;     // gluon (xf convention)
+            if (i == 1) return 10.0 * x * f;  // Sigma (xf convention)
+            if (i == 11) return 10.0 * x * f; // T35 (xf convention)
             return 0.0;
         };
 
         auto cc_alphas_func = [&](double const &Q) -> double {
-            return apfel::FourPi * as_tab.Evaluate(Q);
+            return as_tab.Evaluate(Q);
         };
 
         auto cc_couplings_func = [&](double const &Q) -> std::vector<double> {
@@ -778,14 +777,14 @@ int main() {
             [](int const &i, double const &x, double const & /*Q*/) -> double {
             double f     = std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
             double g_val = std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
-            if (i == 0) return g_val;     // gluon
-            if (i == 1) return 10.0 * f;  // Sigma
-            if (i == 11) return 10.0 * f; // T35
+            if (i == 0) return x * g_val;     // gluon (xf convention)
+            if (i == 1) return 10.0 * x * f;  // Sigma (xf convention)
+            if (i == 11) return 10.0 * x * f; // T35 (xf convention)
             return 0.0;
         };
 
         auto pol_alphas_func = [&](double const &Q) -> double {
-            return apfel::FourPi * as_tab.Evaluate(Q);
+            return as_tab.Evaluate(Q);
         };
 
         auto pol_couplings_func = [&](double const &Q) -> std::vector<double> {
@@ -959,14 +958,14 @@ int main() {
             [](int const &i, double const &x, double const & /*Q*/) -> double {
             double f     = std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
             double g_val = std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
-            if (i == 0) return g_val;
-            if (i == 1) return 10.0 * f;
-            if (i == 11) return 10.0 * f;
+            if (i == 0) return x * g_val;     // xf convention
+            if (i == 1) return 10.0 * x * f;  // xf convention
+            if (i == 11) return 10.0 * x * f; // xf convention
             return 0.0;
         };
 
         auto ffn_alphas_func = [&](double const &Q) -> double {
-            return apfel::FourPi * as_tab.Evaluate(Q);
+            return as_tab.Evaluate(Q);
         };
 
         auto ffn_couplings_func = [&](double const &Q) -> std::vector<double> {
@@ -1047,14 +1046,14 @@ int main() {
             [](int const &i, double const &x, double const & /*Q*/) -> double {
             double f     = std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
             double g_val = std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
-            if (i == 0) return g_val;
-            if (i == 1) return 10.0 * f;
-            if (i == 11) return 10.0 * f;
+            if (i == 0) return x * g_val;     // xf convention
+            if (i == 1) return 10.0 * x * f;  // xf convention
+            if (i == 11) return 10.0 * x * f; // xf convention
             return 0.0;
         };
 
         auto mz_alphas_func = [&](double const &Q) -> double {
-            return apfel::FourPi * as_tab.Evaluate(Q);
+            return as_tab.Evaluate(Q);
         };
 
         auto mz_couplings_func = [&](double const &Q) -> std::vector<double> {
@@ -1139,14 +1138,14 @@ int main() {
             [](int const &i, double const &x, double const & /*Q*/) -> double {
             double f     = std::pow(x, 0.5) * std::pow(1.0 - x, 3.0);
             double g_val = std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
-            if (i == 0) return g_val;
-            if (i == 1) return 10.0 * f;
-            if (i == 11) return 10.0 * f;
+            if (i == 0) return x * g_val;     // xf convention
+            if (i == 1) return 10.0 * x * f;  // xf convention
+            if (i == 11) return 10.0 * x * f; // xf convention
             return 0.0;
         };
 
         auto fonll_alphas_func = [&](double const &Q) -> double {
-            return apfel::FourPi * as_tab.Evaluate(Q);
+            return as_tab.Evaluate(Q);
         };
 
         auto fonll_couplings_func =
