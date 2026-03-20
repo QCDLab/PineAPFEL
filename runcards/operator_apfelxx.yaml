@@ -1,0 +1,27 @@
+# Operator card matching the APFEL++ structurefunction_nc_lhapdf_test.cc x-grid.
+# Reference: apfel::Grid g{{SubGrid{100,1e-5,3}, SubGrid{60,1e-1,3},
+#                            SubGrid{50,6e-1,3}, SubGrid{50,8e-1,3}}}
+# Using 4 sub-grids exposes any stride/offset mismatch in multi-subgrid handling.
+xgrid:
+  - n_knots: 100
+    x_min: 1.0e-5
+    poly_degree: 3
+  - n_knots: 60
+    x_min: 1.0e-1
+    poly_degree: 3
+  - n_knots: 50
+    x_min: 6.0e-1
+    poly_degree: 3
+  - n_knots: 50
+    x_min: 8.0e-1
+    poly_degree: 3
+
+# Same tabulation as operator.yaml
+tabulation:
+  n_points: 200
+  q_min: 0.9
+  n_steps: 13001
+  interp_degree: 3
+
+# No scale variation
+xi: [1.0, 1.0, 1.0]

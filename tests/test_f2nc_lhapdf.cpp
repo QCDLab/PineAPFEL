@@ -8,7 +8,6 @@
 //   - x-grid   : {SubGrid{100,1e-5,3}, SubGrid{60,1e-1,3},
 //                 SubGrid{50,6e-1,3},  SubGrid{50,8e-1,3}}
 //   - Order    : NNLO (PerturbativeOrder = 2)
-//   - Tolerance: 5% (PineAPPL uses interpolated subgrids; BSF computes exact)
 
 #include <apfel/apfelxx.h>
 #include <pineapfel/fill.h>
