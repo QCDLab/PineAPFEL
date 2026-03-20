@@ -3,7 +3,7 @@
 Include the single convenience header to access the full API:
 
 ```cpp
-#include <pineapfel.h>
+#include <pineapfel/pineapfel.h>
 ```
 
 ### API overview
@@ -26,7 +26,7 @@ You do not need to include it in application code.
 Build a PineAPPL grid filled with APFEL++ coefficient functions:
 
 ```cpp
-#include <pineapfel.h>
+#include <pineapfel/pineapfel.h>
 #include <pineappl_capi.h>
 #include <iostream>
 
@@ -57,7 +57,7 @@ auto* grid    = pineapfel::build_grid(grid_def, theory, op_card);
 pineappl_grid_write(grid, "sidis_f2.pineappl.lz4");
 pineappl_grid_delete(grid);
 
-// Polarized DIS g1 (Polarized: true in card)
+// Polarized DIS g1 (ConvolutionTypes: [POL_PDF] in card)
 auto pol_def = pineapfel::load_grid_def("grid_dis_pol.yaml");
 auto* pol_grid = pineapfel::build_grid(pol_def, theory, op_card);
 pineappl_grid_write(pol_grid, "dis_g1.pineappl.lz4");
@@ -119,7 +119,7 @@ supported processes.
 Evolve an existing PineAPPL grid into an FK table:
 
 ```cpp
-#include <pineapfel.h>
+#include <pineapfel/pineapfel.h>
 #include <pineappl_capi.h>
 #include <iostream>
 
@@ -150,7 +150,7 @@ int main() {
 Create a grid and evolve it in one program:
 
 ```cpp
-#include <pineapfel.h>
+#include <pineapfel/pineapfel.h>
 #include <pineappl_capi.h>
 
 int main() {
