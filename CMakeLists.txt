@@ -61,6 +61,26 @@ target_compile_options(test_f2nc_bsf PRIVATE -Wall -Wextra -O3)
 add_test(NAME f2nc_bsf COMMAND test_f2nc_bsf
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
+add_executable(test_sidis_g1_bsf tests/test_sidis_g1_bsf.cpp)
+target_link_libraries(test_sidis_g1_bsf PRIVATE pineapfel)
+target_compile_options(test_sidis_g1_bsf PRIVATE -Wall -Wextra -O3)
+add_test(NAME sidis_g1_bsf COMMAND test_sidis_g1_bsf
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# Diagnostic test: SIDIS G1 convolution with LHAPDF vs BuildSidisG1 reference.
+# Uses lhapdf-config to find include/link flags.
+execute_process(COMMAND lhapdf-config --cflags
+    OUTPUT_VARIABLE LHAPDF_CFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND lhapdf-config --libs
+    OUTPUT_VARIABLE LHAPDF_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+separate_arguments(LHAPDF_CFLAGS_LIST UNIX_COMMAND "${LHAPDF_CFLAGS}")
+separate_arguments(LHAPDF_LIBS_LIST   UNIX_COMMAND "${LHAPDF_LIBS}")
+
+add_executable(test_sidis_g1_lhapdf tests/test_sidis_g1_lhapdf.cpp)
+target_compile_options(test_sidis_g1_lhapdf PRIVATE -Wall -Wextra -O3 ${LHAPDF_CFLAGS_LIST})
+target_link_libraries(test_sidis_g1_lhapdf PRIVATE pineapfel ${LHAPDF_LIBS_LIST})
+# Not added to ctest: this is a manual diagnostic, not an automated pass/fail test.
+
 # Install targets
 install(TARGETS pineapfel pineapfel-evolve pineapfel-build
     EXPORT pineapfelTargets

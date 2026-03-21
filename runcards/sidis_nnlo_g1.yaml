@@ -1,0 +1,52 @@
+Process: SIDIS
+Observable: F2
+Current: NC
+PidBasis: PDG
+HadronPids: [2212, 211]
+ConvolutionTypes: [POL_PDF, UNPOL_FF]
+
+# Full LO+NLO+NNLO perturbative expansion.
+# POL_PDF x UNPOL_FF selects the polarized G_1 structure function.
+Orders:
+  - [0, 0, 0, 0, 0]   # LO
+  - [1, 0, 0, 0, 0]   # NLO
+  - [2, 0, 0, 0, 0]   # NNLO (exact, arXiv:2404.08597)
+
+# 12 narrow bins centered exactly at the benchmark kinematics from
+# sidis_check_zurich.cc (channels -1 through 9).
+#
+# Data points (Q^2 [GeV^2], x):
+#   (1.25001, 0.0052), (1.46, 0.0079), (2.12, 0.0142), (3.22, 0.0245),
+#   (4.36, 0.0346),   (5.97, 0.0487), (8.96, 0.0765), (13.8, 0.121),
+#   (19.6, 0.172),    (27.6, 0.240),  (40.1, 0.341),  (55.6, 0.480)
+#
+# Each bin uses lo = val/1.005, hi = val*1.005, so the geometric centre
+# sqrt(lo*hi) = val exactly.  z is integrated over [0.2, 0.85] as in
+# the benchmark.
+Bins:
+  - lower: [1.24379, 0.0051741, 0.2]
+    upper: [1.25626, 0.0052260, 0.85]
+  - lower: [1.45274, 0.0078607, 0.2]
+    upper: [1.46731, 0.0079393, 0.85]
+  - lower: [2.10945, 0.0141293, 0.2]
+    upper: [2.13060, 0.0142710, 0.85]
+  - lower: [3.20398, 0.0243781, 0.2]
+    upper: [3.23610, 0.0246219, 0.85]
+  - lower: [4.33831, 0.0344279, 0.2]
+    upper: [4.38180, 0.0347721, 0.85]
+  - lower: [5.94030, 0.0484577, 0.2]
+    upper: [5.99985, 0.0489423, 0.85]
+  - lower: [8.91542, 0.0761194, 0.2]
+    upper: [9.00480, 0.0768806, 0.85]
+  - lower: [13.7313, 0.120398, 0.2]
+    upper: [13.8690, 0.121602, 0.85]
+  - lower: [19.5025, 0.171144, 0.2]
+    upper: [19.6980, 0.172856, 0.85]
+  - lower: [27.4627, 0.238806, 0.2]
+    upper: [27.7380, 0.241194, 0.85]
+  - lower: [39.9005, 0.339303, 0.2]
+    upper: [40.3005, 0.342697, 0.85]
+  - lower: [55.3234, 0.477612, 0.2]
+    upper: [55.8766, 0.482388, 0.85]
+
+Normalizations: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]

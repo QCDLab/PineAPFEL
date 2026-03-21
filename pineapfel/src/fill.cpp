@@ -466,9 +466,13 @@ struct SidisChannelInfo {
 static constexpr double QCh[6] =
     {2. / 3., -1. / 3., -1. / 3., 2. / 3., -1. / 3., 2. / 3.};
 
+// Internal implementation: accepts an optional pre-built SidisNNLOObjects.
+// When prebuilt_sobj != nullptr, the initialization step is skipped and the
+// caller's object is used directly — useful in tests that already own one.
 static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
     const TheoryCard                                 &theory,
-    const OperatorCard                               &op_card) {
+    const OperatorCard                               &op_card,
+    const apfel::SidisNNLOObjects                    *prebuilt_sobj = nullptr) {
     if (grid_def_in.observable == Observable::F3)
         throw std::runtime_error(
             "build_grid_sidis: F3 is not supported for SIDIS");
@@ -550,17 +554,24 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
 
     // 2. Initialize SIDIS coefficient functions (exact NNLO).
     // All orders (LO, NLO, NNLO) use DoubleOperator objects from
-    // SidisNNLOObjects.
+    // SidisNNLOObjects.  If the caller already has one, reuse it to
+    // avoid a second (expensive) InitializeSidisObjects call.
     using CoeffNNLOPtr = const apfel::DoubleOperator *;
 
-    auto sobj          = std::make_shared<apfel::SidisNNLOObjects>(
-        init_sidis_nnlo(g, theory.quark_thresholds, op_card.sidis_int_eps));
+    std::shared_ptr<apfel::SidisNNLOObjects> sobj_owned;
+    const apfel::SidisNNLOObjects           *sobj_ptr = prebuilt_sobj;
+    if (sobj_ptr == nullptr) {
+        sobj_owned = std::make_shared<apfel::SidisNNLOObjects>(
+            init_sidis_nnlo(g, theory.quark_thresholds, op_card.sidis_int_eps));
+        sobj_ptr = sobj_owned.get();
+    }
+
     std::function<CoeffNNLOPtr(int, int, Observable, int)> get_coeff =
-        [sobj, polarized](int alpha_s,
-            int               type_id,
-            Observable        obs,
-            int               nf) -> CoeffNNLOPtr {
-        return select_sidis_coeff_nnlo(*sobj,
+        [sobj_ptr, polarized](int alpha_s,
+            int                   type_id,
+            Observable            obs,
+            int                   nf) -> CoeffNNLOPtr {
+        return select_sidis_coeff_nnlo(*sobj_ptr,
             alpha_s,
             type_id,
             obs,
@@ -569,14 +580,33 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
     };
 
     // 3. Create empty PineAPPL grid
-    pineappl_grid      *grid           = create_grid(grid_def);
+    pineappl_grid           *grid           = create_grid(grid_def);
 
     // 4. Determine grid nodes
-    const auto         &joint_grid_vec = g.GetJointGrid().GetGrid();
-    std::vector<double> x_nodes(joint_grid_vec.begin(), joint_grid_vec.end());
-    const std::size_t   nx = x_nodes.size();
-    // Same grid for z
-    const std::size_t   nz = nx;
+    //
+    // APFL++ Lagrange degree-3 grids append a small number of "extension"
+    // nodes beyond x = 1 at the upper boundary of the last SubGrid.  These
+    // nodes are needed internally by APFL++ for the polynomial basis but
+    // have no physical meaning for PDFs/FFs (support is x ≤ 1).  Storing
+    // them in the PineAPPL subgrid axis would cause any real PDF library to
+    // be called with x > 1 during convolution, which is undefined / an error.
+    // Filter them out: keep only nodes with x ≤ 1 and remap the kernel
+    // w-array indices accordingly.
+    const auto              &joint_grid_vec = g.GetJointGrid().GetGrid();
+    const std::size_t        nx_full        = joint_grid_vec.size();
+    std::vector<double>      x_nodes;
+    std::vector<std::size_t> phys_x_indices;
+    x_nodes.reserve(nx_full);
+    phys_x_indices.reserve(nx_full);
+    for (std::size_t i = 0; i < nx_full; i++) {
+        if (joint_grid_vec[i] <= 1.0) {
+            x_nodes.push_back(joint_grid_vec[i]);
+            phys_x_indices.push_back(i);
+        }
+    }
+    const std::size_t   nx      = x_nodes.size(); // physical x nodes
+    const std::size_t   nz_full = nx_full;        // full z extent (same grid)
+    const std::size_t   nz      = nx; // physical z nodes (same filter)
 
     std::vector<double> q2_nodes =
         derive_q2_nodes(grid_def.bins, theory.quark_thresholds);
@@ -613,6 +643,24 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
     const apfel::LagrangeInterpolator li2{g};
 
     // 6. Fill subgrids for each (order, channel, bin)
+    //
+    // Convention: PineAPPL calls the PDF/FF callbacks in LHAPDF convention
+    // (returning xf(x)) and divides by x internally before multiplying by the
+    // stored subgrid weight.  APFEL++ BuildSidisG1 takes xf inputs and applies
+    // an explicit 1/(x·z) factor, so its result is:
+    //
+    //   G1_BSF(x_c,z_c) = (1/(x_c·z_c)) · Σ_{mn} K_{mn}(x_c,z_c) · xf(x_m) ·
+    //   zD(z_n)
+    //                    = (1/(x_c·z_c)) · Σ K · x_m·f(x_m) · z_n·D(z_n)
+    //
+    // PineAPPL with the stored weight w_{mn} computes:
+    //   result = Σ αs^n · w_{mn} · f(x_m) · D(z_n)
+    //
+    // For result == G1_BSF we therefore need:
+    //   w_{mn} = K_{mn}(x_c,z_c) · (x_m · z_n) / (x_c · z_c · (4π)^n)
+    //
+    // The (4π)^n factor matches PineAPPL's αs^n against BSF's (αs/4π)^n.
+    // The (x_m·z_n)/(x_c·z_c) factor compensates for the 1/(x_c·z_c) in BSF.
     for (std::size_t iord = 0; iord < grid_def.orders.size(); iord++) {
         int alpha_s = grid_def.orders[iord].alpha_s;
         if (alpha_s > 2) {
@@ -620,6 +668,9 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                       << " (beyond NNLO)" << std::endl;
             continue;
         }
+        // Precompute (4π)^alpha_s once per perturbative order.
+        const double fourpi_pow =
+            std::pow(4.0 * M_PI, static_cast<double>(alpha_s));
 
         for (std::size_t ich = 0; ich < grid_def.channels.size(); ich++) {
             const SidisChannelInfo &info    = channel_infos[ich];
@@ -704,16 +755,27 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                             nf);
                         if (coeff == nullptr) continue;
 
-                        auto w = eval_double_op_column(*coeff,
+                        auto         w = eval_double_op_column(*coeff,
                             x_center,
                             z_center,
                             li1,
                             li2);
 
-                        for (std::size_t ix = 0; ix < nx; ix++) {
-                            for (std::size_t iz = 0; iz < nz; iz++) {
-                                subgrid[iq * nx * nz + ix * nz + iz] +=
-                                    fill_weight * w[ix * nz + iz];
+                        // w is indexed over the full joint grid (nx_full *
+                        // nz_full).  Map to physical (≤1) indices only.
+                        // Apply the BSF-matching normalisation: multiply by
+                        // x_node · z_node / (x_center · z_center · (4π)^n).
+                        const double xz_denom =
+                            x_center * z_center * fourpi_pow;
+                        for (std::size_t iix = 0; iix < nx; iix++) {
+                            const std::size_t ix     = phys_x_indices[iix];
+                            const double      x_node = x_nodes[iix];
+                            for (std::size_t iiz = 0; iiz < nz; iiz++) {
+                                const std::size_t iz     = phys_x_indices[iiz];
+                                const double      z_node = x_nodes[iiz];
+                                subgrid[iq * nx * nz + iix * nz + iiz] +=
+                                    fill_weight * w[ix * nz_full + iz] *
+                                    (x_node * z_node) / xz_denom;
                             }
                         }
                     }
@@ -775,9 +837,20 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
     // 3. Create empty PineAPPL grid
     pineappl_grid      *grid           = create_grid(grid_def);
 
-    // 4. Determine grid nodes
+    // 4. Determine grid nodes — filter out APFL++ Lagrange extension nodes
+    //    beyond x = 1 (same rationale as in build_grid_sidis).
     const auto         &joint_grid_vec = g.GetJointGrid().GetGrid();
-    std::vector<double> x_nodes(joint_grid_vec.begin(), joint_grid_vec.end());
+    const std::size_t   nx_full        = joint_grid_vec.size();
+    std::vector<double> x_nodes;
+    std::vector<std::size_t> phys_x_indices;
+    x_nodes.reserve(nx_full);
+    phys_x_indices.reserve(nx_full);
+    for (std::size_t i = 0; i < nx_full; i++) {
+        if (joint_grid_vec[i] <= 1.0) {
+            x_nodes.push_back(joint_grid_vec[i]);
+            phys_x_indices.push_back(i);
+        }
+    }
     const std::size_t   nx = x_nodes.size();
 
     std::vector<double> q2_nodes =
@@ -1044,9 +1117,14 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                         // Σ (stored_j) * xf(x_j)/x_j.  Multiplying the stored
                         // kernel by x_j makes PineAPPL compute
                         // Σ (K_j*x_j) * xf/x_j = Σ K_j * xf(x_j) = F2.
-                        for (std::size_t ix = 0; ix < nx && ix < vals.size();
-                             ix++)
-                            subgrid[iq * nx + ix] = vals[ix] * x_nodes[ix];
+                        // vals is indexed over the full joint grid (nx_full).
+                        // Map to physical (≤1) indices only.
+                        for (std::size_t iix = 0; iix < nx; iix++) {
+                            const std::size_t ix = phys_x_indices[iix];
+                            if (ix < vals.size())
+                                subgrid[iq * nx + iix] =
+                                    vals[ix] * x_nodes[iix];
+                        }
                     }
                 }
 
@@ -1057,6 +1135,17 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
 
     std::cout << "Grid filled successfully." << std::endl;
     return grid;
+}
+
+pineappl_grid *build_grid(const GridDef &grid_def,
+    const TheoryCard                    &theory,
+    const OperatorCard                  &op_card,
+    const apfel::SidisNNLOObjects       &prebuilt_sobj) {
+    if (grid_def.process == ProcessType::SIDIS)
+        return build_grid_sidis(grid_def, theory, op_card, &prebuilt_sobj);
+    // Non-SIDIS: prebuilt_sobj is irrelevant; delegate to the standard
+    // overload.
+    return build_grid(grid_def, theory, op_card);
 }
 
 } // namespace pineapfel

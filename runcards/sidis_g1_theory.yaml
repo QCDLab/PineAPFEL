@@ -1,0 +1,28 @@
+# Theory card for polarized SIDIS G1 benchmark.
+# Matches the setup in sidis_check_zurich.cc:
+#   - alpha_s from MSHT20nnlo_as118: alpha_s(M_Z) = 0.118
+#   - Charm/bottom thresholds from PDFs->quarkThreshold(4/5):
+#     mc = 1.4 GeV, mb = 4.75 GeV (MSHT20 convention)
+#   - PerturbativeOrder = 2 (NNLO)
+
+mu0: 1.0
+
+PerturbativeOrder: 2
+
+QRef: 91.1876
+
+AlphaQCDRef: 0.118
+
+# Massless u, d, s; charm threshold 1.4 GeV; bottom threshold 4.75 GeV.
+# Matches PDFs->quarkThreshold(4/5) for MSHT20nnlo_as118.
+QuarkThresholds: [0.0, 0.0, 0.0, 1.4, 4.75]
+
+HeavyQuarkMasses: [0.0, 0.0, 0.0, 1.4, 4.75, 172.0]
+
+Flavors: [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 21]
+
+CKM: [0.94922, 0.05077, 0.00001, 0.05073, 0.94760, 0.00168, 0.00007, 0.00162, 0.99831]
+
+QED: false
+AlphaQEDRef: 0.00729927
+LeptonThresholds: []

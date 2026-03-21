@@ -78,11 +78,16 @@ static double eval_dop_at(const apfel::Grid &g,
             for (int alpha = 0; alpha <= nx_sub - out_x - 1; alpha++) {
                 const int inp_x = x_jg_off + out_x + alpha;
                 if (inp_x >= nx) break;
+                // Skip APFL++ Lagrange extension nodes beyond x = 1.
+                // fill.cpp drops these from the PineAPPL subgrid; the
+                // reference must apply the same cut to remain consistent.
+                if (x_nodes[inp_x] > 1.0) continue;
                 for (int gamma = 0; gamma <= nz_sub - out_z - 1; gamma++) {
                     const int inp_z = z_jg_off + out_z + gamma;
                     if (inp_z >= nz) break;
-                    result += wxz * K_sub(0, alpha)(0, gamma) *
-                              toy_f(pid_pdf, x_nodes[inp_x]) *
+                    if (x_nodes[inp_z] > 1.0) continue;
+                    result += wxz * K_sub(0, alpha)(0, gamma) * x_nodes[inp_x] *
+                              x_nodes[inp_z] * toy_f(pid_pdf, x_nodes[inp_x]) *
                               toy_f(pid_ff, x_nodes[inp_z]);
                 }
             }
@@ -153,11 +158,14 @@ std::vector<double> compute_sidis_reference(const apfel::Grid &g,
                     auto it = sobj.FT.find(key);
                     if (it == sobj.FT.end()) continue;
 
-                    double as_power = std::pow(as_val, alpha_s);
+                    // Convention: eval_dop_at now returns Σ K·x_m·z_n·f·D.
+                    // Divide by x_c·z_c and use (αs/4π)^n to match fill.cpp.
+                    double as_power = std::pow(as_val / (4.0 * M_PI), alpha_s);
                     for (size_t ic = 0; ic < ch.pid_combinations.size(); ic++) {
                         int pid_pdf   = ch.pid_combinations[ic][0];
                         int pid_ff    = ch.pid_combinations[ic][1];
-                        result[ibin] += as_power * e_q_sq * ch.factors[ic] *
+                        result[ibin] += as_power * e_q_sq * ch.factors[ic] /
+                                        (x_center * z_center) *
                                         eval_dop_at(g,
                                             li,
                                             it->second,
@@ -235,11 +243,14 @@ std::vector<double> compute_sidis_pol_reference(const apfel::Grid &g,
                     auto it = sobj.G1.find(key);
                     if (it == sobj.G1.end()) continue;
 
-                    double as_power = std::pow(as_val, alpha_s);
+                    // Convention: eval_dop_at now returns Σ K·x_m·z_n·f·D.
+                    // Divide by x_c·z_c and use (αs/4π)^n to match fill.cpp.
+                    double as_power = std::pow(as_val / (4.0 * M_PI), alpha_s);
                     for (size_t ic = 0; ic < ch.pid_combinations.size(); ic++) {
                         int pid_pdf   = ch.pid_combinations[ic][0];
                         int pid_ff    = ch.pid_combinations[ic][1];
-                        result[ibin] += as_power * e_q_sq * ch.factors[ic] *
+                        result[ibin] += as_power * e_q_sq * ch.factors[ic] /
+                                        (x_center * z_center) *
                                         eval_dop_at(g,
                                             li,
                                             it->second,
@@ -285,9 +296,14 @@ std::vector<double> compute_sidis_nnlo_reference(const apfel::Grid &g,
             double Q       = std::sqrt(q2);
             int    nf      = apfel::NF(Q, thresholds);
             auto   charges = apfel::ElectroWeakCharges(Q, false);
-            double as2     = alphas_func(Q) * alphas_func(Q);
+            // Use (αs/4π)² / (x_c·z_c) to match fill.cpp convention.
+            // eval_dop_at returns Σ K·x_m·z_n·f·D; dividing by x_c·z_c
+            // converts that to the BSF-comparable quantity.
+            double as_val  = alphas_func(Q);
+            double as2 =
+                (as_val / (4.0 * M_PI)) * (as_val / (4.0 * M_PI)) / (x_c * z_c);
 
-            double sumch2  = 0;
+            double sumch2 = 0;
             for (int q = 0; q < nf; q++) sumch2 += charges[q];
 
             const std::string snf      = "_nf" + std::to_string(nf);

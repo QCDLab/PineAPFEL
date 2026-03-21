@@ -1,0 +1,28 @@
+# Operator card for polarized SIDIS G1 benchmark.
+# x/z-grid matches the benchmark grids from sidis_check_zurich.cc:
+#   gx = gz = {SubGrid{30,1e-3,3}, SubGrid{20,1e-1,3}, SubGrid{15,8e-1,3}}
+# PineAPFEL uses a single grid for both PDF (x) and FF (z) dimensions.
+#
+# sidis_int_eps: 1e-2 matches the benchmark value passed to
+# InitializeSidisObjects(gx, gz, thresholds, 1e-2).
+
+xgrid:
+  - n_knots: 30
+    x_min: 1.0e-3
+    poly_degree: 3
+  - n_knots: 20
+    x_min: 1.0e-1
+    poly_degree: 3
+  - n_knots: 15
+    x_min: 8.0e-1
+    poly_degree: 3
+
+tabulation:
+  n_points: 200
+  q_min: 0.9
+  n_steps: 13001
+  interp_degree: 3
+
+xi: [1.0, 1.0, 1.0]
+
+sidis_int_eps: 1.0e-2
