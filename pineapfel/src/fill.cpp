@@ -355,6 +355,40 @@ static std::vector<double> eval_double_op_column(
     return w;
 }
 
+// 8-point Gauss–Legendre nodes/weights on [-1, 1] (∫_{-1}^{1} f ≈ Σ w f(x)).
+// Mapped to [z_lo, z_hi] for ∫ G₁(x, z) dz as in APFEL++ BuildSidisG1:
+//   Evaluate1(x).Integrate(z_lo, z_hi)
+static constexpr int         kSidisZQuadN = 8;
+static constexpr double      kSidisZQuadXi[kSidisZQuadN] = {
+    -0.960289856497536231683560853,
+    -0.796666477413626739591553936,
+    -0.525532409916328985817739049,
+    -0.183434642495649804939476142,
+    0.183434642495649804939476142,
+    0.525532409916328985817739049,
+    0.796666477413626739591553936,
+    0.960289856497536231683560853,
+};
+static constexpr double      kSidisZQuadWi[kSidisZQuadN] = {
+    0.1012285362903762591506828,
+    0.2223810343749745229420239,
+    0.3137066459079072956537718,
+    0.3626837833783619786074925,
+    0.3626837833783619786074925,
+    0.3137066459079072956537718,
+    0.2223810343749745229420239,
+    0.1012285362903762591506828,
+};
+
+// z_out ∈ [z_lo, z_hi]; w_out is the quadrature weight (∫_{z_lo}^{z_hi} f(z) dz ≈ Σ w_out f(z_out))
+static void sidis_z_quadrature_point(
+    double z_lo, double z_hi, int k, double &z_out, double &w_out) {
+    const double mid  = 0.5 * (z_hi + z_lo);
+    const double half = 0.5 * (z_hi - z_lo);
+    z_out             = mid + half * kSidisZQuadXi[k];
+    w_out             = half * kSidisZQuadWi[k];
+}
+
 // Select a DoubleOperator from SidisNNLOObjects for a given
 // (alpha_s, type_id, observable, nf, polarized).
 // type_id: 0=nn/ns, 1=gq, 2=qg, 3=gg, 4=ps, 5=qbq, 6=qpq1, 7=qpq2, 8=qpq3
@@ -656,11 +690,14 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
     // PineAPPL with the stored weight w_{mn} computes:
     //   result = Σ αs^n · w_{mn} · f(x_m) · D(z_n)
     //
-    // For result == G1_BSF we therefore need:
-    //   w_{mn} = K_{mn}(x_c,z_c) · (x_m · z_n) / (x_c · z_c · (4π)^n)
+    // For result == ∫_{z_lo}^{z_hi} G1_BSF(x_c, z) dz (same as
+    // BuildSidisG1(...)(Q).Evaluate1(x_c).Integrate(z_lo, z_hi) in sidisbuilder.h
+    // and bench_sidis_zurich/sidis_check_zurich.cc) we quadrature-integrate the
+    // external z variable:
+    //   w_{mn} = Σ_q w_q · K_{mn}(x_c, z_q) · (x_m · z_n) / (x_c · z_q · (4π)^n)
     //
     // The (4π)^n factor matches PineAPPL's αs^n against BSF's (αs/4π)^n.
-    // The (x_m·z_n)/(x_c·z_c) factor compensates for the 1/(x_c·z_c) in BSF.
+    // The (x_m·z_n)/(x_c·z_ext) factor compensates for the 1/(x_c·z_ext) in BSF.
     for (std::size_t iord = 0; iord < grid_def.orders.size(); iord++) {
         int alpha_s = grid_def.orders[iord].alpha_s;
         if (alpha_s > 2) {
@@ -696,18 +733,15 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                 double              x_hi     = grid_def.bins[ibin].upper[1];
                 double              x_center = std::sqrt(x_lo * x_hi);
 
-                double              z_lo     = grid_def.bins[ibin].lower[2];
-                double              z_hi     = grid_def.bins[ibin].upper[2];
-                double              z_center = std::sqrt(z_lo * z_hi);
+                double              z_lo = grid_def.bins[ibin].lower[2];
+                double              z_hi = grid_def.bins[ibin].upper[2];
 
                 std::vector<double> subgrid(nq * nx * nz, 0.0);
 
-                // NOTE: Skip bins where `x_center` or `z_center` are outside
-                // APFEL++ interpolation range to avoid undefined behaviour in
-                // Operator::Evaluate().  The subgrid stays zero, consistent
-                // with PineAPPL returning zero for convolutions below x_min.
-                if (x_center >= x_nodes.front() && x_center <= x_nodes.back() &&
-                    z_center >= x_nodes.front() && z_center <= x_nodes.back()) {
+                // NOTE: Skip bins where `x_center` is outside APFEL++
+                // interpolation range. External z is handled by quadrature on
+                // [z_lo, z_hi]; individual points must lie on the joint grid.
+                if (x_center >= x_nodes.front() && x_center <= x_nodes.back()) {
                     for (std::size_t iq = 0; iq < nq; iq++) {
                         int         nf          = q2_data[iq].nf;
                         const auto &charges     = q2_data[iq].charges;
@@ -755,27 +789,38 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                             nf);
                         if (coeff == nullptr) continue;
 
-                        auto         w = eval_double_op_column(*coeff,
-                            x_center,
-                            z_center,
-                            li1,
-                            li2);
+                        for (int izq = 0; izq < kSidisZQuadN; izq++) {
+                            double z_ext = 0.0, dz_w = 0.0;
+                            sidis_z_quadrature_point(
+                                z_lo, z_hi, izq, z_ext, dz_w);
+                            if (z_ext < x_nodes.front() ||
+                                z_ext > x_nodes.back())
+                                continue;
 
-                        // w is indexed over the full joint grid (nx_full *
-                        // nz_full).  Map to physical (≤1) indices only.
-                        // Apply the BSF-matching normalisation: multiply by
-                        // x_node · z_node / (x_center · z_center · (4π)^n).
-                        const double xz_denom =
-                            x_center * z_center * fourpi_pow;
-                        for (std::size_t iix = 0; iix < nx; iix++) {
-                            const std::size_t ix     = phys_x_indices[iix];
-                            const double      x_node = x_nodes[iix];
-                            for (std::size_t iiz = 0; iiz < nz; iiz++) {
-                                const std::size_t iz     = phys_x_indices[iiz];
-                                const double      z_node = x_nodes[iiz];
-                                subgrid[iq * nx * nz + iix * nz + iiz] +=
-                                    fill_weight * w[ix * nz_full + iz] *
-                                    (x_node * z_node) / xz_denom;
+                            auto w = eval_double_op_column(*coeff,
+                                x_center,
+                                z_ext,
+                                li1,
+                                li2);
+
+                            // w is indexed over the full joint grid (nx_full *
+                            // nz_full).  Map to physical (≤1) indices only.
+                            // BSF normalisation uses external z at z_ext;
+                            // dz_w accumulates ∫ dz on [z_lo, z_hi].
+                            const double xz_denom =
+                                x_center * z_ext * fourpi_pow;
+                            for (std::size_t iix = 0; iix < nx; iix++) {
+                                const std::size_t ix     = phys_x_indices[iix];
+                                const double      x_node = x_nodes[iix];
+                                for (std::size_t iiz = 0; iiz < nz; iiz++) {
+                                    const std::size_t iz =
+                                        phys_x_indices[iiz];
+                                    const double z_node = x_nodes[iiz];
+                                    subgrid[iq * nx * nz + iix * nz + iiz] +=
+                                        fill_weight * dz_w *
+                                        w[ix * nz_full + iz] *
+                                        (x_node * z_node) / xz_denom;
+                                }
                             }
                         }
                     }

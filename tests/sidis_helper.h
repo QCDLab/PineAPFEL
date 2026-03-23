@@ -50,3 +50,15 @@ std::vector<double> compute_sidis_nnlo_reference(const apfel::Grid &g,
     const std::vector<std::vector<double>> &bin_z_bounds,
     std::function<double(int, double)>      toy_f,
     std::function<double(double)>           alphas_func);
+
+// Polarised G₁ NNLO (α_s²) slice only — same DoubleOperator + z-quadrature
+// convention as pineapfel fill.cpp / compute_sidis_nnlo_reference.
+std::vector<double> compute_sidis_g1_nnlo_reference(const apfel::Grid &g,
+    const apfel::SidisNNLOObjects                                  &sobj,
+    const std::vector<double>                                      &thresholds,
+    int                                                             nf_max,
+    const std::vector<double>                                      &q2_nodes,
+    const std::vector<std::vector<double>> &bin_x_bounds,
+    const std::vector<std::vector<double>> &bin_z_bounds,
+    std::function<double(int, double)>      toy_f,
+    std::function<double(double)>           alphas_func);

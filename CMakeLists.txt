@@ -61,7 +61,7 @@ target_compile_options(test_f2nc_bsf PRIVATE -Wall -Wextra -O3)
 add_test(NAME f2nc_bsf COMMAND test_f2nc_bsf
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
-add_executable(test_sidis_g1_bsf tests/test_sidis_g1_bsf.cpp)
+add_executable(test_sidis_g1_bsf tests/test_sidis_g1_bsf.cpp tests/sidis_helper.cpp)
 target_link_libraries(test_sidis_g1_bsf PRIVATE pineapfel)
 target_compile_options(test_sidis_g1_bsf PRIVATE -Wall -Wextra -O3)
 add_test(NAME sidis_g1_bsf COMMAND test_sidis_g1_bsf
