@@ -29,6 +29,11 @@ static constexpr double kSidisZQuadWi[kSidisZQuadN] = {
     0.1012285362903762591506828,
 };
 
+// APFEL++ sidisbuilder uses fixed electromagnetic charge factors QCh2
+// for SIDIS channels (not ElectroWeakCharges(Q,false)).
+static constexpr double kSidisQCh2[6] = {
+    4. / 9., 1. / 9., 1. / 9., 4. / 9., 1. / 9., 4. / 9.};
+
 static void sidis_z_quadrature_point(
     double z_lo, double z_hi, int k, double &z_out, double &w_out) {
     const double mid  = 0.5 * (z_hi + z_lo);
@@ -173,8 +178,7 @@ std::vector<double> compute_sidis_reference(const apfel::Grid &g,
         for (double q2 : q2_nodes) {
             double Q       = std::sqrt(q2);
             int    nf      = apfel::NF(Q, thresholds);
-            auto   charges = apfel::ElectroWeakCharges(Q, false);
-            double as_val  = alphas_func(Q);
+                        double as_val  = alphas_func(Q);
 
             for (int izq = 0; izq < kSidisZQuadN; izq++) {
                 double z_ext = 0.0, dz_w = 0.0;
@@ -187,7 +191,7 @@ std::vector<double> compute_sidis_reference(const apfel::Grid &g,
                     int channel_type = static_cast<int>(ich % 3);
 
                     if (quark_idx + 1 > nf) continue;
-                    double      e_q_sq = charges[quark_idx];
+                    double      e_q_sq = kSidisQCh2[quark_idx];
                     const auto &ch     = channels[ich];
 
                     for (int alpha_s = 0; alpha_s <= max_alpha_s; alpha_s++) {
@@ -266,8 +270,7 @@ std::vector<double> compute_sidis_pol_reference(const apfel::Grid &g,
         for (double q2 : q2_nodes) {
             double Q       = std::sqrt(q2);
             int    nf      = apfel::NF(Q, thresholds);
-            auto   charges = apfel::ElectroWeakCharges(Q, false);
-            double as_val  = alphas_func(Q);
+                        double as_val  = alphas_func(Q);
 
             for (int izq = 0; izq < kSidisZQuadN; izq++) {
                 double z_ext = 0.0, dz_w = 0.0;
@@ -280,7 +283,7 @@ std::vector<double> compute_sidis_pol_reference(const apfel::Grid &g,
                     int channel_type = static_cast<int>(ich % 3);
 
                     if (quark_idx + 1 > nf) continue;
-                    double      e_q_sq = charges[quark_idx];
+                    double      e_q_sq = kSidisQCh2[quark_idx];
                     const auto &ch     = channels[ich];
 
                     for (int alpha_s = 0; alpha_s <= max_alpha_s; alpha_s++) {
@@ -344,11 +347,10 @@ std::vector<double> compute_sidis_nnlo_reference(const apfel::Grid &g,
         for (double q2 : q2_nodes) {
             double Q       = std::sqrt(q2);
             int    nf      = apfel::NF(Q, thresholds);
-            auto   charges = apfel::ElectroWeakCharges(Q, false);
-            double as_val  = alphas_func(Q);
+                        double as_val  = alphas_func(Q);
 
             double sumch2 = 0;
-            for (int q = 0; q < nf; q++) sumch2 += charges[q];
+            for (int q = 0; q < nf; q++) sumch2 += kSidisQCh2[q];
 
             const std::string snf = "_nf" + std::to_string(nf);
 
@@ -395,7 +397,7 @@ std::vector<double> compute_sidis_nnlo_reference(const apfel::Grid &g,
             if (const auto *op = find_ft("C2TQ2QNS" + snf))
                 for (int q = 1; q <= nf_max; q++) {
                     if (q > nf) continue;
-                    result[ibin] += as2 * charges[q - 1] *
+                    result[ibin] += as2 * kSidisQCh2[q - 1] *
                                     sum_combos(*op,
                                         {
                                             { q,  q},
@@ -408,7 +410,7 @@ std::vector<double> compute_sidis_nnlo_reference(const apfel::Grid &g,
             if (const auto *op = find_ft("C2TQ2G"))
                 for (int q = 1; q <= nf_max; q++) {
                     if (q > nf) continue;
-                    result[ibin] += as2 * charges[q - 1] *
+                    result[ibin] += as2 * kSidisQCh2[q - 1] *
                                     sum_combos(*op,
                                         {
                                             { q, 21},
@@ -421,7 +423,7 @@ std::vector<double> compute_sidis_nnlo_reference(const apfel::Grid &g,
             if (const auto *op = find_ft("C2TG2Q"))
                 for (int q = 1; q <= nf_max; q++) {
                     if (q > nf) continue;
-                    result[ibin] += as2 * charges[q - 1] *
+                    result[ibin] += as2 * kSidisQCh2[q - 1] *
                                     sum_combos(*op,
                                         {
                                             {21,  q},
@@ -456,7 +458,7 @@ std::vector<double> compute_sidis_nnlo_reference(const apfel::Grid &g,
             if (const auto *op = find_ft("C2TQ2QB"))
                 for (int q = 1; q <= nf_max; q++) {
                     if (q > nf) continue;
-                    result[ibin] += as2 * charges[q - 1] *
+                    result[ibin] += as2 * kSidisQCh2[q - 1] *
                                     sum_combos(*op,
                                         {
                                             { q, -q},
@@ -483,7 +485,7 @@ std::vector<double> compute_sidis_nnlo_reference(const apfel::Grid &g,
                             });
                             factors.insert(factors.end(), {1., 1., 1., 1.});
                         }
-                        result[ibin] += as2 * charges[j - 1] *
+                        result[ibin] += as2 * kSidisQCh2[j - 1] *
                                         sum_combos(*op, combos, factors);
                     }
 
@@ -505,7 +507,7 @@ std::vector<double> compute_sidis_nnlo_reference(const apfel::Grid &g,
                             });
                             factors.insert(factors.end(), {1., 1., 1., 1.});
                         }
-                        result[ibin] += as2 * charges[i - 1] *
+                        result[ibin] += as2 * kSidisQCh2[i - 1] *
                                         sum_combos(*op, combos, factors);
                     }
 
@@ -561,11 +563,10 @@ std::vector<double> compute_sidis_g1_nnlo_reference(const apfel::Grid &g,
         for (double q2 : q2_nodes) {
             double Q       = std::sqrt(q2);
             int    nf      = apfel::NF(Q, thresholds);
-            auto   charges = apfel::ElectroWeakCharges(Q, false);
-            double as_val  = alphas_func(Q);
+                        double as_val  = alphas_func(Q);
 
             double sumch2 = 0;
-            for (int q = 0; q < nf; q++) sumch2 += charges[q];
+            for (int q = 0; q < nf; q++) sumch2 += kSidisQCh2[q];
 
             const std::string snf = "_nf" + std::to_string(nf);
 
@@ -611,7 +612,7 @@ std::vector<double> compute_sidis_g1_nnlo_reference(const apfel::Grid &g,
                 if (const auto *op = find_g1("DC2Q2QNS" + snf))
                     for (int q = 1; q <= nf_max; q++) {
                         if (q > nf) continue;
-                        result[ibin] += as2 * charges[q - 1] *
+                        result[ibin] += as2 * kSidisQCh2[q - 1] *
                                         sum_combos(*op,
                                             {
                                                 { q,  q},
@@ -623,7 +624,7 @@ std::vector<double> compute_sidis_g1_nnlo_reference(const apfel::Grid &g,
                 if (const auto *op = find_g1("DC2Q2G" + snf))
                     for (int q = 1; q <= nf_max; q++) {
                         if (q > nf) continue;
-                        result[ibin] += as2 * charges[q - 1] *
+                        result[ibin] += as2 * kSidisQCh2[q - 1] *
                                         sum_combos(*op,
                                             {
                                                 { q, 21},
@@ -635,7 +636,7 @@ std::vector<double> compute_sidis_g1_nnlo_reference(const apfel::Grid &g,
                 if (const auto *op = find_g1("DC2G2Q" + snf))
                     for (int q = 1; q <= nf_max; q++) {
                         if (q > nf) continue;
-                        result[ibin] += as2 * charges[q - 1] *
+                        result[ibin] += as2 * kSidisQCh2[q - 1] *
                                         sum_combos(*op,
                                             {
                                                 {21,  q},
@@ -667,7 +668,7 @@ std::vector<double> compute_sidis_g1_nnlo_reference(const apfel::Grid &g,
                 if (const auto *op = find_g1("DC2Q2QB"))
                     for (int q = 1; q <= nf_max; q++) {
                         if (q > nf) continue;
-                        result[ibin] += as2 * charges[q - 1] *
+                        result[ibin] += as2 * kSidisQCh2[q - 1] *
                                         sum_combos(*op,
                                             {
                                                 { q, -q},
@@ -693,7 +694,7 @@ std::vector<double> compute_sidis_g1_nnlo_reference(const apfel::Grid &g,
                                 });
                                 factors.insert(factors.end(), {1., 1., 1., 1.});
                             }
-                            result[ibin] += as2 * charges[j - 1] *
+                            result[ibin] += as2 * kSidisQCh2[j - 1] *
                                             sum_combos(*op, combos, factors);
                         }
 
@@ -714,7 +715,7 @@ std::vector<double> compute_sidis_g1_nnlo_reference(const apfel::Grid &g,
                                 });
                                 factors.insert(factors.end(), {1., 1., 1., 1.});
                             }
-                            result[ibin] += as2 * charges[i - 1] *
+                            result[ibin] += as2 * kSidisQCh2[i - 1] *
                                             sum_combos(*op, combos, factors);
                         }
 

@@ -66,6 +66,15 @@ OperatorCard load_operator_card(const std::string &path) {
         def.poly_degree = sg["poly_degree"].as<int>();
         oc.xgrid.push_back(def);
     }
+    if (config["zgrid"]) {
+        for (const auto &sg : config["zgrid"]) {
+            SubGridDef def;
+            def.n_knots     = sg["n_knots"].as<int>();
+            def.x_min       = sg["x_min"].as<double>();
+            def.poly_degree = sg["poly_degree"].as<int>();
+            oc.zgrid.push_back(def);
+        }
+    }
 
     auto tab                    = config["tabulation"];
     oc.tabulation.n_points      = tab["n_points"].as<int>();
@@ -75,8 +84,32 @@ OperatorCard load_operator_card(const std::string &path) {
 
     oc.xi                       = config["xi"].as<std::vector<double>>();
 
+    if (config["sidis_mode"]) {
+        oc.sidis_mode = config["sidis_mode"].as<std::string>();
+        if (oc.sidis_mode != "legacy" && oc.sidis_mode != "bsf_exact") {
+            throw std::runtime_error("Unknown sidis_mode: " + oc.sidis_mode);
+        }
+    }
+
     if (config["sidis_int_eps"])
         oc.sidis_int_eps = config["sidis_int_eps"].as<double>();
+    if (config["sidis_q2_n_intermediate"])
+        oc.sidis_q2_n_intermediate =
+            config["sidis_q2_n_intermediate"].as<int>();
+    if (config["sidis_q2_include_thresholds"])
+        oc.sidis_q2_include_thresholds =
+            config["sidis_q2_include_thresholds"].as<bool>();
+    if (config["sidis_q2_use_bin_centers_only"])
+        oc.sidis_q2_use_bin_centers_only =
+            config["sidis_q2_use_bin_centers_only"].as<bool>();
+    if (config["sidis_z_quad_subdivisions"])
+        oc.sidis_z_quad_subdivisions =
+            config["sidis_z_quad_subdivisions"].as<int>();
+
+    if (oc.sidis_q2_n_intermediate < 0)
+        throw std::runtime_error("sidis_q2_n_intermediate must be >= 0");
+    if (oc.sidis_z_quad_subdivisions < 1)
+        throw std::runtime_error("sidis_z_quad_subdivisions must be >= 1");
 
     return oc;
 }

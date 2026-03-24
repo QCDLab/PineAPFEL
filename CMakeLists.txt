@@ -76,10 +76,23 @@ execute_process(COMMAND lhapdf-config --libs
 separate_arguments(LHAPDF_CFLAGS_LIST UNIX_COMMAND "${LHAPDF_CFLAGS}")
 separate_arguments(LHAPDF_LIBS_LIST   UNIX_COMMAND "${LHAPDF_LIBS}")
 
+# LO-only: multi-bin toy + LHAPDF Zurich points vs BuildSidisG1(pert=0, ch=-1).
+add_executable(test_sidis_g1_lo_trace tests/test_sidis_g1_lo_trace.cpp)
+target_compile_options(test_sidis_g1_lo_trace PRIVATE -Wall -Wextra -O3 ${LHAPDF_CFLAGS_LIST})
+target_link_libraries(test_sidis_g1_lo_trace PRIVATE pineapfel ${LHAPDF_LIBS_LIST})
+add_test(NAME sidis_g1_lo_trace COMMAND test_sidis_g1_lo_trace
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 add_executable(test_sidis_g1_lhapdf tests/test_sidis_g1_lhapdf.cpp)
 target_compile_options(test_sidis_g1_lhapdf PRIVATE -Wall -Wextra -O3 ${LHAPDF_CFLAGS_LIST})
 target_link_libraries(test_sidis_g1_lhapdf PRIVATE pineapfel ${LHAPDF_LIBS_LIST})
 # Not added to ctest: this is a manual diagnostic, not an automated pass/fail test.
+
+add_executable(test_sidis_g1_zurich_exact tests/test_sidis_g1_zurich_exact.cpp)
+target_compile_options(test_sidis_g1_zurich_exact PRIVATE -Wall -Wextra -O3 ${LHAPDF_CFLAGS_LIST})
+target_link_libraries(test_sidis_g1_zurich_exact PRIVATE pineapfel ${LHAPDF_LIBS_LIST})
+add_test(NAME sidis_g1_zurich_exact COMMAND test_sidis_g1_zurich_exact
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # Install targets
 install(TARGETS pineapfel pineapfel-evolve pineapfel-build

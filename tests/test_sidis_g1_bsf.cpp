@@ -123,6 +123,185 @@ int main() {
         op_card.sidis_int_eps);
     std::printf("Done.\n\n");
 
+    // ------------------------------------------------------------------
+    // Sanity check: APFEL++ z integration uses Lagrange IntInterpolant.
+    // APFEL++ does `dist_z.Integrate(z_lo,z_hi)` where dist_z is built
+    // on the APFEL++ joint z-grid. We emulate the same integral by
+    // summing IntInterpolant weights times dist_z evaluated at the
+    // joint-grid nodes and require agreement.
+    // ------------------------------------------------------------------
+    {
+        // Pick a kinematics point within the toy interpolation range.
+        const double x_c  = 0.2;
+        const double Q    = 10.0;
+        const double z_lo = 0.2, z_hi = 0.85;
+
+        const int nf = apfel::NF(Q, theory.quark_thresholds);
+
+        // Toy inputs must provide all quark (±1..±nf) entries plus gluon.
+        auto InpPDFsToy = [&](double const& x, double const& /*Q*/ )
+                             -> std::map<int, double> {
+            std::map<int, double> m;
+            m[21] = x * toy_f(21, x);
+            for (int j = -nf; j <= nf; j++) {
+                if (j == 0) continue;
+                m[j] = x * toy_f(j, x);
+            }
+            return m;
+        };
+
+        auto InFFsToy = [&](double const& z, double const& /*Q*/ )
+                           -> std::map<int, double> {
+            std::map<int, double> m;
+            m[21] = z * toy_f(21, z);
+            for (int j = -nf; j <= nf; j++) {
+                if (j == 0) continue;
+                m[j] = z * toy_f(j, z);
+            }
+            return m;
+        };
+
+        auto AsToy = [&](double const& mu) { return as_tab.Evaluate(mu); };
+
+        // LO, polarized G1, channel=0 uses DoubleIdentity only.
+        auto G1_lo = apfel::BuildSidisG1(sobj, InpPDFsToy, InFFsToy, AsToy,
+            theory.quark_thresholds, 0, 0);
+
+        const auto dist_z = G1_lo(Q).Evaluate1(x_c);
+        const double apfel_int = dist_z.Integrate(z_lo, z_hi);
+
+        const apfel::LagrangeInterpolator li{g};
+        const auto &z_joint_nodes = g.GetJointGrid().GetGrid();
+        const auto boundsa = li.SumBounds(z_lo, g.GetJointGrid());
+        const auto boundsb = li.SumBounds(z_hi, g.GetJointGrid());
+
+        double emu_int = 0.0;
+        for (int beta = boundsa[0]; beta < boundsb[1]; beta++) {
+            const double w = li.IntInterpolant(beta, z_lo, z_hi, g.GetJointGrid());
+            const double z_node = z_joint_nodes[beta];
+            emu_int += w * dist_z.Evaluate(z_node);
+        }
+
+        const double rel_err =
+            (std::abs(apfel_int) > 0.0) ? std::abs(emu_int - apfel_int) / std::abs(apfel_int)
+                                          : std::abs(emu_int - apfel_int);
+        const double tol = 1e-10;
+        if (rel_err > tol) {
+            std::cerr << "IntInterpolant sanity check FAILED: apfel=" << apfel_int
+                      << " emu=" << emu_int << " rel_err=" << rel_err << "\n";
+            return 1;
+        }
+        std::printf("IntInterpolant sanity check: OK (rel_err=%.2e)\n\n", rel_err);
+    }
+
+    // ------------------------------------------------------------------
+    // Focused diagnostic: LO point-mode with sidis_mode=bsf_exact should
+    // reproduce APFEL++'s `BuildSidisG1(..., channel=-1, PerturbativeOrder=0)`
+    // after `Evaluate1(x_c).Integrate(z_lo, z_hi)`.
+    // ------------------------------------------------------------------
+    {
+        pineapfel::GridDef grid_def_point;
+        grid_def_point.process            = pineapfel::ProcessType::SIDIS;
+        grid_def_point.observable         = pineapfel::Observable::F2;
+        grid_def_point.current            = pineapfel::Current::NC;
+        grid_def_point.cc_sign            = pineapfel::CCSign::Plus;
+        grid_def_point.mass_scheme        = pineapfel::MassScheme::ZM;
+        grid_def_point.pid_basis          = PINEAPPL_PID_BASIS_PDG;
+        grid_def_point.hadron_pids        = {2212, 211};
+        grid_def_point.convolution_types  = {PINEAPPL_CONV_TYPE_POL_PDF,
+            PINEAPPL_CONV_TYPE_UNPOL_FF};
+        grid_def_point.orders = {{0, 0, 0, 0, 0}}; // LO only
+        grid_def_point.bins   = {
+            {{1.25001, 0.0052, 0.2}, {1.25001, 0.0052, 0.85}}};
+        grid_def_point.normalizations = {1.0, 1.0};
+
+        const double Q    = std::sqrt(1.25001);
+        const double x_c  = 0.0052;
+        const double z_lo = 0.2;
+        const double z_hi = 0.85;
+        const int    nf   = apfel::NF(Q, theory.quark_thresholds);
+
+        auto InpPDFsToy = [&](double const& x, double const& /*Q*/) {
+            std::map<int, double> m;
+            m[21] = (x > 1.0) ? 0.0 : x * toy_f(21, x);
+            for (int j = -nf; j <= nf; j++) {
+                if (j == 0) continue;
+                m[j] = (x > 1.0) ? 0.0 : x * toy_f(j, x);
+            }
+            return m;
+        };
+        auto InFFsToy = [&](double const& z, double const& /*Q*/) {
+            std::map<int, double> m;
+            m[21] = (z > 1.0) ? 0.0 : z * toy_f(21, z);
+            for (int j = -nf; j <= nf; j++) {
+                if (j == 0) continue;
+                m[j] = (z > 1.0) ? 0.0 : z * toy_f(j, z);
+            }
+            return m;
+        };
+
+        auto AsToy = [&](double const& mu) { return as_tab.Evaluate(mu); };
+
+        auto G1_lo_builder = apfel::BuildSidisG1(sobj,
+            InpPDFsToy,
+            InFFsToy,
+            AsToy,
+            theory.quark_thresholds,
+            /*PerturbativeOrder=*/0,
+            /*channel=*/-1);
+
+        const double apfel_int = G1_lo_builder(Q).Evaluate1(x_c).Integrate(z_lo, z_hi);
+
+        const char *modes[] = {"legacy", "bsf_exact"};
+        const double tol = 1e-10;
+        int any_fail = 0;
+        for (const char *mode : modes) {
+            auto op_card_mode = op_card;
+            op_card_mode.sidis_mode = mode;
+
+            pineappl_grid *grid_point =
+                pineapfel::build_grid(grid_def_point,
+                    theory,
+                    op_card_mode,
+                    sobj);
+
+            std::vector<double> pred_point(
+                pineappl_grid_bin_count(grid_point), 0.0);
+            void *pdfs_state[2] = {nullptr, nullptr};
+
+            pineappl_grid_convolve(grid_point,
+                xfx_callback,
+                alphas_callback,
+                pdfs_state,
+                static_cast<void *>(&as_tab),
+                nullptr,
+                nullptr,
+                nullptr,
+                0,
+                nullptr,
+                pred_point.data());
+
+            pineappl_grid_delete(grid_point);
+
+            const double rel =
+                (std::abs(apfel_int) > 0.0)
+                    ? std::abs(pred_point[0] - apfel_int) / std::abs(apfel_int)
+                    : std::abs(pred_point[0] - apfel_int);
+            if (rel > tol) {
+                any_fail = 1;
+                std::cerr
+                    << "LO point-mode diagnostic FAILED for mode=" << mode
+                    << " pine=" << pred_point[0] << " apfel=" << apfel_int
+                    << " rel=" << rel << "\n";
+            } else {
+                std::printf("LO point-mode diagnostic: mode=%s OK (rel_err=%.2e)\n\n",
+                    mode,
+                    rel);
+            }
+        }
+        if (any_fail) return 1;
+    }
+
     std::printf("Building PineAPFEL SIDIS G1 grid...\n");
     pineappl_grid *grid =
         pineapfel::build_grid(grid_def, theory, op_card, sobj);

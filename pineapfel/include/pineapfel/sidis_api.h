@@ -14,4 +14,10 @@ apfel::SidisNNLOObjects init_sidis_nnlo(const apfel::Grid &g,
     const std::vector<double>                             &thresholds,
     double                                                 int_eps = 1e-3);
 
+// Overload with separate x and z grids (Zurich/APFEL++ benchmark setup).
+apfel::SidisNNLOObjects init_sidis_nnlo(const apfel::Grid &gx,
+    const apfel::Grid                                        &gz,
+    const std::vector<double>                             &thresholds,
+    double                                                 int_eps = 1e-3);
+
 } // namespace pineapfel
