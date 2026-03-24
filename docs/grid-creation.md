@@ -282,6 +282,102 @@ in the grid card.
 
 ---
 
+### Operator card: SIDIS-only settings (`sidis_*` keys) {#sidis-operator-card}
+
+Grid **cards** describe bins and orders; **operator** cards describe interpolation
+grids and several options that only affect **SIDIS** filling. For historical
+compatibility, the C++ defaults on `pineapfel::OperatorCard` keep **legacy** SIDIS
+tabulation (see table below). That matches older regression tests and coarse
+`operator_test.yaml`-style setups. It is **not** the same as APFEL++’s
+`BuildSidis*` / `sidisbuilder.h` “BSF-exact” semantics used in modern benchmarks.
+
+**Therefore: for any SIDIS observable grid that you intend to compare to APFEL++
+reference builders (or to reproduce published SIDIS BSF-style tables), you should
+set the following fields explicitly on the operator YAML** used in the same
+`build_grid()` call as your SIDIS grid card. Do not rely on C++ defaults for those
+computations.
+
+!!! warning "DIS and SIA ignore `sidis_q2_*` in the library"
+    For **DIS** and **SIA**, `build_grid()` builds the global \(Q^2\) node list with
+    **fixed legacy logic** (bin edges, three geometric interior points per \(Q^2\)
+    interval, and threshold \(Q^2\) values inside the overall range). Those nodes
+    **do not** read `sidis_q2_n_intermediate`, `sidis_q2_include_thresholds`, or
+    `sidis_q2_use_bin_centers_only` from the operator card, so shared operator cards
+    and SIDIS defaults cannot accidentally break DIS/SIA grids or the
+    `test_grid_vs_apfelxx` suite.
+
+Only **`build_grid_sidis()`** (invoked automatically when `Process: SIDIS` in the
+grid card) consults the SIDIS-specific operator-card fields below.
+
+#### Recommended operator-card block (BSF-style / APFEL++-aligned SIDIS)
+
+Use this block (together with your `xgrid` / optional `zgrid` / `tabulation` / `xi`)
+when you want SIDIS grids that align with APFEL++ BSF-style treatment and avoid
+known pitfalls (duplicate \(Q^2\) slices in PineAPPL convolution for point-like
+\(Q^2\) bins, etc.):
+
+```yaml
+# SIDIS fill mode: use APFEL++-consistent z-handling (IntInterpolant weights in
+# binned-z mode; point-z mode unchanged). "legacy" keeps the older external
+# Gauss–Legendre z-quadrature path inside each z-bin.
+sidis_mode: bsf_exact
+
+# Q^2 axis tabulation for the PineAPPL subgrid (first dimension):
+#   - n_intermediate: extra geometric nodes *between* each bin's Q^2_lo and Q^2_hi
+#     (0 = none).
+#   - include_thresholds: insert m_q^2 for flavours whose thresholds lie in the
+#     global Q^2 range spanned by all bins.
+#   - use_bin_centers_only: build the global Q^2 list from sqrt(Q^2_lo * Q^2_hi)
+#     per bin only (typical for (Q^2,x,z) *point* bins). The fill then activates
+#     only the matching Q^2 slice per bin so PineAPPL does not over-count when it
+#     sums the Q^2 dimension.
+sidis_q2_n_intermediate: 0
+sidis_q2_include_thresholds: false
+sidis_q2_use_bin_centers_only: true
+
+# In sidis_mode: legacy, each z-bin is split into this many sub-intervals; each
+# piece gets the built-in 8-point Gauss–Legendre rule. Larger values increase
+# smoothness of the z-integration proxy. In sidis_mode: bsf_exact, z-binned
+# integration uses APFEL++ interpolation weights instead; this key still affects
+# the legacy quadrature path when mode is legacy.
+sidis_z_quad_subdivisions: 32
+```
+
+A complete real-world example is
+[`zurich_sidis_g1_nnlo_point/operator_zurich_exact.yaml`](../zurich_sidis_g1_nnlo_point/operator_zurich_exact.yaml)
+in this repository (Zurich-style point kinematics).
+
+#### Default C++ values when YAML omits these keys
+
+If the operator YAML does **not** set a field, `load_operator_card()` leaves the
+`OperatorCard` defaults from `pineapfel/cards.h`:
+
+| Field | Default | Role |
+|------|---------|------|
+| `sidis_mode` | `legacy` | Legacy z-quadrature SIDIS fill |
+| `sidis_q2_n_intermediate` | `3` | Legacy dense \(Q^2\) sampling between bin edges |
+| `sidis_q2_include_thresholds` | `true` | Legacy: add \(m_q^2\) nodes |
+| `sidis_q2_use_bin_centers_only` | `false` | Legacy: use edges + intermediates |
+| `sidis_z_quad_subdivisions` | `1` | Legacy: minimal z-bin subdivision |
+
+Those defaults exist so existing **operator** cards without SIDIS sections keep
+previous behaviour and so DIS/SIA paths remain stable. **They are not a substitute
+for an explicit BSF block** when your physics goal is APFEL++-consistent SIDIS.
+
+#### Workflow summary
+
+1. **DIS / SIA grids** — use any standard operator card; SIDIS keys are ignored for
+   \(Q^2\) node generation in `build_grid()`.
+2. **SIDIS grids, legacy regression / coarse tests** — you may omit SIDIS keys and
+   inherit defaults (e.g. `runcards/operator_test.yaml` used with
+   `test_grid_vs_apfelxx`).
+3. **SIDIS grids, production or APFEL++ benchmarks** — copy the recommended block
+   above into the operator YAML (or a dedicated SIDIS operator card) and tune
+   `sidis_int_eps` separately for speed vs. accuracy of `InitializeSidisObjects`.
+
+See also [Configuration cards — operator card](configuration-cards.md#operator-card-sidis-fields)
+for the same YAML keys in the general operator-card reference.
+
 ### The grid card
 
 The grid card defines the structure of the PineAPPL grid. Below is a complete reference
@@ -461,6 +557,13 @@ Bins:
 Normalizations: [1.0, 1.0]
 ```
 
+!!! note "Operator YAML for SIDIS"
+    The snippet above is only the **grid** card. For APFEL++-consistent BSF-style
+    SIDIS (recommended for new physics grids), add the `sidis_*` block from
+    [Operator card: SIDIS-only settings](#sidis-operator-card) to the **operator**
+    YAML you pass to `build_grid()`. Legacy tests may keep a plain operator card
+    and inherit C++ defaults.
+
 #### SIDIS NNLO example
 
 Adding NNLO extends the channel set from 3 per quark to 9 types (see
@@ -488,6 +591,10 @@ Bins:
 
 Normalizations: [1.0, 1.0]
 ```
+
+!!! note "Operator YAML for SIDIS"
+    Add the recommended `sidis_*` fields on the **operator** card when you need
+    BSF-aligned tabulation; see [Operator card: SIDIS-only settings](#sidis-operator-card).
 
 !!! note
     The NNLO SIDIS coefficient functions are computed exactly from the full 2D
@@ -549,6 +656,10 @@ Bins:
 
 Normalizations: [1.0, 1.0]
 ```
+
+!!! note "Operator YAML for polarized SIDIS"
+    Use the [SIDIS operator-card settings](#sidis-operator-card) on the operator
+    YAML when you need BSF-aligned \(G_1\) grids comparable to APFEL++.
 
 #### FFN DIS example
 
@@ -715,10 +826,19 @@ The grid nodes are defined automatically:
   the `xgrid` definition in the operator card. This ensures consistency between the
   coefficient function grid and any subsequent evolution step.
 
-- **\(Q^2\) nodes**: Derived from the bin edges in the grid card. The bin boundaries in the
-  first dimension (\(Q^2\)) are collected, and geometrically spaced intermediate points are
-  added within each bin. Additionally, quark threshold values (\(m_q^2\)) that fall within
-  the overall \(Q^2\) range are included to capture flavour-threshold effects.
+- **\(Q^2\) nodes (DIS and SIA)**: Built inside `build_grid()` with **fixed legacy rules**
+  that do **not** read `sidis_q2_*` from the operator card: collect each bin’s \(Q^2\)
+  edges, insert three geometrically spaced interior points between edges (per bin
+  interval), and add threshold \(Q^2 = m_q^2\) for flavours whose thresholds lie in the
+  global \(Q^2\) range. This keeps DIS/SIA grids stable regardless of SIDIS settings.
+
+- **\(Q^2\) nodes (SIDIS)**: Built in `build_grid_sidis()` from the **operator card**
+  fields `sidis_q2_n_intermediate`, `sidis_q2_include_thresholds`, and
+  `sidis_q2_use_bin_centers_only` (defaults are legacy-style unless you override them;
+  see [Operator card: SIDIS-only settings](#sidis-operator-card)). When
+  `sidis_q2_use_bin_centers_only: true`, only one \(Q^2\) per bin enters the global list
+  (geometric centre), and the fill keeps a single active slice per bin to avoid
+  double-counting when PineAPPL sums the \(Q^2\) axis.
 
 #### Subgrid layout
 
@@ -758,8 +878,12 @@ subgrid[iq, ix, iz] = fill_weight * W(x[ix], z[iz]; x_centre, z_centre)
 
 where `fill_weight` is the per-channel electroweak factor (\(e_q^2\), \(\sum_i e_i^2\),
 or \(e_a e_b\) depending on channel type) and \(W\) is the 2D interpolation kernel
-extracted from the `DoubleOperator`. This approach is used uniformly for all
-perturbative orders (LO, NLO, NNLO).
+extracted from the `DoubleOperator`. The \(z\) direction may accumulate contributions
+from a single centre (\(z\) point bin), from APFEL++-style interpolation weights over
+joint-grid nodes (`sidis_mode: bsf_exact` and extended \(z\) bins), or from internal
+Gauss–Legendre quadrature on sub-intervals (`sidis_mode: legacy`); see
+[SIDIS operator-card settings](#sidis-operator-card). The same DoubleOperator column
+machinery is used for all perturbative orders (LO, NLO, NNLO).
 
 ### Programmatic grid definition
 

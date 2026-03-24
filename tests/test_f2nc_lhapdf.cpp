@@ -22,7 +22,6 @@
 #include <set>
 #include <vector>
 
-// ── Toy PDFs ────────────────────────────────────────────────────────────────
 // toy_f returns f(x), NOT x*f(x)
 static double toy_f(int pid, double x) {
     if (pid == 21) return std::pow(x, -0.1) * std::pow(1.0 - x, 5.0);
@@ -47,13 +46,11 @@ extern "C" double alphas_callback(double q2, void *state) {
 int main() {
     std::printf("=== F2 NC Unpol: PineAPFEL vs APFEL++ BSF (toy PDFs) ===\n\n");
 
-    // ── Theory setup ────────────────────────────────────────────────────────
     auto grid_def = pineapfel::load_grid_def("runcards/grid_dis_unp_nc.yaml");
     auto theory   = pineapfel::load_theory_card("runcards/theory.yaml");
     auto op_card =
         pineapfel::load_operator_card("runcards/operator_apfelxx.yaml");
 
-    // ── alpha_s tabulation ──────────────────────────────────────────────────
     apfel::AlphaQCD               a{theory.alpha_qcd_ref,
         theory.q_ref,
         theory.quark_thresholds,
@@ -65,8 +62,6 @@ int main() {
         static_cast<double>(tabp.n_steps),
         tabp.interp_degree};
 
-    // ── APFEL++ BSF reference ───────────────────────────────────────────────
-    // x-grid matching operator_apfelxx.yaml
     std::vector<apfel::SubGrid>   sgs;
     for (const auto &sg : op_card.xgrid)
         sgs.emplace_back(sg.n_knots, sg.x_min, sg.poly_degree);
@@ -101,7 +96,6 @@ int main() {
         alphas_func,
         couplings_func);
 
-    // ── PineAPFEL grid ──────────────────────────────────────────────────────
     pineappl_grid      *grid = pineapfel::build_grid(grid_def, theory, op_card);
     std::size_t         nbins = pineappl_grid_bin_count(grid);
 
@@ -117,7 +111,6 @@ int main() {
         1.0,     // xi_fac
         predictions.data());
 
-    // ── Derive Q² nodes (same logic as fill.cpp derive_q2_nodes) ───────────
     const int        n_intermediate = 3;
     std::set<double> q2_set;
     for (const auto &bin : grid_def.bins) {
@@ -142,11 +135,7 @@ int main() {
         std::printf("    Q²=%.4e  Q=%.4f\n", q2, std::sqrt(q2));
     std::printf("\n");
 
-    // ── Comparison ──────────────────────────────────────────────────────────
-    // 5% tolerance: PineAPPL uses interpolated subgrids while BSF computes
-    // exact convolutions.
     const double tolerance = 5e-2;
-
     std::printf("  %-10s  %-14s  %-14s  %-10s  %s\n",
         "x",
         "PineAPFEL",

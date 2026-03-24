@@ -113,4 +113,39 @@ tabulation:
 # Scale variation factors: [xi_R, xi_F, xi_A]
 # Use [1.0, 1.0, 1.0] for central predictions.
 xi: [1.0, 1.0, 1.0]
+
+# --- Optional: SIDIS grid filling only ---
+# Omit these for DIS/SIA-only workflows. DIS/SIA Q^2 tabulation in build_grid().
+#
+# sidis_mode: legacy | bsf_exact
+# sidis_int_eps: <double>   # APFEL++ InitializeSidisObjects tolerance (default 1e-3)
+# sidis_q2_n_intermediate: <int>
+# sidis_q2_include_thresholds: <bool>
+# sidis_q2_use_bin_centers_only: <bool>
+# sidis_z_quad_subdivisions: <int>
 ```
+
+#### SIDIS-only YAML fields {#operator-card-sidis-fields}
+
+These keys are parsed into `pineapfel::OperatorCard` and affect **`build_grid()` only
+when the grid card has `Process: SIDIS`**. They are **ignored for \(Q^2\) node
+generation** in DIS and SIA (those processes use fixed legacy \(Q^2\) rules inside
+the library).
+
+| YAML key | C++ default (if omitted) | Purpose |
+|----------|-------------------------|---------|
+| `sidis_mode` | `legacy` | `legacy` = Gauss–Legendre \(z\) quadrature in each \(z\) bin; `bsf_exact` = APFEL++-style \(z\) weights (`IntInterpolant`) for extended \(z\) bins. |
+| `sidis_int_eps` | `1e-3` | Relative tolerance for `InitializeSidisObjects` / SIDIS NNLO setup (tests often use `1e-1`). |
+| `sidis_q2_n_intermediate` | `3` | Extra geometric \(Q^2\) nodes between each bin’s lower/upper edge (SIDIS global \(Q^2\) list). |
+| `sidis_q2_include_thresholds` | `true` | Insert \(m_q^2\) into the SIDIS global \(Q^2\) list when in range. |
+| `sidis_q2_use_bin_centers_only` | `false` | If `true`, global \(Q^2\) nodes are only \(\sqrt{Q^2_\mathrm{lo} Q^2_\mathrm{hi}}\) per bin (typical for point \(Q^2\) bins; fill activates one slice per bin). |
+| `sidis_z_quad_subdivisions` | `1` | Legacy mode: number of \(z\)-subintervals per bin for internal 8-point GL quadrature. |
+
+For **recommended values** when matching APFEL++ BSF-style SIDIS (and for avoiding
+PineAPPL \(Q^2\)-axis over-counting on point grids), set `sidis_mode: bsf_exact` and
+
+`sidis_q2_n_intermediate: 0`, `sidis_q2_include_thresholds: false`,
+`sidis_q2_use_bin_centers_only: true`, `sidis_z_quad_subdivisions: 32`
+
+explicitly on the operator YAML. Full rationale, workflow, and copy-paste block:
+[Grid creation — Operator card: SIDIS-only settings](grid-creation.md#sidis-operator-card).

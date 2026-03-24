@@ -11,7 +11,7 @@ apfel::SidisNNLOObjects init_sidis_nnlo(const apfel::Grid &g,
 }
 
 apfel::SidisNNLOObjects init_sidis_nnlo(const apfel::Grid &gx,
-    const apfel::Grid                                        &gz,
+    const apfel::Grid                                     &gz,
     const std::vector<double>                             &thresholds,
     double                                                 int_eps) {
     return apfel::InitializeSidisObjects(gx, gz, thresholds, int_eps);
