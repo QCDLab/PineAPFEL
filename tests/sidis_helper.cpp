@@ -32,7 +32,9 @@ static constexpr double kSidisZQuadWi[kSidisZQuadN] = {
 // APFEL++ sidisbuilder uses fixed electromagnetic charge factors QCh2
 // for SIDIS channels (not ElectroWeakCharges(Q,false)).
 static constexpr double kSidisQCh2[6] =
-    {4. / 9., 1. / 9., 1. / 9., 4. / 9., 1. / 9., 4. / 9.};
+    // Ordering must match APFEL++ flavor indices used throughout PineAPFEL:
+    // (d, u, s, c, b, t) i.e. PDG 1..6.
+    {1. / 9., 4. / 9., 1. / 9., 4. / 9., 1. / 9., 4. / 9.};
 
 static void sidis_z_quadrature_point(double z_lo,
     double                                  z_hi,
@@ -45,9 +47,78 @@ static void sidis_z_quadrature_point(double z_lo,
     w_out             = half * kSidisZQuadWi[k];
 }
 
+// Evaluate a DoubleOperator as a full 2D interpolant column on the joint grid.
+// This mirrors the algorithm used in pineapfel/src/fill.cpp
+// (`eval_double_op_column`) and avoids relying on internal APFEL++ Evaluate
+// paths.
+static std::vector<double> eval_double_op_column(
+    const apfel::DoubleOperator       &dop,
+    double                             x_c,
+    double                             z_c,
+    const apfel::LagrangeInterpolator &li1,
+    const apfel::LagrangeInterpolator &li2) {
+    const apfel::Grid    &g1  = dop.GetFirstGrid();
+    const apfel::Grid    &g2  = dop.GetSecondGrid();
+    const auto            K   = dop.GetDoubleOperator();
+
+    const std::size_t     nj1 = g1.GetJointGrid().GetGrid().size();
+    const std::size_t     nj2 = g2.GetJointGrid().GetGrid().size();
+    std::vector<double>   w(nj1 * nj2, 0.0);
+
+    const int             nx1    = g1.GetJointGrid().nx();
+    const int             nx2    = g2.GetJointGrid().nx();
+
+    const auto           &jsmap1 = g1.JointToSubMap();
+    const auto           &jsmap2 = g2.JointToSubMap();
+    const auto           &sjmap1 = g1.SubToJointMap();
+    const auto           &sjmap2 = g2.SubToJointMap();
+
+    const apfel::SubGrid &jg1    = g1.GetJointGrid();
+    const apfel::SubGrid &jg2    = g2.GetJointGrid();
+    const auto            bx     = li1.SumBounds(x_c, jg1);
+    const auto            bz     = li2.SumBounds(z_c, jg2);
+
+    for (int beta = bx[0]; beta < bx[1]; beta++) {
+        if (beta < 0 || beta >= nx1 || beta >= static_cast<int>(sjmap1.size()))
+            continue;
+        const double wx = li1.Interpolant(beta, x_c, jg1);
+        const auto   m1 = sjmap1[beta];
+
+        for (int delta = bz[0]; delta < bz[1]; delta++) {
+            if (delta < 0 || delta >= nx2 ||
+                delta >= static_cast<int>(sjmap2.size()))
+                continue;
+            const double wz   = li2.Interpolant(delta, z_c, jg2);
+            const double pref = wx * wz;
+            const auto   m2   = sjmap2[delta];
+
+            const auto  &Ksub = K[m1.first][m2.first];
+            for (int alpha = m1.second; alpha < g1.GetSubGrid(m1.first).nx();
+                 alpha++) {
+                const int jx = jsmap1[m1.first][alpha];
+                if (jx < 0 || jx >= static_cast<int>(nj1)) continue;
+                const int ka = alpha - m1.second;
+                if (ka < 0 || ka >= static_cast<int>(Ksub.size(1))) continue;
+                const auto &Krow = Ksub(0, ka);
+                for (int gamma = m2.second;
+                     gamma < g2.GetSubGrid(m2.first).nx();
+                     gamma++) {
+                    const int jz = jsmap2[m2.first][gamma];
+                    if (jz < 0 || jz >= static_cast<int>(nj2)) continue;
+                    const int kg = gamma - m2.second;
+                    if (kg < 0 || kg >= static_cast<int>(Krow.size(1)))
+                        continue;
+                    w[jx * nj2 + jz] += pref * Krow(0, kg);
+                }
+            }
+        }
+    }
+
+    return w;
+}
+
 // Helper: evaluate a DoubleOperator contracted with a PDF and an FF at fixed
-// (x, z) using direct kernel access (avoids DistributionOperator::Evaluate
-// which crashes on null matrix data).
+// (x, z) using the same column-evaluation algorithm as the grid filling code.
 static double eval_dop_at(const apfel::Grid &g,
     const apfel::LagrangeInterpolator       &li,
     const apfel::DoubleOperator             &dop,
@@ -56,81 +127,21 @@ static double eval_dop_at(const apfel::Grid &g,
     double                                   x,
     double                                   z,
     std::function<double(int, double)>       toy_f) {
-    const apfel::Grid &g1  = dop.GetFirstGrid();
-    const apfel::Grid &g2  = dop.GetSecondGrid();
-    const auto        &K   = dop.GetDoubleOperator();
+    const auto        w       = eval_double_op_column(dop, x, z, li, li);
 
-    const int          ng1 = g1.nGrids();
-    const int          ng2 = g2.nGrids();
+    const auto       &x_nodes = g.GetJointGrid().GetGrid();
+    const std::size_t nj      = x_nodes.size();
+    double            result  = 0.0;
 
-    int                nx  = 0;
-    for (int ig = 0; ig < ng1; ig++) nx += g1.GetSubGrid(ig).nx();
-    int nz = 0;
-    for (int ig = 0; ig < ng2; ig++) nz += g2.GetSubGrid(ig).nx();
-
-    const auto &x_nodes = g.GetJointGrid().GetGrid();
-
-    int         ig1_xc  = ng1 - 1;
-    for (int ig = 0; ig < ng1; ig++)
-        if (g1.GetSubGrid(ig).xMin() > x) {
-            ig1_xc = ig - 1;
-            break;
-        }
-
-    int ig2_zc = ng2 - 1;
-    for (int ig = 0; ig < ng2; ig++)
-        if (g2.GetSubGrid(ig).xMin() > z) {
-            ig2_zc = ig - 1;
-            break;
-        }
-
-    const apfel::SubGrid &sg1    = g1.GetSubGrid(ig1_xc);
-    const apfel::SubGrid &sg2    = g2.GetSubGrid(ig2_zc);
-    const int             nx_sub = sg1.nx();
-    const int             nz_sub = sg2.nx();
-
-    const auto            bx     = li.SumBounds(x, sg1);
-    const int             lo_x = bx[0], hi_x = bx[1];
-    std::vector<double>   W_x(hi_x - lo_x);
-    for (int b = 0; b < hi_x - lo_x; b++)
-        W_x[b] = li.Interpolant(lo_x + b, x, sg1);
-
-    const auto          bz   = li.SumBounds(z, sg2);
-    const int           lo_z = bz[0], hi_z = bz[1];
-    std::vector<double> W_z(hi_z - lo_z);
-    for (int b = 0; b < hi_z - lo_z; b++)
-        W_z[b] = li.Interpolant(lo_z + b, z, sg2);
-
-    int x_jg_off = 0;
-    for (int ig = 0; ig < ig1_xc; ig++) x_jg_off += g1.GetSubGrid(ig).nx();
-    int z_jg_off = 0;
-    for (int ig = 0; ig < ig2_zc; ig++) z_jg_off += g2.GetSubGrid(ig).nx();
-
-    const auto &K_sub  = K[ig1_xc][ig2_zc];
-    double      result = 0.0;
-
-    for (int b_ox = 0; b_ox < hi_x - lo_x; b_ox++) {
-        const int    out_x = lo_x + b_ox;
-        const double wx    = W_x[b_ox];
-        for (int b_oz = 0; b_oz < hi_z - lo_z; b_oz++) {
-            const int    out_z = lo_z + b_oz;
-            const double wxz   = wx * W_z[b_oz];
-            for (int alpha = 0; alpha <= nx_sub - out_x - 1; alpha++) {
-                const int inp_x = x_jg_off + out_x + alpha;
-                if (inp_x >= nx) break;
-                // Skip APFL++ Lagrange extension nodes beyond x = 1.
-                // fill.cpp drops these from the PineAPPL subgrid; the
-                // reference must apply the same cut to remain consistent.
-                if (x_nodes[inp_x] > 1.0) continue;
-                for (int gamma = 0; gamma <= nz_sub - out_z - 1; gamma++) {
-                    const int inp_z = z_jg_off + out_z + gamma;
-                    if (inp_z >= nz) break;
-                    if (x_nodes[inp_z] > 1.0) continue;
-                    result += wxz * K_sub(0, alpha)(0, gamma) * x_nodes[inp_x] *
-                              x_nodes[inp_z] * toy_f(pid_pdf, x_nodes[inp_x]) *
-                              toy_f(pid_ff, x_nodes[inp_z]);
-                }
-            }
+    for (std::size_t jx = 0; jx < nj; jx++) {
+        const double xj = x_nodes[jx];
+        if (xj > 1.0) continue;
+        const double fx = xj * toy_f(pid_pdf, xj);
+        for (std::size_t jz = 0; jz < nj; jz++) {
+            const double zj = x_nodes[jz];
+            if (zj > 1.0) continue;
+            const double fz  = zj * toy_f(pid_ff, zj);
+            result          += w[jx * nj + jz] * fx * fz;
         }
     }
 
@@ -334,8 +345,9 @@ std::vector<double> compute_sidis_nnlo_reference(const apfel::Grid &g,
     const std::vector<std::vector<double>> &bin_z_bounds,
     std::function<double(int, double)>      toy_f,
     std::function<double(double)>           alphas_func) {
+    // Charge ordering: (d, u, s, c, b, t).
     constexpr double QCh[6] =
-        {2. / 3., -1. / 3., -1. / 3., 2. / 3., -1. / 3., 2. / 3.};
+        {-1. / 3., 2. / 3., -1. / 3., 2. / 3., -1. / 3., 2. / 3.};
 
     size_t                            nbins = bin_x_bounds.size();
     std::vector<double>               result(nbins, 0.0);
@@ -550,8 +562,9 @@ std::vector<double> compute_sidis_g1_nnlo_reference(const apfel::Grid &g,
     const std::vector<std::vector<double>> &bin_z_bounds,
     std::function<double(int, double)>      toy_f,
     std::function<double(double)>           alphas_func) {
+    // Charge ordering: (d, u, s, c, b, t).
     constexpr double QCh[6] =
-        {2. / 3., -1. / 3., -1. / 3., 2. / 3., -1. / 3., 2. / 3.};
+        {-1. / 3., 2. / 3., -1. / 3., 2. / 3., -1. / 3., 2. / 3.};
 
     size_t                            nbins = bin_x_bounds.size();
     std::vector<double>               result(nbins, 0.0);
