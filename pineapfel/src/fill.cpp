@@ -1,4 +1,5 @@
 #include <apfel/apfelxx.h>
+#include <apfel/betaqcd.h>
 #include <pineapfel/fill.h>
 #include <pineapfel/sidis_api.h>
 
@@ -10,6 +11,7 @@
 #include <numeric>
 #include <set>
 #include <stdexcept>
+#include <tuple>
 #include <vector>
 
 namespace pineapfel {
@@ -1118,16 +1120,18 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
         (int)grid_def.channels.size() - (has_gluon_channel ? 1 : 0);
 
     // 5. Precompute per-channel operators for each (Q^2, order) node.
-    //    channel_ops[order][channel_idx] accumulates the combined operator
-    //    from all weighted initializers.  Gluon and quark channels are
-    //    handled separately to correctly incorporate heavy-quark
-    //    contributions in the massive scheme.
+    //    channel_ops[{alpha_s, log_xir, log_xif}][channel_idx] accumulates
+    //    the combined operator from all weighted initializers.  Gluon and
+    //    quark channels are handled separately to correctly incorporate
+    //    heavy-quark contributions in the massive scheme.
+    //    Scale-log orders ({alpha_s, >=1, 0} or {alpha_s, 0, >=1}) are
+    //    derived from the central-scale operators after the main accumulation.
+    using OrdKey = std::tuple<int, int, int>; // (alpha_s, log_xir, log_xif)
     struct Q2Data {
-        int                                           nf;
+        int                                              nf;
         // 6-entry EW charges (NC) or nf-entry CKM (CC):
-        // channel_ops[order][channel_idx] = accumulated operator
-        std::vector<double>                           charges;
-        std::map<int, std::map<int, apfel::Operator>> channel_ops;
+        std::vector<double>                              charges;
+        std::map<OrdKey, std::map<int, apfel::Operator>> channel_ops;
     };
 
     std::vector<Q2Data> q2_data(nq);
@@ -1208,7 +1212,8 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                 // α_s^ord the result matches APFEL++ BSF which uses
                 // (α_s/4π)^ord.
                 const double pert_norm = std::pow(1.0 / apfel::FourPi, ord);
-                auto        &target    = q2_data[iq].channel_ops[ord];
+                const OrdKey key_ord{ord, 0, 0};
+                auto        &target    = q2_data[iq].channel_ops[key_ord];
 
                 const auto  &ops_light = C.at(1).GetObjects();
                 const apfel::Operator &CNS =
@@ -1304,16 +1309,78 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                 }
             }
         }
+
+        // Renormalization-scale logs derived from central-scale operators.
+        // Populate channel_ops[{n, m, 0}] for m>0 from the accumulated
+        // central-scale channel_ops[{n-m, 0, 0}] entries.
+        //
+        // Coefficients follow from d/d(tR) [C(ξ_R)] with tR = ln(ξ_R²):
+        //   {1,1,0}: b₀ · C0 · (1/4π)^1
+        //   {2,1,0}: b₀ · C1 · (1/4π)^2
+        //   {2,2,0}: (b₀²/2) · C0 · (1/4π)^2
+        // where each C_n is already stored in channel_ops[{n,0,0}] with its
+        // (1/4π)^n factor absorbed, so the extra factor per log-slot is just
+        // (1/4π)^{alpha_s} / (1/4π)^{base_ord} = (1/4π)^{log_xir}.
+        // Only computed when the requested order set contains log_xir > 0.
+        {
+            bool need_xir = false;
+            for (const auto &o : grid_def.orders)
+                if (o.log_xir > 0) {
+                    need_xir = true;
+                    break;
+                }
+
+            if (need_xir) {
+                const double b0     = apfel::beta0qcd(q2_data[iq].nf);
+                const double inv4pi = 1.0 / apfel::FourPi;
+                auto        &cops   = q2_data[iq].channel_ops;
+
+                auto         it0    = cops.find(OrdKey{0, 0, 0});
+                auto         it1    = cops.find(OrdKey{1, 0, 0});
+
+                // {1,1,0}: b₀ * (1/4π) * C0_channels
+                if (it0 != cops.end()) {
+                    const double fac = b0 * inv4pi;
+                    for (const auto &[ich, op] : it0->second)
+                        add_to_channel(cops[OrdKey{1, 1, 0}],
+                            ich,
+                            op * fac,
+                            1.0);
+                }
+                // {2,1,0}: b₀ * (1/4π) * C1_channels
+                if (it1 != cops.end()) {
+                    const double fac = b0 * inv4pi;
+                    for (const auto &[ich, op] : it1->second)
+                        add_to_channel(cops[OrdKey{2, 1, 0}],
+                            ich,
+                            op * fac,
+                            1.0);
+                }
+                // {2,2,0}: (b₀²/2) * (1/4π)² * C0_channels
+                if (it0 != cops.end()) {
+                    const double fac = 0.5 * b0 * b0 * inv4pi * inv4pi;
+                    for (const auto &[ich, op] : it0->second)
+                        add_to_channel(cops[OrdKey{2, 2, 0}],
+                            ich,
+                            op * fac,
+                            1.0);
+                }
+            }
+        }
     }
 
     // 6. Fill subgrids for each (bin, order, channel) using pre-built operators
     for (std::size_t iord = 0; iord < grid_def.orders.size(); iord++) {
-        int alpha_s = grid_def.orders[iord].alpha_s;
+        const auto &odef    = grid_def.orders[iord];
+        int         alpha_s = odef.alpha_s;
         if (alpha_s > 2) {
             std::cerr << "  Warning: skipping order alpha_s^" << alpha_s
                       << " (beyond NNLO)" << std::endl;
             continue;
         }
+        const OrdKey ord_key{(int)odef.alpha_s,
+            (int)odef.log_xir,
+            (int)odef.log_xif};
 
         for (std::size_t ich = 0; ich < grid_def.channels.size(); ich++) {
             for (std::size_t ibin = 0; ibin < grid_def.bins.size(); ibin++) {
@@ -1328,7 +1395,7 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                 // [x_nodes.front(), x_nodes.back()].
                 if (x_center >= x_nodes.front() && x_center <= x_nodes.back()) {
                     for (std::size_t iq = 0; iq < nq; iq++) {
-                        auto it_ord = q2_data[iq].channel_ops.find(alpha_s);
+                        auto it_ord = q2_data[iq].channel_ops.find(ord_key);
                         if (it_ord == q2_data[iq].channel_ops.end()) continue;
 
                         auto it_ch = it_ord->second.find((int)ich);

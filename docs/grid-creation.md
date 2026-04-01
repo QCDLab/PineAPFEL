@@ -154,12 +154,15 @@ the same nine channel types. Note that at NNLO the \(gq\) and \(qg\) channels be
 | 2 | NNLO | \(G_{1,\mathrm{NS}}^{(2)}\) (\(n_f\)-dep.) | \(G_{1,gq}^{(2)}\) (\(n_f\)-dep.) | \(G_{1,qg}^{(2)}\) (\(n_f\)-dep.) | \(G_{1,gg}^{(2)}\) | \(G_{1,\mathrm{PS}}^{(2)}\) | \(G_{1,q\bar{q}}^{(2)}\) | \(G_{1,qpq_{1,2,3}}^{(2)}\) |
 
 The orders are specified in the grid card via the `Orders` field. Each order entry is a
-5-element array `[alpha_s, alpha, log_xir, log_xif, log_xia]`. For pure QCD coefficient
-functions, only the `alpha_s` power matters; the remaining entries should be set to 0.
+5-element array `[alpha_s, alpha, log_xir, log_xif, log_xia]`. For central-scale QCD
+coefficient functions set all but `alpha_s` to 0. To include renormalization-scale
+logarithms (DIS/SIA only), set `log_xir` to the desired power; see
+[Renormalization scale variation](#renormalization-scale-variation-dissia) below.
 
-Each entry stores the coefficient function at that **specific** power of \(\alpha_s\),
-not the cumulative sum. For a complete NNLO prediction, all three orders (LO, NLO, NNLO)
-must be listed so that the grid contains separate subgrids for each perturbative contribution.
+Each entry stores the coefficient function at that **specific** power of \(\alpha_s\)
+(and \(\ln\xi_R^2\)), not the cumulative sum. For a complete NNLO prediction, all three
+orders (LO, NLO, NNLO) must be listed so that the grid contains separate subgrids for
+each perturbative contribution.
 
 !!! warning
     Orders beyond NNLO (`alpha_s > 2`) are silently skipped during grid filling, even
@@ -752,6 +755,82 @@ The theory card should include a `CKM` field with 9 squared CKM matrix elements
 \(|V_{ij}|^2\) in row-major order: \([V_{ud}^2, V_{us}^2, V_{ub}^2, V_{cd}^2,
 V_{cs}^2, V_{cb}^2, V_{td}^2, V_{ts}^2, V_{tb}^2]\). If absent, standard PDG
 values are used.
+
+---
+
+### Renormalization scale variation {#renormalization-scale-variation-dissia}
+
+PineAPFEL supports renormalization-scale variation for **DIS and SIA** grids. When one or
+more orders with `log_xir > 0` are requested, `build_grid()` automatically computes the
+corresponding coefficient-function contributions and stores them as separate PineAPPL
+subgrids. At convolution time, PineAPPL evaluates
+
+$$
+F(x, Q^2;\, \xi_R) \;=\;
+\sum_{n,\,m} \alpha_s(\mu_R)^n \,
+\bigl[\ln\xi_R^2\bigr]^m \,
+W_{n,m}
+$$
+
+where \(\xi_R = \mu_R / Q\) and \(W_{n,m}\) are the stored subgrid weights for order
+`[n, 0, m, 0, 0]`. Setting \(\xi_R = 1\) recovers the central-scale result; varying it
+around 1 gives the renormalization-scale uncertainty band.
+
+#### Available renorm-scale orders
+
+The following `log_xir` orders are derived automatically from the central-scale
+coefficient functions \(C_0\), \(C_1\), \(C_2\) via the renormalization group:
+
+| Order entry | Label | Stored weight | Derivation |
+|-------------|-------|---------------|------------|
+| `[1, 0, 1, 0, 0]` | NLO × \(\ln\xi_R^2\) | \(\beta_0(n_f)\,\tfrac{1}{4\pi}\,C_0\) | \(\partial_{\ln\mu_R^2} F\big\lvert_{\mathrm{NLO}}\) |
+| `[2, 0, 1, 0, 0]` | NNLO × \(\ln\xi_R^2\) | \(\beta_0(n_f)\,\tfrac{1}{4\pi}\,C_1\) | \(\partial_{\ln\mu_R^2} F\big\lvert_{\mathrm{NNLO}}\) |
+| `[2, 0, 2, 0, 0]` | NNLO × \(\ln^2\xi_R^2\) | \(\tfrac{\beta_0(n_f)^2}{2}\,\tfrac{1}{(4\pi)^2}\,C_0\) | \(\tfrac{1}{2}\partial^2_{\ln\mu_R^2} F\big\lvert_{\mathrm{NNLO}}\) |
+
+Here \(\beta_0(n_f) = 11 - \tfrac{2}{3}n_f\) (the one-loop QCD \(\beta\)-function
+coefficient) and the factors of \(\tfrac{1}{4\pi}\) absorb the difference between
+APFEL++'s \((\alpha_s/4\pi)^n\) convention and PineAPPL's \(\alpha_s^n\) convention,
+\(n_f\) is the number of active flavours at the Q² node.
+
+The central-scale orders `[0,0,0,0,0]`, `[1,0,0,0,0]`, `[2,0,0,0,0]` must also be
+included in `Orders` for the corresponding \(C_0\), \(C_1\), \(C_2\) subgrids to exist
+(scale-log orders are derived from them). If a base order is absent, the derived log
+order will be empty.
+
+#### Example: DIS NLO + NNLO with renorm-scale variation
+
+```yaml
+Process: DIS
+Observable: F2
+Current: NC
+PidBasis: PDG
+HadronPids: [2212]
+ConvolutionTypes: [UNPOL_PDF]
+
+Orders:
+  - [0, 0, 0, 0, 0]   # LO           (C_0)
+  - [1, 0, 0, 0, 0]   # NLO          (C_1)
+  - [2, 0, 0, 0, 0]   # NNLO         (C_2)
+  - [1, 0, 1, 0, 0]   # NLO  × ln ξ_R²
+  - [2, 0, 1, 0, 0]   # NNLO × ln ξ_R²
+  - [2, 0, 2, 0, 0]   # NNLO × ln² ξ_R²
+
+Bins:
+  - lower: [10.0, 0.001]
+    upper: [100.0, 0.01]
+
+Normalizations: [1.0]
+```
+
+The six-subgrid grid can then be convoluted at any \(\xi_R\) by passing a non-unity
+scale factor to `pineappl_grid_convolve_with_one` (or the Python `Grid.convolve`
+wrapper).
+
+!!! warning "DIS/SIA only — SIDIS and factorization logs not yet implemented"
+    Renormalization-scale logs are currently filled only for **DIS and SIA** processes.
+    SIDIS grids ignore `log_xir > 0` entries (no error is raised; the subgrid is simply
+    left empty). **Factorization-scale logs** (`log_xif > 0`) require convolving with
+    DGLAP splitting functions and are not yet implemented for any process.
 
 ---
 
