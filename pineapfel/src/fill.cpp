@@ -1077,26 +1077,20 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
     }
     const std::size_t   nx       = x_nodes.size();
 
-    // DIS/SIA/etc. Q² tabulation is independent of OperatorCard SIDIS knobs.
-    // Those fields apply only in `build_grid_sidis`; reusing them here made
-    // non-SIDIS grids sensitive to SIDIS defaults and broke legacy tests.
-    std::vector<double> q2_nodes = derive_q2_nodes(grid_def.bins,
-        theory.quark_thresholds,
-        /*n_intermediate=*/3,
-        /*include_thresholds=*/true,
-        /*use_bin_centers_only=*/false);
-    const std::size_t   nq       = q2_nodes.size();
+    // Pointwise design: one Q² node per bin at the geometric bin centre.
+    // Collect unique Q²_c values to avoid redundant APFEL++ coefficient
+    // function calls when multiple bins share the same Q²_c.
+    std::vector<double> bin_q2c(grid_def.bins.size());
+    std::set<double>    unique_q2c_set;
+    for (std::size_t ibin = 0; ibin < grid_def.bins.size(); ibin++) {
+        bin_q2c[ibin] = std::sqrt(grid_def.bins[ibin].lower[0] *
+                                  grid_def.bins[ibin].upper[0]);
+        unique_q2c_set.insert(bin_q2c[ibin]);
+    }
+    std::vector<double> unique_q2c(unique_q2c_set.begin(), unique_q2c_set.end());
 
-    std::cout << "  Grid nodes: " << nq << " Q^2 x " << nx << " x/z points"
-              << std::endl;
-
-    // Concatenated node_values: [q2_0..q2_{nq-1}, x_0..x_{nx-1}]
-    std::vector<double> node_values;
-    node_values.reserve(nq + nx);
-    node_values.insert(node_values.end(), q2_nodes.begin(), q2_nodes.end());
-    node_values.insert(node_values.end(), x_nodes.begin(), x_nodes.end());
-
-    std::vector<std::size_t> shape     = {nq, nx};
+    std::cout << "  Pointwise grid: " << unique_q2c.size()
+              << " unique Q² centres x " << nx << " x/z points" << std::endl;
 
     bool                     timelike  = (grid_def.process == ProcessType::SIA);
     bool                     is_cc     = (grid_def.current == Current::CC);
@@ -1134,7 +1128,7 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
         std::map<OrdKey, std::map<int, apfel::Operator>> channel_ops;
     };
 
-    std::vector<Q2Data> q2_data(nq);
+    std::map<double, Q2Data> q2_data_map;
 
     // Helper: accumulate op*sign into target[ich].
     // NOTE: APFEL++ Operator::operator= is infinitely recursive (APFEL++ bug).
@@ -1149,14 +1143,15 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
         else it->second += op * sign;
     };
 
-    for (std::size_t iq = 0; iq < nq; iq++) {
-        double Q       = std::sqrt(q2_nodes[iq]);
-        q2_data[iq].nf = apfel::NF(Q, theory.quark_thresholds);
+    for (double q2_c : unique_q2c) {
+        Q2Data &qd     = q2_data_map[q2_c];
+        double  Q      = std::sqrt(q2_c);
+        qd.nf          = apfel::NF(Q, theory.quark_thresholds);
 
         // Compute per-quark charges and initializer charges
         std::vector<double> init_charges;
         if (is_cc) {
-            int                 nf = q2_data[iq].nf;
+            int                 nf = qd.nf;
             std::vector<double> weights(nf, 0.0);
             for (int q = 1; q <= nf; q++) {
                 bool is_down = (q % 2 == 1);
@@ -1179,15 +1174,15 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                 }
                 weights[q - 1] /= 2.0;
             }
-            q2_data[iq].charges = weights;
-            init_charges        = theory.ckm;
+            qd.charges   = weights;
+            init_charges = theory.ckm;
         } else {
             // ElectroWeakCharges always returns 6 entries
-            q2_data[iq].charges = apfel::ElectroWeakCharges(Q, timelike);
-            init_charges        = q2_data[iq].charges;
+            qd.charges   = apfel::ElectroWeakCharges(Q, timelike);
+            init_charges = qd.charges;
         }
 
-        const std::vector<double> &charges = q2_data[iq].charges;
+        const std::vector<double> &charges = qd.charges;
 
         for (const auto &wi : weighted_inits) {
             auto   FObjQ        = wi.init(Q, init_charges);
@@ -1195,7 +1190,7 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
             // nf_local: number of "light" quarks for this init
             //   ZM (wi.actnf<0): Q-dependent from thresholds
             //   massive (wi.actnf>=0): fixed count of zero-mass quarks
-            int    nf_local     = (wi.actnf < 0) ? q2_data[iq].nf : wi.actnf;
+            int    nf_local     = (wi.actnf < 0) ? qd.nf : wi.actnf;
 
             // Sum of EW charges over light quarks
             double sum_ch_light = 0;
@@ -1213,7 +1208,7 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                 // (α_s/4π)^ord.
                 const double pert_norm = std::pow(1.0 / apfel::FourPi, ord);
                 const OrdKey key_ord{ord, 0, 0};
-                auto        &target    = q2_data[iq].channel_ops[key_ord];
+                auto        &target    = qd.channel_ops[key_ord];
 
                 const auto  &ops_light = C.at(1).GetObjects();
                 const apfel::Operator &CNS =
@@ -1331,9 +1326,9 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                 }
 
             if (need_xir) {
-                const double b0     = apfel::beta0qcd(q2_data[iq].nf);
+                const double b0     = apfel::beta0qcd(qd.nf);
                 const double inv4pi = 1.0 / apfel::FourPi;
-                auto        &cops   = q2_data[iq].channel_ops;
+                auto        &cops   = qd.channel_ops;
 
                 auto         it0    = cops.find(OrdKey{0, 0, 0});
                 auto         it1    = cops.find(OrdKey{1, 0, 0});
@@ -1384,46 +1379,50 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
 
         for (std::size_t ich = 0; ich < grid_def.channels.size(); ich++) {
             for (std::size_t ibin = 0; ibin < grid_def.bins.size(); ibin++) {
-                double              x_lo     = grid_def.bins[ibin].lower.back();
-                double              x_hi     = grid_def.bins[ibin].upper.back();
-                double              x_center = std::sqrt(x_lo * x_hi);
+                double x_lo     = grid_def.bins[ibin].lower.back();
+                double x_hi     = grid_def.bins[ibin].upper.back();
+                double x_center = std::sqrt(x_lo * x_hi);
 
-                std::vector<double> subgrid(nq * nx, 0.0);
+                // Per-bin 1-node Q² subgrid at the geometric bin centre.
+                double              q2_c = bin_q2c[ibin];
+                std::vector<double> node_vals_bin;
+                node_vals_bin.reserve(1 + nx);
+                node_vals_bin.push_back(q2_c);
+                node_vals_bin.insert(node_vals_bin.end(),
+                    x_nodes.begin(), x_nodes.end());
+                std::vector<std::size_t> shape_bin = {1, nx};
+
+                std::vector<double> subgrid(nx, 0.0);
 
                 // NOTE: Skip bins outside the APFEL++ interpolation range; the
                 // operator Evaluate() has undefined behaviour for x outside
                 // [x_nodes.front(), x_nodes.back()].
                 if (x_center >= x_nodes.front() && x_center <= x_nodes.back()) {
-                    for (std::size_t iq = 0; iq < nq; iq++) {
-                        auto it_ord = q2_data[iq].channel_ops.find(ord_key);
-                        if (it_ord == q2_data[iq].channel_ops.end()) continue;
+                    auto it_q2 = q2_data_map.find(q2_c);
+                    if (it_q2 != q2_data_map.end()) {
+                        auto it_ord = it_q2->second.channel_ops.find(ord_key);
+                        if (it_ord != it_q2->second.channel_ops.end()) {
+                            auto it_ch = it_ord->second.find((int)ich);
+                            if (it_ch != it_ord->second.end()) {
+                                apfel::Distribution dist =
+                                    it_ch->second.Evaluate(x_center);
+                                const std::vector<double> &vals =
+                                    dist.GetDistributionJointGrid();
 
-                        auto it_ch = it_ord->second.find((int)ich);
-                        if (it_ch == it_ord->second.end()) continue;
-
-                        apfel::Distribution dist =
-                            it_ch->second.Evaluate(x_center);
-                        const std::vector<double> &vals =
-                            dist.GetDistributionJointGrid();
-
-                        // NOTE: APFEL++: K_j satisfy (C⊗f)(x) = Σ K_j*f(x_j)
-                        // where f is the PDF *without* the x factor.  PineAPPL
-                        // with APPL_GRID_X divides xfx(x_j) by x_j, giving
-                        // Σ (stored_j) * xf(x_j)/x_j.  Multiplying the stored
-                        // kernel by x_j makes PineAPPL compute
-                        // Σ (K_j*x_j) * xf/x_j = Σ K_j * xf(x_j) = F2.
-                        // vals is indexed over the full joint grid (nx_full).
-                        // Map to physical (≤1) indices only.
-                        for (std::size_t iix = 0; iix < nx; iix++) {
-                            const std::size_t ix = phys_x_indices[iix];
-                            if (ix < vals.size())
-                                subgrid[iq * nx + iix] =
-                                    vals[ix] * x_nodes[iix];
+                                // NOTE: APFEL++: K_j satisfy (C⊗f)(x)=Σ K_j*f(x_j)
+                                // PineAPPL divides xfx(x_j) by x_j, so store K_j*x_j.
+                                // vals is indexed over the full joint grid (nx_full).
+                                for (std::size_t iix = 0; iix < nx; iix++) {
+                                    const std::size_t ix = phys_x_indices[iix];
+                                    if (ix < vals.size())
+                                        subgrid[iix] = vals[ix] * x_nodes[iix];
+                                }
+                            }
                         }
                     }
                 }
 
-                set_subgrid(grid, ibin, iord, ich, node_values, subgrid, shape);
+                set_subgrid(grid, ibin, iord, ich, node_vals_bin, subgrid, shape_bin);
             }
         }
     }
