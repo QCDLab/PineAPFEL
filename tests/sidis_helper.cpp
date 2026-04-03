@@ -162,18 +162,17 @@ std::vector<double> compute_sidis_reference(const apfel::Grid &g,
 
     const apfel::LagrangeInterpolator li{g};
 
-    double                            q2_max_val =
-        *std::max_element(bin_q2.begin(), bin_q2.end());
-    int  nf_max   = apfel::NF(std::sqrt(q2_max_val), thresholds);
+    double q2_max_val = *std::max_element(bin_q2.begin(), bin_q2.end());
+    int    nf_max     = apfel::NF(std::sqrt(q2_max_val), thresholds);
 
-    auto channels = pineapfel::derive_channels(pineapfel::ProcessType::SIDIS,
+    auto   channels = pineapfel::derive_channels(pineapfel::ProcessType::SIDIS,
         pineapfel::Observable::F2,
         pineapfel::Current::NC,
         pineapfel::CCSign::Plus,
         nf_max);
 
     // Key lookup helpers for FT operators (LO/NLO only here)
-    auto ft_key   = [](int alpha_s, int channel_type) -> std::string {
+    auto   ft_key   = [](int alpha_s, int channel_type) -> std::string {
         if (alpha_s == 0 && channel_type == 0) return "DoubleIdentity";
         if (alpha_s == 1 && channel_type == 0) return "C1TQ2Q";
         if (alpha_s == 1 && channel_type == 1) return "C1TQ2G";
@@ -255,18 +254,17 @@ std::vector<double> compute_sidis_pol_reference(const apfel::Grid &g,
 
     const apfel::LagrangeInterpolator li{g};
 
-    double                            q2_max_val =
-        *std::max_element(bin_q2.begin(), bin_q2.end());
-    int  nf_max   = apfel::NF(std::sqrt(q2_max_val), thresholds);
+    double q2_max_val = *std::max_element(bin_q2.begin(), bin_q2.end());
+    int    nf_max     = apfel::NF(std::sqrt(q2_max_val), thresholds);
 
-    auto channels = pineapfel::derive_channels(pineapfel::ProcessType::SIDIS,
+    auto   channels = pineapfel::derive_channels(pineapfel::ProcessType::SIDIS,
         pineapfel::Observable::F2,
         pineapfel::Current::NC,
         pineapfel::CCSign::Plus,
         nf_max);
 
     // Key lookup helpers for G1 operators (LO/NLO only here)
-    auto g1_key   = [](int alpha_s, int channel_type) -> std::string {
+    auto   g1_key   = [](int alpha_s, int channel_type) -> std::string {
         if (alpha_s == 0 && channel_type == 0) return "DoubleIdentity";
         if (alpha_s == 1 && channel_type == 0) return "DC1Q2Q";
         if (alpha_s == 1 && channel_type == 1) return "DC1Q2G";

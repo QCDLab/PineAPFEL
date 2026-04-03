@@ -286,8 +286,7 @@ GridDef load_grid_def(const std::string &path) {
     // Normalizations (optional — defaults to 1.0 per bin)
     if (config["Normalizations"])
         def.normalizations = config["Normalizations"].as<std::vector<double>>();
-    else
-        def.normalizations.assign(def.bins.size(), 1.0);
+    else def.normalizations.assign(def.bins.size(), 1.0);
 
     return def;
 }

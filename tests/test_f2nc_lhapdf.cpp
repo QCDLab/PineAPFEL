@@ -126,8 +126,8 @@ int main() {
         double x_c  = std::sqrt(x_lo * x_hi);
 
         // Pointwise: evaluate BSF at the geometric Q² bin centre.
-        double q2_c = std::sqrt(grid_def.bins[ibin].lower[0] *
-                                grid_def.bins[ibin].upper[0]);
+        double q2_c = std::sqrt(
+            grid_def.bins[ibin].lower[0] * grid_def.bins[ibin].upper[0]);
         double ref  = F2.at(0).Evaluate(x_c, std::sqrt(q2_c));
 
         double pred = predictions[ibin];

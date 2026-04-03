@@ -86,7 +86,6 @@ static apfel::Operator build_channel_operator(
     return e_q_sq * CNS + (sum_ch / 6.0) * (CS - CNS);
 }
 
-
 // ================================================================
 int main() {
     std::cout << "=== Grid vs APFEL++ comparison test ===" << std::endl;
@@ -170,8 +169,8 @@ int main() {
             double ref      = 0;
 
             // Pointwise: evaluate at the geometric Q² bin centre
-            double q2      = std::sqrt(grid_def.bins[ibin].lower[0] *
-                                       grid_def.bins[ibin].upper[0]);
+            double q2       = std::sqrt(
+                grid_def.bins[ibin].lower[0] * grid_def.bins[ibin].upper[0]);
             double Q       = std::sqrt(q2);
             int    nf      = apfel::NF(Q, theory.quark_thresholds);
             auto   charges = apfel::ElectroWeakCharges(Q, timelike);
@@ -248,8 +247,8 @@ int main() {
             double ref      = 0;
 
             // Pointwise: evaluate at the geometric Q² bin centre
-            double q2      = std::sqrt(grid_def.bins[ibin].lower[0] *
-                                       grid_def.bins[ibin].upper[0]);
+            double q2       = std::sqrt(
+                grid_def.bins[ibin].lower[0] * grid_def.bins[ibin].upper[0]);
             double Q       = std::sqrt(q2);
             int    nf      = apfel::NF(Q, theory.quark_thresholds);
             auto   charges = apfel::ElectroWeakCharges(Q, timelike);
@@ -352,8 +351,8 @@ int main() {
             double ref      = 0;
 
             // Pointwise: evaluate at the geometric Q² bin centre
-            double q2      = std::sqrt(grid_def.bins[ibin].lower[0] *
-                                       grid_def.bins[ibin].upper[0]);
+            double q2       = std::sqrt(
+                grid_def.bins[ibin].lower[0] * grid_def.bins[ibin].upper[0]);
             double Q       = std::sqrt(q2);
             int    nf      = apfel::NF(Q, theory.quark_thresholds);
             auto   charges = apfel::ElectroWeakCharges(Q, timelike);
@@ -478,8 +477,8 @@ int main() {
                                         grid_def.bins[ibin].upper.back());
 
             // Pointwise: evaluate BSF at the geometric Q² bin centre
-            double q2  = std::sqrt(grid_def.bins[ibin].lower[0] *
-                                   grid_def.bins[ibin].upper[0]);
+            double q2       = std::sqrt(
+                grid_def.bins[ibin].lower[0] * grid_def.bins[ibin].upper[0]);
             double Q   = std::sqrt(q2);
             double ref = F2_total.Evaluate(x_center, Q);
 
@@ -582,10 +581,10 @@ int main() {
                                         cc_grid_def.bins[ibin].upper.back());
 
             // Pointwise: evaluate BSF at the geometric Q² bin centre
-            double q2  = std::sqrt(cc_grid_def.bins[ibin].lower[0] *
-                                   cc_grid_def.bins[ibin].upper[0]);
-            double Q   = std::sqrt(q2);
-            double ref = F2CC_total.Evaluate(x_center, Q);
+            double q2       = std::sqrt(cc_grid_def.bins[ibin].lower[0] *
+                                  cc_grid_def.bins[ibin].upper[0]);
+            double Q        = std::sqrt(q2);
+            double ref      = F2CC_total.Evaluate(x_center, Q);
 
             double rel_diff =
                 std::abs(ref) > 1e-30
@@ -645,7 +644,7 @@ int main() {
 
         pineappl_grid *sidis_grid =
             pineapfel::build_grid(sidis_grid_def, sidis_theory, sidis_op_card);
-        std::size_t sidis_nbins = pineappl_grid_bin_count(sidis_grid);
+        std::size_t         sidis_nbins = pineappl_grid_bin_count(sidis_grid);
 
         // Pointwise: one Q² per bin
         std::vector<double> sidis_bin_q2;
@@ -785,10 +784,10 @@ int main() {
                                         pol_grid_def.bins[ibin].upper.back());
 
             // Pointwise: evaluate BSF at the geometric Q² bin centre
-            double q2  = std::sqrt(pol_grid_def.bins[ibin].lower[0] *
-                                   pol_grid_def.bins[ibin].upper[0]);
-            double Q   = std::sqrt(q2);
-            double ref = g1_total.Evaluate(x_center, Q);
+            double q2       = std::sqrt(pol_grid_def.bins[ibin].lower[0] *
+                                  pol_grid_def.bins[ibin].upper[0]);
+            double Q        = std::sqrt(q2);
+            double ref      = g1_total.Evaluate(x_center, Q);
 
             double rel_diff =
                 std::abs(ref) > 1e-30
@@ -960,10 +959,10 @@ int main() {
                                         ffn_grid_def.bins[ibin].upper.back());
 
             // Pointwise: evaluate BSF at the geometric Q² bin centre
-            double q2  = std::sqrt(ffn_grid_def.bins[ibin].lower[0] *
-                                   ffn_grid_def.bins[ibin].upper[0]);
-            double Q   = std::sqrt(q2);
-            double ref = F2FFN_total.Evaluate(x_center, Q);
+            double q2       = std::sqrt(ffn_grid_def.bins[ibin].lower[0] *
+                                  ffn_grid_def.bins[ibin].upper[0]);
+            double Q        = std::sqrt(q2);
+            double ref      = F2FFN_total.Evaluate(x_center, Q);
             double rel_diff =
                 std::abs(ref) > 1e-30
                     ? std::abs(pineappl_ffn[ibin] - ref) / std::abs(ref)
@@ -1046,10 +1045,10 @@ int main() {
                                         mz_grid_def.bins[ibin].upper.back());
 
             // Pointwise: evaluate BSF at the geometric Q² bin centre
-            double q2  = std::sqrt(mz_grid_def.bins[ibin].lower[0] *
-                                   mz_grid_def.bins[ibin].upper[0]);
-            double Q   = std::sqrt(q2);
-            double ref = F2MZ_total.Evaluate(x_center, Q);
+            double q2       = std::sqrt(mz_grid_def.bins[ibin].lower[0] *
+                                  mz_grid_def.bins[ibin].upper[0]);
+            double Q        = std::sqrt(q2);
+            double ref      = F2MZ_total.Evaluate(x_center, Q);
             double rel_diff =
                 std::abs(ref) > 1e-30
                     ? std::abs(pineappl_mz[ibin] - ref) / std::abs(ref)
@@ -1150,11 +1149,11 @@ int main() {
                                         fonll_grid_def.bins[ibin].upper.back());
 
             // Pointwise: evaluate BSF at the geometric Q² bin centre
-            double q2  = std::sqrt(fonll_grid_def.bins[ibin].lower[0] *
-                                   fonll_grid_def.bins[ibin].upper[0]);
-            double Q   = std::sqrt(q2);
+            double q2       = std::sqrt(fonll_grid_def.bins[ibin].lower[0] *
+                                  fonll_grid_def.bins[ibin].upper[0]);
+            double Q        = std::sqrt(q2);
             // F_FONLL = F_ZM + F_FFN - F_MZ
-            double ref = F2ZM_tot.Evaluate(x_center, Q) +
+            double ref      = F2ZM_tot.Evaluate(x_center, Q) +
                          F2FFN_tot.Evaluate(x_center, Q) -
                          F2MZ_tot.Evaluate(x_center, Q);
             double rel_diff =
@@ -1204,8 +1203,8 @@ int main() {
         // keeps all SIDIS tests on the same 20+10-node grid.
         pineappl_grid *nnlo_grid =
             pineapfel::build_grid(nnlo_grid_def, nnlo_theory, sidis_op_card);
-        std::size_t nnlo_nbins = pineappl_grid_bin_count(nnlo_grid);
-        std::size_t nnlo_nords = pineappl_grid_order_count(nnlo_grid);
+        std::size_t         nnlo_nbins = pineappl_grid_bin_count(nnlo_grid);
+        std::size_t         nnlo_nords = pineappl_grid_order_count(nnlo_grid);
 
         // Pointwise: one Q² per bin
         std::vector<double> nnlo_q2_nodes;
