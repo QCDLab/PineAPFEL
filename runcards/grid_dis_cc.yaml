@@ -11,7 +11,7 @@ Orders:
   - [1, 0, 0, 0, 0]
   - [2, 0, 0, 0, 0]
 
-# Points: [Q2, x] — geometric centers of the original bins
+# Points: [Q2, x]
 Points:
   - [31.62278,  3.162278e-4]
   - [31.62278,  3.162278e-3]

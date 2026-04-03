@@ -18,7 +18,7 @@ Channels:
   - pids: [[21]]
     factors: [1.0]
 
-# Points: [Q2, z] — geometric centers of the original bins
+# Points: [Q2, z]
 Points:
   - [31.62278, 2.828427e-1]
   - [316.2278, 4.898979e-1]

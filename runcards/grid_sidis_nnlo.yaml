@@ -11,7 +11,8 @@ Orders:
   - [2, 0, 0, 0, 0]
 
 # 3 log-spaced x points at Q^2=10 GeV^2 and z in [0.2, 0.3].
-# Points: [Q2, x, z_lo, z_hi] — Q2 and x are pointwise, z is an integration range.
+# Points: [Q2, x, z_lo, z_hi] — Q2 and x are pointwise, z
+# is an integration range.
 Points:
   - [10.0, 1.468e-4, 0.2, 0.3]
   - [10.0, 3.163e-3, 0.2, 0.3]

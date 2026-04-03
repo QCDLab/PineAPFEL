@@ -10,7 +10,7 @@ Orders:
   - [1, 0, 0, 0, 0]
   - [2, 0, 0, 0, 0]
 
-# Points: [Q2, x] — pointwise at fixed Q^2=10000.5 (midpoint) and selected x values
+# Points: [Q2, x]
 Points:
   - [10000.5, 1.0e-5]
   - [10000.5, 1.0e-4]
