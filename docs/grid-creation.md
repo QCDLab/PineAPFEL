@@ -287,99 +287,23 @@ in the grid card.
 
 ### Operator card: SIDIS-only settings (`sidis_*` keys) {#sidis-operator-card}
 
-Grid **cards** describe bins and orders; **operator** cards describe interpolation
-grids and several options that only affect **SIDIS** filling. For historical
-compatibility, the C++ defaults on `pineapfel::OperatorCard` keep **legacy** SIDIS
-tabulation (see table below). That matches older regression tests and coarse
-`operator_test.yaml`-style setups. It is **not** the same as APFEL++’s
-`BuildSidis*` / `sidisbuilder.h` “BSF-exact” semantics used in modern benchmarks.
+Two optional fields in the **operator card** control SIDIS-specific behaviour.
+They are ignored for DIS and SIA.
 
-**Therefore: for any SIDIS observable grid that you intend to compare to APFEL++
-reference builders (or to reproduce published SIDIS BSF-style tables), you should
-set the following fields explicitly on the operator YAML** used in the same
-`build_grid()` call as your SIDIS grid card. Do not rely on C++ defaults for those
-computations.
+| Field | Default | Purpose |
+|-------|---------|---------|
+| `sidis_mode` | `legacy` | `legacy` = Gauss–Legendre \(z\) quadrature inside each \(z\) bin; `bsf_exact` = APFEL++-style interpolation weights (`IntInterpolant`) over the \(z\) range. |
+| `sidis_int_eps` | `1e-3` | Relative tolerance for `InitializeSidisObjects` (SIDIS NNLO coefficient-function setup). Increase to `1e-1` for faster but coarser initialisation in tests. |
 
-!!! warning "DIS and SIA ignore `sidis_q2_*` in the library"
-    For **DIS** and **SIA**, `build_grid()` builds the global \(Q^2\) node list with
-    **fixed legacy logic** (bin edges, three geometric interior points per \(Q^2\)
-    interval, and threshold \(Q^2\) values inside the overall range). Those nodes
-    **do not** read `sidis_q2_n_intermediate`, `sidis_q2_include_thresholds`, or
-    `sidis_q2_use_bin_centers_only` from the operator card, so shared operator cards
-    and SIDIS defaults cannot accidentally break DIS/SIA grids or the
-    `test_grid_vs_apfelxx` suite.
-
-Only **`build_grid_sidis()`** (invoked automatically when `Process: SIDIS` in the
-grid card) consults the SIDIS-specific operator-card fields below.
-
-#### Recommended operator-card block (BSF-style / APFEL++-aligned SIDIS)
-
-Use this block (together with your `xgrid` / optional `zgrid` / `tabulation` / `xi`)
-when you want SIDIS grids that align with APFEL++ BSF-style treatment and avoid
-known pitfalls (duplicate \(Q^2\) slices in PineAPPL convolution for point-like
-\(Q^2\) bins, etc.):
+For APFEL++-aligned (BSF-style) SIDIS grids, set `sidis_mode: bsf_exact` explicitly
+in the operator YAML:
 
 ```yaml
-# SIDIS fill mode: use APFEL++-consistent z-handling (IntInterpolant weights in
-# binned-z mode; point-z mode unchanged). "legacy" keeps the older external
-# Gauss–Legendre z-quadrature path inside each z-bin.
 sidis_mode: bsf_exact
-
-# Q^2 axis tabulation for the PineAPPL subgrid (first dimension):
-#   - n_intermediate: extra geometric nodes *between* each bin's Q^2_lo and Q^2_hi
-#     (0 = none).
-#   - include_thresholds: insert m_q^2 for flavours whose thresholds lie in the
-#     global Q^2 range spanned by all bins.
-#   - use_bin_centers_only: build the global Q^2 list from sqrt(Q^2_lo * Q^2_hi)
-#     per bin only (typical for (Q^2,x,z) *point* bins). The fill then activates
-#     only the matching Q^2 slice per bin so PineAPPL does not over-count when it
-#     sums the Q^2 dimension.
-sidis_q2_n_intermediate: 0
-sidis_q2_include_thresholds: false
-sidis_q2_use_bin_centers_only: true
-
-# In sidis_mode: legacy, each z-bin is split into this many sub-intervals; each
-# piece gets the built-in 8-point Gauss–Legendre rule. Larger values increase
-# smoothness of the z-integration proxy. In sidis_mode: bsf_exact, z-binned
-# integration uses APFEL++ interpolation weights instead; this key still affects
-# the legacy quadrature path when mode is legacy.
-sidis_z_quad_subdivisions: 32
+sidis_int_eps: 1e-3   # optional; 1e-1 is enough for quick tests
 ```
 
-A complete real-world example is
-[`zurich_sidis_g1_nnlo_point/operator_zurich_exact.yaml`](../zurich_sidis_g1_nnlo_point/operator_zurich_exact.yaml)
-in this repository (Zurich-style point kinematics).
-
-#### Default C++ values when YAML omits these keys
-
-If the operator YAML does **not** set a field, `load_operator_card()` leaves the
-`OperatorCard` defaults from `pineapfel/cards.h`:
-
-| Field | Default | Role |
-|------|---------|------|
-| `sidis_mode` | `legacy` | Legacy z-quadrature SIDIS fill |
-| `sidis_q2_n_intermediate` | `3` | Legacy dense \(Q^2\) sampling between bin edges |
-| `sidis_q2_include_thresholds` | `true` | Legacy: add \(m_q^2\) nodes |
-| `sidis_q2_use_bin_centers_only` | `false` | Legacy: use edges + intermediates |
-| `sidis_z_quad_subdivisions` | `1` | Legacy: minimal z-bin subdivision |
-
-Those defaults exist so existing **operator** cards without SIDIS sections keep
-previous behaviour and so DIS/SIA paths remain stable. **They are not a substitute
-for an explicit BSF block** when your physics goal is APFEL++-consistent SIDIS.
-
-#### Workflow summary
-
-1. **DIS / SIA grids** — use any standard operator card; SIDIS keys are ignored for
-   \(Q^2\) node generation in `build_grid()`.
-2. **SIDIS grids, legacy regression / coarse tests** — you may omit SIDIS keys and
-   inherit defaults (e.g. `runcards/operator_test.yaml` used with
-   `test_grid_vs_apfelxx`).
-3. **SIDIS grids, production or APFEL++ benchmarks** — copy the recommended block
-   above into the operator YAML (or a dedicated SIDIS operator card) and tune
-   `sidis_int_eps` separately for speed vs. accuracy of `InitializeSidisObjects`.
-
-See also [Configuration cards — operator card](configuration-cards.md#operator-card-sidis-fields)
-for the same YAML keys in the general operator-card reference.
+See also [Configuration cards — operator card](configuration-cards.md#operator-card-sidis-fields).
 
 ### The grid card
 
@@ -465,24 +389,29 @@ Orders:
 #   - pids: [[21]]          # gluon
 #     factors: [1.0]
 
-# Kinematic bins. Each bin is defined by lower and upper edges
-# in each dimension:
-#   DIS:   [Q^2, x]        (2 dimensions)
-#   SIA:   [Q^2, z]        (2 dimensions)
-#   SIDIS: [Q^2, x, z]     (3 dimensions)
-Bins:
-  - lower: [10.0, 0.001]
-    upper: [100.0, 0.01]
-  - lower: [100.0, 0.01]
-    upper: [1000.0, 0.1]
+# Kinematic points. Each entry is a coordinate tuple:
+#   DIS/SIA:  [Q^2, x]              — fully pointwise
+#   SIDIS:    [Q^2, x, z_lo, z_hi]  — Q^2 and x are pointwise; z is an integration range
+Points:
+  - [10.0, 0.001]
+  - [100.0, 0.01]
 
-# Bin normalisation factors (one per bin).
-Normalizations: [1.0, 1.0]
+# Bin normalisation factors (one per bin). Optional — defaults to 1.0 per bin.
+# Normalizations: [1.0, 1.0]
+
+# Legacy alternative to Points (still accepted for backward compatibility).
+# Each bin is defined by lower and upper edges in each dimension:
+#   DIS/SIA:  [Q^2, x]     (2 dimensions)
+#   SIDIS:    [Q^2, x, z]  (3 dimensions)
+# The Q^2 node is taken as the geometric centre sqrt(Q^2_lo * Q^2_hi).
+# Bins:
+#   - lower: [10.0, 0.001]
+#     upper: [100.0, 0.01]
 ```
 
 #### DIS example
 
-A DIS \(F_2\) grid up to NNLO with two \((Q^2, x)\) bins.
+A DIS \(F_2\) grid up to NNLO at two \((Q^2, x)\) points.
 
 ```yaml
 Process: DIS
@@ -497,13 +426,9 @@ Orders:
   - [1, 0, 0, 0, 0]
   - [2, 0, 0, 0, 0]
 
-Bins:
-  - lower: [10.0, 0.001]
-    upper: [100.0, 0.01]
-  - lower: [100.0, 0.01]
-    upper: [1000.0, 0.1]
-
-Normalizations: [1.0, 1.0]
+Points:
+  - [10.0,   0.001]
+  - [1000.0, 0.1]
 ```
 
 #### SIA example
@@ -525,19 +450,16 @@ Orders:
   - [1, 0, 0, 0, 0]
   - [2, 0, 0, 0, 0]
 
-Bins:
-  - lower: [10.0, 0.2]
-    upper: [100.0, 0.4]
-  - lower: [100.0, 0.4]
-    upper: [1000.0, 0.6]
-
-Normalizations: [1.0, 1.0]
+Points:
+  - [10.0,   0.2]
+  - [1000.0, 0.6]
 ```
 
 #### SIDIS example
 
-A SIDIS \(F_T\) grid for proton→pion semi-inclusive production up to NLO. Bins are
-three-dimensional \((Q^2, x, z)\) and two convolution types are required (PDF and FF):
+A SIDIS \(F_T\) grid for proton→pion semi-inclusive production up to NLO. Each point
+specifies \((Q^2, x)\) exactly and a \(z\) integration range \([z_\mathrm{lo},
+z_\mathrm{hi}]\). Two convolution types are required (PDF and FF):
 
 ```yaml
 Process: SIDIS
@@ -551,21 +473,11 @@ Orders:
   - [0, 0, 0, 0, 0]   # LO
   - [1, 0, 0, 0, 0]   # NLO
 
-Bins:
-  - lower: [10.0, 0.001, 0.2]
-    upper: [100.0, 0.01, 0.4]
-  - lower: [100.0, 0.01, 0.4]
-    upper: [1000.0, 0.1, 0.6]
-
-Normalizations: [1.0, 1.0]
+# [Q^2, x, z_lo, z_hi] — Q^2 and x are pointwise; z is an integration range.
+Points:
+  - [10.0,   0.001, 0.2, 0.4]
+  - [1000.0, 0.1,   0.4, 0.6]
 ```
-
-!!! note "Operator YAML for SIDIS"
-    The snippet above is only the **grid** card. For APFEL++-consistent BSF-style
-    SIDIS (recommended for new physics grids), add the `sidis_*` block from
-    [Operator card: SIDIS-only settings](#sidis-operator-card) to the **operator**
-    YAML you pass to `build_grid()`. Legacy tests may keep a plain operator card
-    and inherit C++ defaults.
 
 #### SIDIS NNLO example
 
@@ -586,18 +498,10 @@ Orders:
   - [1, 0, 0, 0, 0]   # NLO
   - [2, 0, 0, 0, 0]   # NNLO (exact, arXiv:2401.16281)
 
-Bins:
-  - lower: [10.0, 0.001, 0.2]
-    upper: [100.0, 0.01, 0.4]
-  - lower: [100.0, 0.01, 0.4]
-    upper: [1000.0, 0.1, 0.6]
-
-Normalizations: [1.0, 1.0]
+Points:
+  - [10.0,   0.001, 0.2, 0.4]
+  - [1000.0, 0.1,   0.4, 0.6]
 ```
-
-!!! note "Operator YAML for SIDIS"
-    Add the recommended `sidis_*` fields on the **operator** card when you need
-    BSF-aligned tabulation; see [Operator card: SIDIS-only settings](#sidis-operator-card).
 
 !!! note
     The NNLO SIDIS coefficient functions are computed exactly from the full 2D
@@ -624,13 +528,9 @@ Orders:
   - [0, 0, 0, 0, 0]
   - [1, 0, 0, 0, 0]
 
-Bins:
-  - lower: [10.0, 0.001]
-    upper: [100.0, 0.01]
-  - lower: [100.0, 0.01]
-    upper: [1000.0, 0.1]
-
-Normalizations: [1.0, 1.0]
+Points:
+  - [10.0,   0.001]
+  - [1000.0, 0.1]
 ```
 
 #### Polarized SIDIS example
@@ -651,18 +551,10 @@ Orders:
   - [0, 0, 0, 0, 0]
   - [1, 0, 0, 0, 0]
 
-Bins:
-  - lower: [10.0, 0.001, 0.2]
-    upper: [100.0, 0.01, 0.4]
-  - lower: [100.0, 0.01, 0.4]
-    upper: [1000.0, 0.1, 0.6]
-
-Normalizations: [1.0, 1.0]
+Points:
+  - [10.0,   0.001, 0.2, 0.4]
+  - [1000.0, 0.1,   0.4, 0.6]
 ```
-
-!!! note "Operator YAML for polarized SIDIS"
-    Use the [SIDIS operator-card settings](#sidis-operator-card) on the operator
-    YAML when you need BSF-aligned \(G_1\) grids comparable to APFEL++.
 
 #### FFN DIS example
 
@@ -685,13 +577,9 @@ Orders:
   - [1, 0, 0, 0, 0]
   - [2, 0, 0, 0, 0]
 
-Bins:
-  - lower: [10.0, 0.001]
-    upper: [100.0, 0.01]
-  - lower: [100.0, 0.01]
-    upper: [1000.0, 0.1]
-
-Normalizations: [1.0, 1.0]
+Points:
+  - [10.0,   0.001]
+  - [1000.0, 0.1]
 ```
 
 #### FONLL DIS example
@@ -713,13 +601,9 @@ Orders:
   - [1, 0, 0, 0, 0]
   - [2, 0, 0, 0, 0]
 
-Bins:
-  - lower: [10.0, 0.001]
-    upper: [100.0, 0.01]
-  - lower: [100.0, 0.01]
-    upper: [1000.0, 0.1]
-
-Normalizations: [1.0, 1.0]
+Points:
+  - [10.0,   0.001]
+  - [1000.0, 0.1]
 ```
 
 #### CC DIS example
@@ -742,13 +626,9 @@ Orders:
   - [1, 0, 0, 0, 0]
   - [2, 0, 0, 0, 0]
 
-Bins:
-  - lower: [10.0, 0.001]
-    upper: [100.0, 0.01]
-  - lower: [100.0, 0.01]
-    upper: [1000.0, 0.1]
-
-Normalizations: [1.0, 1.0]
+Points:
+  - [10.0,   0.001]
+  - [1000.0, 0.1]
 ```
 
 The theory card should include a `CKM` field with 9 squared CKM matrix elements
@@ -815,11 +695,8 @@ Orders:
   - [2, 0, 1, 0, 0]   # NNLO × ln ξ_R²
   - [2, 0, 2, 0, 0]   # NNLO × ln² ξ_R²
 
-Bins:
-  - lower: [10.0, 0.001]
-    upper: [100.0, 0.01]
-
-Normalizations: [1.0]
+Points:
+  - [10.0, 0.001]
 ```
 
 The six-subgrid grid can then be convoluted at any \(\xi_R\) by passing a non-unity
@@ -905,64 +782,56 @@ The grid nodes are defined automatically:
   the `xgrid` definition in the operator card. This ensures consistency between the
   coefficient function grid and any subsequent evolution step.
 
-- **\(Q^2\) nodes (DIS and SIA)**: Built inside `build_grid()` with **fixed legacy rules**
-  that do **not** read `sidis_q2_*` from the operator card: collect each bin’s \(Q^2\)
-  edges, insert three geometrically spaced interior points between edges (per bin
-  interval), and add threshold \(Q^2 = m_q^2\) for flavours whose thresholds lie in the
-  global \(Q^2\) range. This keeps DIS/SIA grids stable regardless of SIDIS settings.
+- **\(Q^2\) nodes (DIS and SIA)**: Each bin contributes exactly **one** \(Q^2\) node,
+  taken from the `Points` entry directly. All coefficient functions are evaluated at
+  that single \(Q^2\) value, and the subgrid has shape `[1, n_x]`.
 
-- **\(Q^2\) nodes (SIDIS)**: Built in `build_grid_sidis()` from the **operator card**
-  fields `sidis_q2_n_intermediate`, `sidis_q2_include_thresholds`, and
-  `sidis_q2_use_bin_centers_only` (defaults are legacy-style unless you override them;
-  see [Operator card: SIDIS-only settings](#sidis-operator-card)). When
-  `sidis_q2_use_bin_centers_only: true`, only one \(Q^2\) per bin enters the global list
-  (geometric centre), and the fill keeps a single active slice per bin to avoid
-  double-counting when PineAPPL sums the \(Q^2\) axis.
+- **\(Q^2\) nodes (SIDIS)**: Same pointwise strategy — each bin contributes exactly one
+  \(Q^2\) node equal to the \(Q^2\) coordinate from the `Points` entry (geometric centre
+  \(\sqrt{Q^2_\mathrm{lo} \cdot Q^2_\mathrm{hi}}\) when the old `Bins` format is used).
+  The subgrid has shape `[1, n_x, n_z]`.
 
 #### Subgrid layout
 
 ##### DIS and SIA
 
 Each subgrid (one per combination of bin, perturbative order, and channel) is a
-two-dimensional array of shape `[n_Q2, n_x]`, stored in row-major order. The
-`node_values` vector concatenates the \(Q^2\) nodes followed by the \(x\)/\(z\) nodes:
+two-dimensional array of shape `[1, n_x]`, stored in row-major order. The
+`node_values` vector is:
 
 ```text
-node_values = [Q^2_0, ..., Q^2_{nq-1}, x_0, ..., x_{nx-1}]
+node_values = [Q^2, x_0, ..., x_{nx-1}]
 ```
 
-For each \(Q^2\) node, the coefficient function operator is evaluated at the bin's
-\(x\)/\(z\) centre (geometric mean of the bin edges) to produce a distribution on the
-APFEL++ joint grid, which populates one row of the subgrid.
+The coefficient function operator is evaluated at the bin's \(Q^2\) and \(x\) point to
+produce a distribution on the APFEL++ joint grid, which fills the single row.
 
 ##### SIDIS
 
-SIDIS subgrids are three-dimensional arrays of shape `[n_Q2, n_x, n_z]`, stored in
+SIDIS subgrids are three-dimensional arrays of shape `[1, n_x, n_z]`, stored in
 row-major order. The same APFEL++ joint grid is used for both the \(x\) (PDF) and
-\(z\) (FF) dimensions. The `node_values` vector concatenates three segments:
+\(z\) (FF) dimensions. The `node_values` vector is:
 
 ```text
-node_values = [Q^2_0, ..., Q^2_{nq-1}, x_0, ..., x_{nx-1}, z_0, ..., z_{nz-1}]
+node_values = [Q^2, x_0, ..., x_{nx-1}, z_0, ..., z_{nz-1}]
 ```
 
 Each coefficient function is stored as a `DoubleOperator` — a full 2D kernel on the
-\((x, z)\) grid. For each \(Q^2\) node, the 2D operator is evaluated as a column at
-the bin's \((x, z)\) centre (geometric mean of the bin edges) using
-`eval_double_op_column()`, which applies 2D Lagrange interpolation weights. The
-subgrid entry at `[iq, ix, iz]` accumulates the weighted kernel:
+\((x, z)\) grid. The 2D operator is evaluated at the bin's \((Q^2, x)\) point and over
+the bin's \(z\) range \([z_\mathrm{lo}, z_\mathrm{hi}]\) using
+`eval_double_op_column()`. The subgrid entry at `[ix, iz]` accumulates the weighted
+kernel:
 
 ```text
-subgrid[iq, ix, iz] = fill_weight * W(x[ix], z[iz]; x_centre, z_centre)
+subgrid[ix, iz] = fill_weight * W(x[ix], z[iz]; x_point, z_centre)
 ```
 
 where `fill_weight` is the per-channel electroweak factor (\(e_q^2\), \(\sum_i e_i^2\),
 or \(e_a e_b\) depending on channel type) and \(W\) is the 2D interpolation kernel
-extracted from the `DoubleOperator`. The \(z\) direction may accumulate contributions
-from a single centre (\(z\) point bin), from APFEL++-style interpolation weights over
-joint-grid nodes (`sidis_mode: bsf_exact` and extended \(z\) bins), or from internal
-Gauss–Legendre quadrature on sub-intervals (`sidis_mode: legacy`); see
-[SIDIS operator-card settings](#sidis-operator-card). The same DoubleOperator column
-machinery is used for all perturbative orders (LO, NLO, NNLO).
+extracted from the `DoubleOperator`. The \(z\) direction accumulates contributions
+from APFEL++-style interpolation weights over joint-grid nodes (`sidis_mode: bsf_exact`)
+or from internal Gauss–Legendre quadrature on the \(z\) range (`sidis_mode: legacy`).
+The same DoubleOperator column machinery is used for all perturbative orders (LO, NLO, NNLO).
 
 ### Programmatic grid definition
 
@@ -980,9 +849,10 @@ def.convolution_types  = {PINEAPPL_CONV_TYPE_UNPOL_PDF};
 
 def.orders = {{0, 0, 0, 0, 0}, {1, 0, 0, 0, 0}, {2, 0, 0, 0, 0}};  // LO + NLO + NNLO
 // channels are auto-derived by build_grid() — no need to set them
+// Pointwise bins: lower == upper == {Q^2, x}
 def.bins = {
-    {{10.0, 0.001}, {100.0, 0.01}},
-    {{100.0, 0.01}, {1000.0, 0.1}},
+    {{10.0,   0.001}, {10.0,   0.001}},
+    {{1000.0, 0.1},   {1000.0, 0.1}},
 };
 def.normalizations = {1.0, 1.0};
 
