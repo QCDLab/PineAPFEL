@@ -162,15 +162,7 @@ PYBIND11_MODULE(_pineapfel, m) {
         .def_readwrite("tabulation", &pineapfel::OperatorCard::tabulation)
         .def_readwrite("xi", &pineapfel::OperatorCard::xi)
         .def_readwrite("sidis_mode", &pineapfel::OperatorCard::sidis_mode)
-        .def_readwrite("sidis_int_eps", &pineapfel::OperatorCard::sidis_int_eps)
-        .def_readwrite("sidis_q2_n_intermediate",
-            &pineapfel::OperatorCard::sidis_q2_n_intermediate)
-        .def_readwrite("sidis_q2_include_thresholds",
-            &pineapfel::OperatorCard::sidis_q2_include_thresholds)
-        .def_readwrite("sidis_q2_use_bin_centers_only",
-            &pineapfel::OperatorCard::sidis_q2_use_bin_centers_only)
-        .def_readwrite("sidis_z_quad_subdivisions",
-            &pineapfel::OperatorCard::sidis_z_quad_subdivisions);
+        .def_readwrite("sidis_int_eps", &pineapfel::OperatorCard::sidis_int_eps);
 
     py::class_<pineapfel::GridDef>(m, "GridDef")
         .def(py::init<>())

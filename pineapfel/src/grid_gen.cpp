@@ -258,16 +258,36 @@ GridDef load_grid_def(const std::string &path) {
         }
     }
 
-    // Bins
-    for (const auto &bin : config["Bins"]) {
-        BinDef bdef;
-        bdef.lower = bin["lower"].as<std::vector<double>>();
-        bdef.upper = bin["upper"].as<std::vector<double>>();
-        def.bins.push_back(std::move(bdef));
+    // Bins (legacy) or Points (new pointwise format)
+    if (config["Points"]) {
+        for (const auto &pt : config["Points"]) {
+            auto   coords = pt.as<std::vector<double>>();
+            BinDef bdef;
+            if (coords.size() == 4) {
+                // SIDIS: [Q2, x, z_lo, z_hi] — Q2 and x pointwise, z is range
+                bdef.lower = {coords[0], coords[1], coords[2]};
+                bdef.upper = {coords[0], coords[1], coords[3]};
+            } else {
+                // DIS/SIA: [Q2, x] — fully pointwise
+                bdef.lower = coords;
+                bdef.upper = coords;
+            }
+            def.bins.push_back(std::move(bdef));
+        }
+    } else {
+        for (const auto &bin : config["Bins"]) {
+            BinDef bdef;
+            bdef.lower = bin["lower"].as<std::vector<double>>();
+            bdef.upper = bin["upper"].as<std::vector<double>>();
+            def.bins.push_back(std::move(bdef));
+        }
     }
 
-    // Normalizations
-    def.normalizations = config["Normalizations"].as<std::vector<double>>();
+    // Normalizations (optional — defaults to 1.0 per bin)
+    if (config["Normalizations"])
+        def.normalizations = config["Normalizations"].as<std::vector<double>>();
+    else
+        def.normalizations.assign(def.bins.size(), 1.0);
 
     return def;
 }

@@ -10,16 +10,9 @@ Orders:
   - [1, 0, 0, 0, 0]
   - [2, 0, 0, 0, 0]
 
-# 3 log-spaced x-bins at fixed Q^2 ~10 GeV^2 and z in [0.2, 0.3].
-# Reduced from 10 to 3 bins to cut build_grid and reference computation time.
-# Q range is kept very narrow so all bins share the same nf and alpha_s.
-# x and z values are within the APFEL++ interpolation grid [1e-5, 1].
-Bins:
-  - lower: [10.0, 1.000e-4, 0.2]
-    upper: [10.001, 2.154e-4, 0.3]
-  - lower: [10.0, 2.154e-3, 0.2]
-    upper: [10.001, 4.642e-3, 0.3]
-  - lower: [10.0, 1.000e-1, 0.2]
-    upper: [10.001, 4.000e-1, 0.3]
-
-Normalizations: [1.0, 1.0, 1.0]
+# 3 log-spaced x points at Q^2=10 GeV^2 and z in [0.2, 0.3].
+# Points: [Q2, x, z_lo, z_hi] — Q2 and x are pointwise, z is an integration range.
+Points:
+  - [10.0, 1.468e-4, 0.2, 0.3]
+  - [10.0, 3.163e-3, 0.2, 0.3]
+  - [10.0, 2.000e-1, 0.2, 0.3]

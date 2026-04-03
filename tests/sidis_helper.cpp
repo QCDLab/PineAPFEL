@@ -151,7 +151,7 @@ static double eval_dop_at(const apfel::Grid &g,
 std::vector<double> compute_sidis_reference(const apfel::Grid &g,
     const apfel::SidisNNLOObjects                             &sobj,
     const std::vector<double>                                 &thresholds,
-    const std::vector<double>                                 &q2_nodes,
+    const std::vector<double>                                 &bin_q2,
     const std::vector<std::vector<double>>                    &bin_x_bounds,
     const std::vector<std::vector<double>>                    &bin_z_bounds,
     const std::vector<double> & /*charges_dummy*/,
@@ -162,8 +162,8 @@ std::vector<double> compute_sidis_reference(const apfel::Grid &g,
 
     const apfel::LagrangeInterpolator li{g};
 
-    double                            q2_max_val = 0;
-    for (double q2 : q2_nodes) q2_max_val = std::max(q2_max_val, q2);
+    double                            q2_max_val =
+        *std::max_element(bin_q2.begin(), bin_q2.end());
     int  nf_max   = apfel::NF(std::sqrt(q2_max_val), thresholds);
 
     auto channels = pineapfel::derive_channels(pineapfel::ProcessType::SIDIS,
@@ -189,7 +189,8 @@ std::vector<double> compute_sidis_reference(const apfel::Grid &g,
         const double z_lo = bin_z_bounds[ibin][0];
         const double z_hi = bin_z_bounds[ibin][1];
 
-        for (double q2 : q2_nodes) {
+        {
+            double q2     = bin_q2[ibin];
             double Q      = std::sqrt(q2);
             int    nf     = apfel::NF(Q, thresholds);
             double as_val = alphas_func(Q);
@@ -244,7 +245,7 @@ std::vector<double> compute_sidis_reference(const apfel::Grid &g,
 std::vector<double> compute_sidis_pol_reference(const apfel::Grid &g,
     const apfel::SidisNNLOObjects                                 &sobj,
     const std::vector<double>                                     &thresholds,
-    const std::vector<double>                                     &q2_nodes,
+    const std::vector<double>                                     &bin_q2,
     const std::vector<std::vector<double>>                        &bin_x_bounds,
     const std::vector<std::vector<double>>                        &bin_z_bounds,
     int                                                            max_alpha_s,
@@ -254,8 +255,8 @@ std::vector<double> compute_sidis_pol_reference(const apfel::Grid &g,
 
     const apfel::LagrangeInterpolator li{g};
 
-    double                            q2_max_val = 0;
-    for (double q2 : q2_nodes) q2_max_val = std::max(q2_max_val, q2);
+    double                            q2_max_val =
+        *std::max_element(bin_q2.begin(), bin_q2.end());
     int  nf_max   = apfel::NF(std::sqrt(q2_max_val), thresholds);
 
     auto channels = pineapfel::derive_channels(pineapfel::ProcessType::SIDIS,
@@ -281,7 +282,8 @@ std::vector<double> compute_sidis_pol_reference(const apfel::Grid &g,
         const double z_lo = bin_z_bounds[ibin][0];
         const double z_hi = bin_z_bounds[ibin][1];
 
-        for (double q2 : q2_nodes) {
+        {
+            double q2     = bin_q2[ibin];
             double Q      = std::sqrt(q2);
             int    nf     = apfel::NF(Q, thresholds);
             double as_val = alphas_func(Q);
@@ -340,7 +342,7 @@ std::vector<double> compute_sidis_nnlo_reference(const apfel::Grid &g,
     const apfel::SidisNNLOObjects                                  &sobj,
     const std::vector<double>                                      &thresholds,
     int                                                             nf_max,
-    const std::vector<double>                                      &q2_nodes,
+    const std::vector<double>                                      &bin_q2,
     const std::vector<std::vector<double>> &bin_x_bounds,
     const std::vector<std::vector<double>> &bin_z_bounds,
     std::function<double(int, double)>      toy_f,
@@ -359,7 +361,8 @@ std::vector<double> compute_sidis_nnlo_reference(const apfel::Grid &g,
         const double z_lo = bin_z_bounds[ibin][0];
         const double z_hi = bin_z_bounds[ibin][1];
 
-        for (double q2 : q2_nodes) {
+        {
+            double q2     = bin_q2[ibin];
             double Q      = std::sqrt(q2);
             int    nf     = apfel::NF(Q, thresholds);
             double as_val = alphas_func(Q);
@@ -557,7 +560,7 @@ std::vector<double> compute_sidis_g1_nnlo_reference(const apfel::Grid &g,
     const apfel::SidisNNLOObjects                                     &sobj,
     const std::vector<double>              &thresholds,
     int                                     nf_max,
-    const std::vector<double>              &q2_nodes,
+    const std::vector<double>              &bin_q2,
     const std::vector<std::vector<double>> &bin_x_bounds,
     const std::vector<std::vector<double>> &bin_z_bounds,
     std::function<double(int, double)>      toy_f,
@@ -576,7 +579,8 @@ std::vector<double> compute_sidis_g1_nnlo_reference(const apfel::Grid &g,
         const double z_lo = bin_z_bounds[ibin][0];
         const double z_hi = bin_z_bounds[ibin][1];
 
-        for (double q2 : q2_nodes) {
+        {
+            double q2     = bin_q2[ibin];
             double Q      = std::sqrt(q2);
             int    nf     = apfel::NF(Q, thresholds);
             double as_val = alphas_func(Q);

@@ -11,7 +11,6 @@
 #include <iostream>
 #include <map>
 #include <memory>
-#include <set>
 #include <vector>
 
 // ----------------------------------------------------------------
@@ -87,33 +86,6 @@ static apfel::Operator build_channel_operator(
     return e_q_sq * CNS + (sum_ch / 6.0) * (CS - CNS);
 }
 
-// ----------------------------------------------------------------
-// Reproduce derive_q2_nodes from fill.cpp
-// ----------------------------------------------------------------
-static std::vector<double> derive_q2_nodes(
-    const std::vector<pineapfel::BinDef> &bins,
-    const std::vector<double>            &thresholds,
-    int                                   n_intermediate = 3) {
-    std::set<double> q2_set;
-    for (const auto &bin : bins) {
-        double q2_lo = bin.lower[0], q2_hi = bin.upper[0];
-        q2_set.insert(q2_lo);
-        q2_set.insert(q2_hi);
-        if (n_intermediate > 0) {
-            double log_lo = std::log(q2_lo), log_hi = std::log(q2_hi);
-            for (int i = 1; i <= n_intermediate; i++) {
-                double frac = static_cast<double>(i) / (n_intermediate + 1);
-                q2_set.insert(std::exp(log_lo + frac * (log_hi - log_lo)));
-            }
-        }
-    }
-    double q2_min = *q2_set.begin(), q2_max = *q2_set.rbegin();
-    for (double thr : thresholds) {
-        double q2_thr = thr * thr;
-        if (q2_thr > q2_min && q2_thr < q2_max) q2_set.insert(q2_thr);
-    }
-    return std::vector<double>(q2_set.begin(), q2_set.end());
-}
 
 // ================================================================
 int main() {
@@ -675,8 +647,10 @@ int main() {
             pineapfel::build_grid(sidis_grid_def, sidis_theory, sidis_op_card);
         std::size_t sidis_nbins = pineappl_grid_bin_count(sidis_grid);
 
-        auto        sidis_q2_nodes =
-            derive_q2_nodes(sidis_grid_def.bins, sidis_theory.quark_thresholds);
+        // Pointwise: one Q² per bin
+        std::vector<double> sidis_bin_q2;
+        for (const auto &bin : sidis_grid_def.bins)
+            sidis_bin_q2.push_back(std::sqrt(bin.lower[0] * bin.upper[0]));
 
         // PineAPPL convolution with 2 convolution functions (PDF and FF).
         // Both use the same toy_f functional form.
@@ -709,7 +683,7 @@ int main() {
         auto ref_vals = compute_sidis_reference(sidis_g,
             sidis_sobj,
             sidis_theory.quark_thresholds,
-            sidis_q2_nodes,
+            sidis_bin_q2,
             bin_x_bounds,
             bin_z_bounds,
             {},
@@ -858,8 +832,10 @@ int main() {
                 sidis_op_card);
         std::size_t pol_sidis_nbins = pineappl_grid_bin_count(pol_sidis_grid);
 
-        auto pol_sidis_q2_nodes     = derive_q2_nodes(pol_sidis_grid_def.bins,
-            pol_sidis_theory.quark_thresholds);
+        // Pointwise: one Q² per bin
+        std::vector<double> pol_sidis_bin_q2;
+        for (const auto &bin : pol_sidis_grid_def.bins)
+            pol_sidis_bin_q2.push_back(bin.lower[0]);
 
         // PineAPPL convolution with 2 convolution functions (POL_PDF ⊗
         // UNPOL_FF)
@@ -892,7 +868,7 @@ int main() {
         auto pol_ref_vals = compute_sidis_pol_reference(sidis_g,
             sidis_sobj,
             pol_sidis_theory.quark_thresholds,
-            pol_sidis_q2_nodes,
+            pol_sidis_bin_q2,
             pol_bin_x_bounds,
             pol_bin_z_bounds,
             1, // max_alpha_s = 1 (LO + NLO)
@@ -1231,8 +1207,10 @@ int main() {
         std::size_t nnlo_nbins = pineappl_grid_bin_count(nnlo_grid);
         std::size_t nnlo_nords = pineappl_grid_order_count(nnlo_grid);
 
-        auto        nnlo_q2_nodes =
-            derive_q2_nodes(nnlo_grid_def.bins, nnlo_theory.quark_thresholds);
+        // Pointwise: one Q² per bin
+        std::vector<double> nnlo_q2_nodes;
+        for (const auto &bin : nnlo_grid_def.bins)
+            nnlo_q2_nodes.push_back(bin.lower[0]);
 
         // PineAPPL convolution — NNLO order only (index 2).
         auto nnlo_mask = std::make_unique<bool[]>(nnlo_nords);

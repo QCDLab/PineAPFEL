@@ -225,46 +225,6 @@ static std::vector<WeightedSFInit> select_initializers(ProcessType process,
     throw std::runtime_error("select_initializers: unhandled mass scheme");
 }
 
-// Collect unique Q^2 nodes from bin edges with geometric intermediate points.
-static std::vector<double> derive_q2_nodes(const std::vector<BinDef> &bins,
-    const std::vector<double> &thresholds,
-    int                        n_intermediate       = 3,
-    bool                       include_thresholds   = true,
-    bool                       use_bin_centers_only = false) {
-    std::set<double> q2_set;
-
-    for (const auto &bin : bins) {
-        double q2_lo = bin.lower[0];
-        double q2_hi = bin.upper[0];
-        if (use_bin_centers_only) {
-            q2_set.insert(std::sqrt(q2_lo * q2_hi));
-            continue;
-        }
-
-        q2_set.insert(q2_lo);
-        q2_set.insert(q2_hi);
-
-        if (n_intermediate > 0) {
-            double log_lo = std::log(q2_lo);
-            double log_hi = std::log(q2_hi);
-            for (int i = 1; i <= n_intermediate; i++) {
-                double frac = static_cast<double>(i) / (n_intermediate + 1);
-                q2_set.insert(std::exp(log_lo + frac * (log_hi - log_lo)));
-            }
-        }
-    }
-
-    if (include_thresholds && !q2_set.empty()) {
-        double q2_min = *q2_set.begin();
-        double q2_max = *q2_set.rbegin();
-        for (double thr : thresholds) {
-            double q2_thr = thr * thr;
-            if (q2_thr > q2_min && q2_thr < q2_max) q2_set.insert(q2_thr);
-        }
-    }
-
-    return std::vector<double>(q2_set.begin(), q2_set.end());
-}
 
 // Evaluate a DoubleOperator at continuous output point (x_c, z_c) and return
 // the 2D kernel column w[jx * nj2 + jz] for all joint-grid input nodes (jx,
@@ -663,26 +623,22 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
     const std::size_t   nx       = x_nodes.size(); // physical x nodes
     const std::size_t   nz       = z_nodes.size(); // physical z nodes
 
-    std::vector<double> q2_nodes = derive_q2_nodes(grid_def.bins,
-        theory.quark_thresholds,
-        op_card.sidis_q2_n_intermediate,
-        op_card.sidis_q2_include_thresholds,
-        op_card.sidis_q2_use_bin_centers_only);
-    const std::size_t   nq       = q2_nodes.size();
+    // Pointwise Q²: each bin carries exactly one Q² node at its geometric centre.
+    // For the Points format lower[0]==upper[0], so sqrt gives the same value.
+    // Collect unique Q² values to avoid redundant APFEL++ calls.
+    std::vector<double> bin_q2c(grid_def.bins.size());
+    std::set<double>    unique_q2c_set;
+    for (std::size_t ibin = 0; ibin < grid_def.bins.size(); ibin++) {
+        bin_q2c[ibin] = std::sqrt(grid_def.bins[ibin].lower[0] *
+                                  grid_def.bins[ibin].upper[0]);
+        unique_q2c_set.insert(bin_q2c[ibin]);
+    }
+    std::vector<double> unique_q2c(unique_q2c_set.begin(), unique_q2c_set.end());
 
-    std::cout << "  Grid nodes: " << nq << " Q^2 x " << nx << " x x " << nz
-              << " z points" << std::endl;
+    std::cout << "  Grid nodes: 1 (pointwise) Q^2 x " << nx << " x x " << nz
+              << " z points per bin" << std::endl;
 
-    // node_values: [q2_0..q2_{nq-1}, x_0..x_{nx-1}, z_0..z_{nz-1}]
-    std::vector<double> node_values;
-    node_values.reserve(nq + nx + nz);
-    node_values.insert(node_values.end(), q2_nodes.begin(), q2_nodes.end());
-    node_values.insert(node_values.end(), x_nodes.begin(), x_nodes.end());
-    node_values.insert(node_values.end(), z_nodes.begin(), z_nodes.end());
-
-    std::vector<std::size_t> shape = {nq, nx, nz};
-
-    // 5. Precompute nf per Q² node.
+    // 5. Precompute nf per unique Q² value.
     // IMPORTANT:
     // APFEL++ sidisbuilder uses fixed electromagnetic charge factors QCh2
     // in BuildChannels (not ElectroWeakCharges(Q,false)).
@@ -691,10 +647,11 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
     struct Q2DataSidis {
         int nf;
     };
-    std::vector<Q2DataSidis> q2_data(nq);
-    for (std::size_t iq = 0; iq < nq; iq++) {
-        double Q       = std::sqrt(q2_nodes[iq]);
-        q2_data[iq].nf = apfel::NF(Q, theory.quark_thresholds);
+    std::map<double, Q2DataSidis> q2_data_map;
+    for (double q2_c : unique_q2c) {
+        Q2DataSidis qd;
+        qd.nf          = apfel::NF(std::sqrt(q2_c), theory.quark_thresholds);
+        q2_data_map[q2_c] = qd;
     }
 
     // Lagrange interpolators for NNLO DoubleOperator evaluation.
@@ -756,30 +713,24 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
             if (type_id < 0) continue;
 
             for (std::size_t ibin = 0; ibin < grid_def.bins.size(); ibin++) {
-                // Bin centers: dim 0=Q², dim 1=x, dim 2=z
-                double       x_lo         = grid_def.bins[ibin].lower[1];
-                double       x_hi         = grid_def.bins[ibin].upper[1];
-                double       x_center     = std::sqrt(x_lo * x_hi);
+                // Bin kinematics: Q2 and x are geometric centers,
+                // z is an integration range [z_lo, z_hi].
+                double     q2_c       = bin_q2c[ibin];
+                double     x_center   = std::sqrt(grid_def.bins[ibin].lower[1] *
+                                                  grid_def.bins[ibin].upper[1]);
+                double     z_lo       = grid_def.bins[ibin].lower[2];
+                double     z_hi       = grid_def.bins[ibin].upper[2];
+                const bool z_point_mode = (std::abs(z_hi - z_lo) < 1e-15);
 
-                double       z_lo         = grid_def.bins[ibin].lower[2];
-                double       z_hi         = grid_def.bins[ibin].upper[2];
-                const bool   z_point_mode = (std::abs(z_hi - z_lo) < 1e-15);
+                // Per-bin node values: [q2_c, x_0..x_{nx-1}, z_0..z_{nz-1}]
+                std::vector<double> node_vals_bin;
+                node_vals_bin.reserve(1 + nx + nz);
+                node_vals_bin.push_back(q2_c);
+                node_vals_bin.insert(node_vals_bin.end(), x_nodes.begin(), x_nodes.end());
+                node_vals_bin.insert(node_vals_bin.end(), z_nodes.begin(), z_nodes.end());
+                std::vector<std::size_t> shape_bin = {1, nx, nz};
 
-                // When `sidis_q2_use_bin_centers_only` is on, `derive_q2_nodes`
-                // inserts exactly one Q² per bin (sqrt(lower·upper)), merged
-                // into a global list.  PineAPPL sums the full Q² axis at
-                // convolution time, so every slice must be zero except the one
-                // matching this bin's center — otherwise each bin picks up
-                // every other bin's scale (fatal for multi-bin point grids).
-                // With the default tabulation (lo/hi + intermediates), centers
-                // need not appear in `q2_nodes`; keep the legacy fill-all-iq
-                // path there for backward compatibility.
-                const double q2_bin_c = std::sqrt(grid_def.bins[ibin].lower[0] *
-                                                  grid_def.bins[ibin].upper[0]);
-                const double q2_match_eps =
-                    1e-9 * std::max(std::abs(q2_bin_c), 1.0);
-
-                std::vector<double> subgrid(nq * nx * nz, 0.0);
+                std::vector<double> subgrid(nx * nz, 0.0);
                 int                 z_int_lo = 0, z_int_hi = 0;
                 std::vector<double> z_int_w;
                 if (use_bsf_exact) {
@@ -803,11 +754,8 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                 // interpolation range. External z is handled by quadrature on
                 // [z_lo, z_hi]; individual points must lie on the joint grid.
                 if (x_center >= x_nodes.front() && x_center <= x_nodes.back()) {
-                    for (std::size_t iq = 0; iq < nq; iq++) {
-                        if (op_card.sidis_q2_use_bin_centers_only &&
-                            std::abs(q2_nodes[iq] - q2_bin_c) > q2_match_eps)
-                            continue;
-                        int                     nf          = q2_data[iq].nf;
+                    {
+                        int                     nf          = q2_data_map.at(q2_c).nf;
                         static constexpr double QCh2[6]     = {1. / 9.,
                                 4. / 9.,
                                 1. / 9.,
@@ -876,8 +824,7 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                                         const std::size_t iz =
                                             phys_z_indices[iiz];
                                         const double z_node = z_nodes[iiz];
-                                        subgrid[iq * nx * nz + iix * nz +
-                                                iiz] +=
+                                        subgrid[iix * nz + iiz] +=
                                             fill_weight * w[ix * nz_full + iz] *
                                             (x_node * z_node) / xz_denom;
                                     }
@@ -914,8 +861,7 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                                             const std::size_t iz =
                                                 phys_z_indices[iiz];
                                             const double z_node = z_nodes[iiz];
-                                            subgrid[iq * nx * nz + iix * nz +
-                                                    iiz] +=
+                                            subgrid[iix * nz + iiz] +=
                                                 fill_weight * int_w *
                                                 w[ix * nz_full + iz] *
                                                 (x_node * z_node) / xz_denom;
@@ -943,15 +889,13 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                                         const std::size_t iz =
                                             phys_z_indices[iiz];
                                         const double z_node = z_nodes[iiz];
-                                        subgrid[iq * nx * nz + iix * nz +
-                                                iiz] +=
+                                        subgrid[iix * nz + iiz] +=
                                             fill_weight * w[ix * nz_full + iz] *
                                             (x_node * z_node) / xz_denom;
                                     }
                                 }
                             } else {
-                                const int z_nsub =
-                                    op_card.sidis_z_quad_subdivisions;
+                                const int z_nsub = 1;
                                 for (int isub = 0; isub < z_nsub; isub++) {
                                     const double z_a = z_lo + (z_hi - z_lo) *
                                                                   (double)isub /
@@ -990,8 +934,7 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                                                     phys_z_indices[iiz];
                                                 const double z_node =
                                                     z_nodes[iiz];
-                                                subgrid[iq * nx * nz +
-                                                        iix * nz + iiz] +=
+                                                subgrid[iix * nz + iiz] +=
                                                     fill_weight * dz_w *
                                                     w[ix * nz_full + iz] *
                                                     (x_node * z_node) /
@@ -1005,7 +948,7 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                     }
                 }
 
-                set_subgrid(grid, ibin, iord, ich, node_values, subgrid, shape);
+                set_subgrid(grid, ibin, iord, ich, node_vals_bin, subgrid, shape_bin);
             }
         }
     }

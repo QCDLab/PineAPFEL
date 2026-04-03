@@ -93,24 +93,6 @@ OperatorCard load_operator_card(const std::string &path) {
 
     if (config["sidis_int_eps"])
         oc.sidis_int_eps = config["sidis_int_eps"].as<double>();
-    if (config["sidis_q2_n_intermediate"])
-        oc.sidis_q2_n_intermediate =
-            config["sidis_q2_n_intermediate"].as<int>();
-    if (config["sidis_q2_include_thresholds"])
-        oc.sidis_q2_include_thresholds =
-            config["sidis_q2_include_thresholds"].as<bool>();
-    if (config["sidis_q2_use_bin_centers_only"])
-        oc.sidis_q2_use_bin_centers_only =
-            config["sidis_q2_use_bin_centers_only"].as<bool>();
-    if (config["sidis_z_quad_subdivisions"])
-        oc.sidis_z_quad_subdivisions =
-            config["sidis_z_quad_subdivisions"].as<int>();
-
-    if (oc.sidis_q2_n_intermediate < 0)
-        throw std::runtime_error("sidis_q2_n_intermediate must be >= 0");
-    if (oc.sidis_z_quad_subdivisions < 1)
-        throw std::runtime_error("sidis_z_quad_subdivisions must be >= 1");
-
     return oc;
 }
 
