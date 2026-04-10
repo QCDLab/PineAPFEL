@@ -1,4 +1,5 @@
 #include <apfel/apfelxx.h>
+#include <apfel/betaqcd.h>
 #include <pineapfel/fill.h>
 #include <pineapfel/sidis_api.h>
 
@@ -10,6 +11,7 @@
 #include <numeric>
 #include <set>
 #include <stdexcept>
+#include <tuple>
 #include <vector>
 
 namespace pineapfel {
@@ -221,47 +223,6 @@ static std::vector<WeightedSFInit> select_initializers(ProcessType process,
     }
     }
     throw std::runtime_error("select_initializers: unhandled mass scheme");
-}
-
-// Collect unique Q^2 nodes from bin edges with geometric intermediate points.
-static std::vector<double> derive_q2_nodes(const std::vector<BinDef> &bins,
-    const std::vector<double> &thresholds,
-    int                        n_intermediate       = 3,
-    bool                       include_thresholds   = true,
-    bool                       use_bin_centers_only = false) {
-    std::set<double> q2_set;
-
-    for (const auto &bin : bins) {
-        double q2_lo = bin.lower[0];
-        double q2_hi = bin.upper[0];
-        if (use_bin_centers_only) {
-            q2_set.insert(std::sqrt(q2_lo * q2_hi));
-            continue;
-        }
-
-        q2_set.insert(q2_lo);
-        q2_set.insert(q2_hi);
-
-        if (n_intermediate > 0) {
-            double log_lo = std::log(q2_lo);
-            double log_hi = std::log(q2_hi);
-            for (int i = 1; i <= n_intermediate; i++) {
-                double frac = static_cast<double>(i) / (n_intermediate + 1);
-                q2_set.insert(std::exp(log_lo + frac * (log_hi - log_lo)));
-            }
-        }
-    }
-
-    if (include_thresholds && !q2_set.empty()) {
-        double q2_min = *q2_set.begin();
-        double q2_max = *q2_set.rbegin();
-        for (double thr : thresholds) {
-            double q2_thr = thr * thr;
-            if (q2_thr > q2_min && q2_thr < q2_max) q2_set.insert(q2_thr);
-        }
-    }
-
-    return std::vector<double>(q2_set.begin(), q2_set.end());
 }
 
 // Evaluate a DoubleOperator at continuous output point (x_c, z_c) and return
@@ -658,29 +619,26 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
             phys_z_indices.push_back(i);
         }
     }
-    const std::size_t   nx       = x_nodes.size(); // physical x nodes
-    const std::size_t   nz       = z_nodes.size(); // physical z nodes
+    const std::size_t   nx = x_nodes.size(); // physical x nodes
+    const std::size_t   nz = z_nodes.size(); // physical z nodes
 
-    std::vector<double> q2_nodes = derive_q2_nodes(grid_def.bins,
-        theory.quark_thresholds,
-        op_card.sidis_q2_n_intermediate,
-        op_card.sidis_q2_include_thresholds,
-        op_card.sidis_q2_use_bin_centers_only);
-    const std::size_t   nq       = q2_nodes.size();
+    // Pointwise Q²: each bin carries exactly one Q² node at its geometric
+    // centre. For the Points format lower[0]==upper[0], so sqrt gives the same
+    // value. Collect unique Q² values to avoid redundant APFEL++ calls.
+    std::vector<double> bin_q2c(grid_def.bins.size());
+    std::set<double>    unique_q2c_set;
+    for (std::size_t ibin = 0; ibin < grid_def.bins.size(); ibin++) {
+        bin_q2c[ibin] = std::sqrt(
+            grid_def.bins[ibin].lower[0] * grid_def.bins[ibin].upper[0]);
+        unique_q2c_set.insert(bin_q2c[ibin]);
+    }
+    std::vector<double> unique_q2c(unique_q2c_set.begin(),
+        unique_q2c_set.end());
 
-    std::cout << "  Grid nodes: " << nq << " Q^2 x " << nx << " x x " << nz
-              << " z points" << std::endl;
+    std::cout << "  Grid nodes: 1 (pointwise) Q^2 x " << nx << " x x " << nz
+              << " z points per bin" << std::endl;
 
-    // node_values: [q2_0..q2_{nq-1}, x_0..x_{nx-1}, z_0..z_{nz-1}]
-    std::vector<double> node_values;
-    node_values.reserve(nq + nx + nz);
-    node_values.insert(node_values.end(), q2_nodes.begin(), q2_nodes.end());
-    node_values.insert(node_values.end(), x_nodes.begin(), x_nodes.end());
-    node_values.insert(node_values.end(), z_nodes.begin(), z_nodes.end());
-
-    std::vector<std::size_t> shape = {nq, nx, nz};
-
-    // 5. Precompute nf per Q² node.
+    // 5. Precompute nf per unique Q² value.
     // IMPORTANT:
     // APFEL++ sidisbuilder uses fixed electromagnetic charge factors QCh2
     // in BuildChannels (not ElectroWeakCharges(Q,false)).
@@ -689,10 +647,11 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
     struct Q2DataSidis {
         int nf;
     };
-    std::vector<Q2DataSidis> q2_data(nq);
-    for (std::size_t iq = 0; iq < nq; iq++) {
-        double Q       = std::sqrt(q2_nodes[iq]);
-        q2_data[iq].nf = apfel::NF(Q, theory.quark_thresholds);
+    std::map<double, Q2DataSidis> q2_data_map;
+    for (double q2_c : unique_q2c) {
+        Q2DataSidis qd;
+        qd.nf             = apfel::NF(std::sqrt(q2_c), theory.quark_thresholds);
+        q2_data_map[q2_c] = qd;
     }
 
     // Lagrange interpolators for NNLO DoubleOperator evaluation.
@@ -754,32 +713,30 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
             if (type_id < 0) continue;
 
             for (std::size_t ibin = 0; ibin < grid_def.bins.size(); ibin++) {
-                // Bin centers: dim 0=Q², dim 1=x, dim 2=z
-                double       x_lo         = grid_def.bins[ibin].lower[1];
-                double       x_hi         = grid_def.bins[ibin].upper[1];
-                double       x_center     = std::sqrt(x_lo * x_hi);
+                // Bin kinematics: Q2 and x are geometric centers,
+                // z is an integration range [z_lo, z_hi].
+                double     q2_c     = bin_q2c[ibin];
+                double     x_center = std::sqrt(grid_def.bins[ibin].lower[1] *
+                                            grid_def.bins[ibin].upper[1]);
+                double     z_lo     = grid_def.bins[ibin].lower[2];
+                double     z_hi     = grid_def.bins[ibin].upper[2];
+                const bool z_point_mode = (std::abs(z_hi - z_lo) < 1e-15);
 
-                double       z_lo         = grid_def.bins[ibin].lower[2];
-                double       z_hi         = grid_def.bins[ibin].upper[2];
-                const bool   z_point_mode = (std::abs(z_hi - z_lo) < 1e-15);
+                // Per-bin node values: [q2_c, x_0..x_{nx-1}, z_0..z_{nz-1}]
+                std::vector<double> node_vals_bin;
+                node_vals_bin.reserve(1 + nx + nz);
+                node_vals_bin.push_back(q2_c);
+                node_vals_bin.insert(node_vals_bin.end(),
+                    x_nodes.begin(),
+                    x_nodes.end());
+                node_vals_bin.insert(node_vals_bin.end(),
+                    z_nodes.begin(),
+                    z_nodes.end());
+                std::vector<std::size_t> shape_bin = {1, nx, nz};
 
-                // When `sidis_q2_use_bin_centers_only` is on, `derive_q2_nodes`
-                // inserts exactly one Q² per bin (sqrt(lower·upper)), merged
-                // into a global list.  PineAPPL sums the full Q² axis at
-                // convolution time, so every slice must be zero except the one
-                // matching this bin's center — otherwise each bin picks up
-                // every other bin's scale (fatal for multi-bin point grids).
-                // With the default tabulation (lo/hi + intermediates), centers
-                // need not appear in `q2_nodes`; keep the legacy fill-all-iq
-                // path there for backward compatibility.
-                const double q2_bin_c = std::sqrt(grid_def.bins[ibin].lower[0] *
-                                                  grid_def.bins[ibin].upper[0]);
-                const double q2_match_eps =
-                    1e-9 * std::max(std::abs(q2_bin_c), 1.0);
-
-                std::vector<double> subgrid(nq * nx * nz, 0.0);
-                int                 z_int_lo = 0, z_int_hi = 0;
-                std::vector<double> z_int_w;
+                std::vector<double>      subgrid(nx * nz, 0.0);
+                int                      z_int_lo = 0, z_int_hi = 0;
+                std::vector<double>      z_int_w;
                 if (use_bsf_exact) {
                     if (!z_point_mode) {
                         const apfel::SubGrid &z_joint_sg = gz.GetJointGrid();
@@ -801,11 +758,8 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                 // interpolation range. External z is handled by quadrature on
                 // [z_lo, z_hi]; individual points must lie on the joint grid.
                 if (x_center >= x_nodes.front() && x_center <= x_nodes.back()) {
-                    for (std::size_t iq = 0; iq < nq; iq++) {
-                        if (op_card.sidis_q2_use_bin_centers_only &&
-                            std::abs(q2_nodes[iq] - q2_bin_c) > q2_match_eps)
-                            continue;
-                        int                     nf          = q2_data[iq].nf;
+                    {
+                        int                     nf = q2_data_map.at(q2_c).nf;
                         static constexpr double QCh2[6]     = {1. / 9.,
                                 4. / 9.,
                                 1. / 9.,
@@ -874,8 +828,7 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                                         const std::size_t iz =
                                             phys_z_indices[iiz];
                                         const double z_node = z_nodes[iiz];
-                                        subgrid[iq * nx * nz + iix * nz +
-                                                iiz] +=
+                                        subgrid[iix * nz + iiz] +=
                                             fill_weight * w[ix * nz_full + iz] *
                                             (x_node * z_node) / xz_denom;
                                     }
@@ -912,8 +865,7 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                                             const std::size_t iz =
                                                 phys_z_indices[iiz];
                                             const double z_node = z_nodes[iiz];
-                                            subgrid[iq * nx * nz + iix * nz +
-                                                    iiz] +=
+                                            subgrid[iix * nz + iiz] +=
                                                 fill_weight * int_w *
                                                 w[ix * nz_full + iz] *
                                                 (x_node * z_node) / xz_denom;
@@ -941,15 +893,13 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                                         const std::size_t iz =
                                             phys_z_indices[iiz];
                                         const double z_node = z_nodes[iiz];
-                                        subgrid[iq * nx * nz + iix * nz +
-                                                iiz] +=
+                                        subgrid[iix * nz + iiz] +=
                                             fill_weight * w[ix * nz_full + iz] *
                                             (x_node * z_node) / xz_denom;
                                     }
                                 }
                             } else {
-                                const int z_nsub =
-                                    op_card.sidis_z_quad_subdivisions;
+                                const int z_nsub = 1;
                                 for (int isub = 0; isub < z_nsub; isub++) {
                                     const double z_a = z_lo + (z_hi - z_lo) *
                                                                   (double)isub /
@@ -988,8 +938,7 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                                                     phys_z_indices[iiz];
                                                 const double z_node =
                                                     z_nodes[iiz];
-                                                subgrid[iq * nx * nz +
-                                                        iix * nz + iiz] +=
+                                                subgrid[iix * nz + iiz] +=
                                                     fill_weight * dz_w *
                                                     w[ix * nz_full + iz] *
                                                     (x_node * z_node) /
@@ -1003,7 +952,13 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
                     }
                 }
 
-                set_subgrid(grid, ibin, iord, ich, node_values, subgrid, shape);
+                set_subgrid(grid,
+                    ibin,
+                    iord,
+                    ich,
+                    node_vals_bin,
+                    subgrid,
+                    shape_bin);
             }
         }
     }
@@ -1073,37 +1028,32 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
             phys_x_indices.push_back(i);
         }
     }
-    const std::size_t   nx       = x_nodes.size();
+    const std::size_t   nx = x_nodes.size();
 
-    // DIS/SIA/etc. Q² tabulation is independent of OperatorCard SIDIS knobs.
-    // Those fields apply only in `build_grid_sidis`; reusing them here made
-    // non-SIDIS grids sensitive to SIDIS defaults and broke legacy tests.
-    std::vector<double> q2_nodes = derive_q2_nodes(grid_def.bins,
-        theory.quark_thresholds,
-        /*n_intermediate=*/3,
-        /*include_thresholds=*/true,
-        /*use_bin_centers_only=*/false);
-    const std::size_t   nq       = q2_nodes.size();
+    // Pointwise design: one Q² node per bin at the geometric bin centre.
+    // Collect unique Q²_c values to avoid redundant APFEL++ coefficient
+    // function calls when multiple bins share the same Q²_c.
+    std::vector<double> bin_q2c(grid_def.bins.size());
+    std::set<double>    unique_q2c_set;
+    for (std::size_t ibin = 0; ibin < grid_def.bins.size(); ibin++) {
+        bin_q2c[ibin] = std::sqrt(
+            grid_def.bins[ibin].lower[0] * grid_def.bins[ibin].upper[0]);
+        unique_q2c_set.insert(bin_q2c[ibin]);
+    }
+    std::vector<double> unique_q2c(unique_q2c_set.begin(),
+        unique_q2c_set.end());
 
-    std::cout << "  Grid nodes: " << nq << " Q^2 x " << nx << " x/z points"
-              << std::endl;
+    std::cout << "  Pointwise grid: " << unique_q2c.size()
+              << " unique Q² centres x " << nx << " x/z points" << std::endl;
 
-    // Concatenated node_values: [q2_0..q2_{nq-1}, x_0..x_{nx-1}]
-    std::vector<double> node_values;
-    node_values.reserve(nq + nx);
-    node_values.insert(node_values.end(), q2_nodes.begin(), q2_nodes.end());
-    node_values.insert(node_values.end(), x_nodes.begin(), x_nodes.end());
-
-    std::vector<std::size_t> shape     = {nq, nx};
-
-    bool                     timelike  = (grid_def.process == ProcessType::SIA);
-    bool                     is_cc     = (grid_def.current == Current::CC);
+    bool timelike           = (grid_def.process == ProcessType::SIA);
+    bool is_cc              = (grid_def.current == Current::CC);
 
     // Pre-determine gluon channel index (gluon is the last channel when
     // present)
-    int                      gluon_ich = -1;
-    bool                     has_gluon_channel  = false;
-    int                      num_quark_channels = 0;
+    int  gluon_ich          = -1;
+    bool has_gluon_channel  = false;
+    int  num_quark_channels = 0;
     for (int ich = 0; ich < (int)grid_def.channels.size(); ich++) {
         for (const auto &combo : grid_def.channels[ich].pid_combinations) {
             if (combo.size() == 1 && combo[0] == 21) {
@@ -1118,19 +1068,21 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
         (int)grid_def.channels.size() - (has_gluon_channel ? 1 : 0);
 
     // 5. Precompute per-channel operators for each (Q^2, order) node.
-    //    channel_ops[order][channel_idx] accumulates the combined operator
-    //    from all weighted initializers.  Gluon and quark channels are
-    //    handled separately to correctly incorporate heavy-quark
-    //    contributions in the massive scheme.
+    //    channel_ops[{alpha_s, log_xir, log_xif}][channel_idx] accumulates
+    //    the combined operator from all weighted initializers.  Gluon and
+    //    quark channels are handled separately to correctly incorporate
+    //    heavy-quark contributions in the massive scheme.
+    //    Scale-log orders ({alpha_s, >=1, 0} or {alpha_s, 0, >=1}) are
+    //    derived from the central-scale operators after the main accumulation.
+    using OrdKey = std::tuple<int, int, int>; // (alpha_s, log_xir, log_xif)
     struct Q2Data {
-        int                                           nf;
+        int                                              nf;
         // 6-entry EW charges (NC) or nf-entry CKM (CC):
-        // channel_ops[order][channel_idx] = accumulated operator
-        std::vector<double>                           charges;
-        std::map<int, std::map<int, apfel::Operator>> channel_ops;
+        std::vector<double>                              charges;
+        std::map<OrdKey, std::map<int, apfel::Operator>> channel_ops;
     };
 
-    std::vector<Q2Data> q2_data(nq);
+    std::map<double, Q2Data> q2_data_map;
 
     // Helper: accumulate op*sign into target[ich].
     // NOTE: APFEL++ Operator::operator= is infinitely recursive (APFEL++ bug).
@@ -1145,14 +1097,15 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
         else it->second += op * sign;
     };
 
-    for (std::size_t iq = 0; iq < nq; iq++) {
-        double Q       = std::sqrt(q2_nodes[iq]);
-        q2_data[iq].nf = apfel::NF(Q, theory.quark_thresholds);
+    for (double q2_c : unique_q2c) {
+        Q2Data &qd = q2_data_map[q2_c];
+        double  Q  = std::sqrt(q2_c);
+        qd.nf      = apfel::NF(Q, theory.quark_thresholds);
 
         // Compute per-quark charges and initializer charges
         std::vector<double> init_charges;
         if (is_cc) {
-            int                 nf = q2_data[iq].nf;
+            int                 nf = qd.nf;
             std::vector<double> weights(nf, 0.0);
             for (int q = 1; q <= nf; q++) {
                 bool is_down = (q % 2 == 1);
@@ -1175,15 +1128,15 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                 }
                 weights[q - 1] /= 2.0;
             }
-            q2_data[iq].charges = weights;
-            init_charges        = theory.ckm;
+            qd.charges   = weights;
+            init_charges = theory.ckm;
         } else {
             // ElectroWeakCharges always returns 6 entries
-            q2_data[iq].charges = apfel::ElectroWeakCharges(Q, timelike);
-            init_charges        = q2_data[iq].charges;
+            qd.charges   = apfel::ElectroWeakCharges(Q, timelike);
+            init_charges = qd.charges;
         }
 
-        const std::vector<double> &charges = q2_data[iq].charges;
+        const std::vector<double> &charges = qd.charges;
 
         for (const auto &wi : weighted_inits) {
             auto   FObjQ        = wi.init(Q, init_charges);
@@ -1191,7 +1144,7 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
             // nf_local: number of "light" quarks for this init
             //   ZM (wi.actnf<0): Q-dependent from thresholds
             //   massive (wi.actnf>=0): fixed count of zero-mass quarks
-            int    nf_local     = (wi.actnf < 0) ? q2_data[iq].nf : wi.actnf;
+            int    nf_local     = (wi.actnf < 0) ? qd.nf : wi.actnf;
 
             // Sum of EW charges over light quarks
             double sum_ch_light = 0;
@@ -1208,7 +1161,8 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                 // α_s^ord the result matches APFEL++ BSF which uses
                 // (α_s/4π)^ord.
                 const double pert_norm = std::pow(1.0 / apfel::FourPi, ord);
-                auto        &target    = q2_data[iq].channel_ops[ord];
+                const OrdKey key_ord{ord, 0, 0};
+                auto        &target    = qd.channel_ops[key_ord];
 
                 const auto  &ops_light = C.at(1).GetObjects();
                 const apfel::Operator &CNS =
@@ -1304,16 +1258,78 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                 }
             }
         }
+
+        // Renormalization-scale logs derived from central-scale operators.
+        // Populate channel_ops[{n, m, 0}] for m>0 from the accumulated
+        // central-scale channel_ops[{n-m, 0, 0}] entries.
+        //
+        // Coefficients follow from d/d(tR) [C(ξ_R)] with tR = ln(ξ_R²):
+        //   {1,1,0}: b₀ · C0 · (1/4π)^1
+        //   {2,1,0}: b₀ · C1 · (1/4π)^2
+        //   {2,2,0}: (b₀²/2) · C0 · (1/4π)^2
+        // where each C_n is already stored in channel_ops[{n,0,0}] with its
+        // (1/4π)^n factor absorbed, so the extra factor per log-slot is just
+        // (1/4π)^{alpha_s} / (1/4π)^{base_ord} = (1/4π)^{log_xir}.
+        // Only computed when the requested order set contains log_xir > 0.
+        {
+            bool need_xir = false;
+            for (const auto &o : grid_def.orders)
+                if (o.log_xir > 0) {
+                    need_xir = true;
+                    break;
+                }
+
+            if (need_xir) {
+                const double b0     = apfel::beta0qcd(qd.nf);
+                const double inv4pi = 1.0 / apfel::FourPi;
+                auto        &cops   = qd.channel_ops;
+
+                auto         it0    = cops.find(OrdKey{0, 0, 0});
+                auto         it1    = cops.find(OrdKey{1, 0, 0});
+
+                // {1,1,0}: b₀ * (1/4π) * C0_channels
+                if (it0 != cops.end()) {
+                    const double fac = b0 * inv4pi;
+                    for (const auto &[ich, op] : it0->second)
+                        add_to_channel(cops[OrdKey{1, 1, 0}],
+                            ich,
+                            op * fac,
+                            1.0);
+                }
+                // {2,1,0}: b₀ * (1/4π) * C1_channels
+                if (it1 != cops.end()) {
+                    const double fac = b0 * inv4pi;
+                    for (const auto &[ich, op] : it1->second)
+                        add_to_channel(cops[OrdKey{2, 1, 0}],
+                            ich,
+                            op * fac,
+                            1.0);
+                }
+                // {2,2,0}: (b₀²/2) * (1/4π)² * C0_channels
+                if (it0 != cops.end()) {
+                    const double fac = 0.5 * b0 * b0 * inv4pi * inv4pi;
+                    for (const auto &[ich, op] : it0->second)
+                        add_to_channel(cops[OrdKey{2, 2, 0}],
+                            ich,
+                            op * fac,
+                            1.0);
+                }
+            }
+        }
     }
 
     // 6. Fill subgrids for each (bin, order, channel) using pre-built operators
     for (std::size_t iord = 0; iord < grid_def.orders.size(); iord++) {
-        int alpha_s = grid_def.orders[iord].alpha_s;
+        const auto &odef    = grid_def.orders[iord];
+        int         alpha_s = odef.alpha_s;
         if (alpha_s > 2) {
             std::cerr << "  Warning: skipping order alpha_s^" << alpha_s
                       << " (beyond NNLO)" << std::endl;
             continue;
         }
+        const OrdKey ord_key{(int)odef.alpha_s,
+            (int)odef.log_xir,
+            (int)odef.log_xif};
 
         for (std::size_t ich = 0; ich < grid_def.channels.size(); ich++) {
             for (std::size_t ibin = 0; ibin < grid_def.bins.size(); ibin++) {
@@ -1321,42 +1337,54 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
                 double              x_hi     = grid_def.bins[ibin].upper.back();
                 double              x_center = std::sqrt(x_lo * x_hi);
 
-                std::vector<double> subgrid(nq * nx, 0.0);
+                // Per-bin 1-node Q² subgrid at the geometric bin centre.
+                double              q2_c     = bin_q2c[ibin];
+                std::vector<double> node_vals_bin;
+                node_vals_bin.reserve(1 + nx);
+                node_vals_bin.push_back(q2_c);
+                node_vals_bin.insert(node_vals_bin.end(),
+                    x_nodes.begin(),
+                    x_nodes.end());
+                std::vector<std::size_t> shape_bin = {1, nx};
+
+                std::vector<double>      subgrid(nx, 0.0);
 
                 // NOTE: Skip bins outside the APFEL++ interpolation range; the
                 // operator Evaluate() has undefined behaviour for x outside
                 // [x_nodes.front(), x_nodes.back()].
                 if (x_center >= x_nodes.front() && x_center <= x_nodes.back()) {
-                    for (std::size_t iq = 0; iq < nq; iq++) {
-                        auto it_ord = q2_data[iq].channel_ops.find(alpha_s);
-                        if (it_ord == q2_data[iq].channel_ops.end()) continue;
+                    auto it_q2 = q2_data_map.find(q2_c);
+                    if (it_q2 != q2_data_map.end()) {
+                        auto it_ord = it_q2->second.channel_ops.find(ord_key);
+                        if (it_ord != it_q2->second.channel_ops.end()) {
+                            auto it_ch = it_ord->second.find((int)ich);
+                            if (it_ch != it_ord->second.end()) {
+                                apfel::Distribution dist =
+                                    it_ch->second.Evaluate(x_center);
+                                const std::vector<double> &vals =
+                                    dist.GetDistributionJointGrid();
 
-                        auto it_ch = it_ord->second.find((int)ich);
-                        if (it_ch == it_ord->second.end()) continue;
-
-                        apfel::Distribution dist =
-                            it_ch->second.Evaluate(x_center);
-                        const std::vector<double> &vals =
-                            dist.GetDistributionJointGrid();
-
-                        // NOTE: APFEL++: K_j satisfy (C⊗f)(x) = Σ K_j*f(x_j)
-                        // where f is the PDF *without* the x factor.  PineAPPL
-                        // with APPL_GRID_X divides xfx(x_j) by x_j, giving
-                        // Σ (stored_j) * xf(x_j)/x_j.  Multiplying the stored
-                        // kernel by x_j makes PineAPPL compute
-                        // Σ (K_j*x_j) * xf/x_j = Σ K_j * xf(x_j) = F2.
-                        // vals is indexed over the full joint grid (nx_full).
-                        // Map to physical (≤1) indices only.
-                        for (std::size_t iix = 0; iix < nx; iix++) {
-                            const std::size_t ix = phys_x_indices[iix];
-                            if (ix < vals.size())
-                                subgrid[iq * nx + iix] =
-                                    vals[ix] * x_nodes[iix];
+                                // NOTE: APFEL++: K_j satisfy (C⊗f)(x)=Σ
+                                // K_j*f(x_j) PineAPPL divides xfx(x_j) by x_j,
+                                // so store K_j*x_j. vals is indexed over the
+                                // full joint grid (nx_full).
+                                for (std::size_t iix = 0; iix < nx; iix++) {
+                                    const std::size_t ix = phys_x_indices[iix];
+                                    if (ix < vals.size())
+                                        subgrid[iix] = vals[ix] * x_nodes[iix];
+                                }
+                            }
                         }
                     }
                 }
 
-                set_subgrid(grid, ibin, iord, ich, node_values, subgrid, shape);
+                set_subgrid(grid,
+                    ibin,
+                    iord,
+                    ich,
+                    node_vals_bin,
+                    subgrid,
+                    shape_bin);
             }
         }
     }

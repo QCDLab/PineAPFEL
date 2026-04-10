@@ -111,30 +111,6 @@ int main() {
         1.0,     // xi_fac
         predictions.data());
 
-    const int        n_intermediate = 3;
-    std::set<double> q2_set;
-    for (const auto &bin : grid_def.bins) {
-        double q2_lo = bin.lower[0], q2_hi = bin.upper[0];
-        q2_set.insert(q2_lo);
-        q2_set.insert(q2_hi);
-        double log_lo = std::log(q2_lo), log_hi = std::log(q2_hi);
-        for (int k = 1; k <= n_intermediate; k++) {
-            double frac = static_cast<double>(k) / (n_intermediate + 1);
-            q2_set.insert(std::exp(log_lo + frac * (log_hi - log_lo)));
-        }
-    }
-    for (double thr : theory.quark_thresholds) {
-        double q2t = thr * thr;
-        if (!q2_set.empty() && q2t > *q2_set.begin() && q2t < *q2_set.rbegin())
-            q2_set.insert(q2t);
-    }
-    std::vector<double> q2_nodes(q2_set.begin(), q2_set.end());
-
-    std::printf("  Q² nodes used: %zu\n", q2_nodes.size());
-    for (double q2 : q2_nodes)
-        std::printf("    Q²=%.4e  Q=%.4f\n", q2, std::sqrt(q2));
-    std::printf("\n");
-
     const double tolerance = 5e-2;
     std::printf("  %-10s  %-14s  %-14s  %-10s  %s\n",
         "x",
@@ -149,9 +125,10 @@ int main() {
         double x_hi = grid_def.bins[ibin].upper.back();
         double x_c  = std::sqrt(x_lo * x_hi);
 
-        // Sum BSF reference over the same q2_nodes that PineAPPL sums over.
-        double ref  = 0.0;
-        for (double q2 : q2_nodes) ref += F2.at(0).Evaluate(x_c, std::sqrt(q2));
+        // Pointwise: evaluate BSF at the geometric Q² bin centre.
+        double q2_c = std::sqrt(
+            grid_def.bins[ibin].lower[0] * grid_def.bins[ibin].upper[0]);
+        double ref  = F2.at(0).Evaluate(x_c, std::sqrt(q2_c));
 
         double pred = predictions[ibin];
         double rel  = (std::abs(ref) > 1e-30)

@@ -11,7 +11,6 @@
 #include <iostream>
 #include <map>
 #include <memory>
-#include <set>
 #include <vector>
 
 // ----------------------------------------------------------------
@@ -87,34 +86,6 @@ static apfel::Operator build_channel_operator(
     return e_q_sq * CNS + (sum_ch / 6.0) * (CS - CNS);
 }
 
-// ----------------------------------------------------------------
-// Reproduce derive_q2_nodes from fill.cpp
-// ----------------------------------------------------------------
-static std::vector<double> derive_q2_nodes(
-    const std::vector<pineapfel::BinDef> &bins,
-    const std::vector<double>            &thresholds,
-    int                                   n_intermediate = 3) {
-    std::set<double> q2_set;
-    for (const auto &bin : bins) {
-        double q2_lo = bin.lower[0], q2_hi = bin.upper[0];
-        q2_set.insert(q2_lo);
-        q2_set.insert(q2_hi);
-        if (n_intermediate > 0) {
-            double log_lo = std::log(q2_lo), log_hi = std::log(q2_hi);
-            for (int i = 1; i <= n_intermediate; i++) {
-                double frac = static_cast<double>(i) / (n_intermediate + 1);
-                q2_set.insert(std::exp(log_lo + frac * (log_hi - log_lo)));
-            }
-        }
-    }
-    double q2_min = *q2_set.begin(), q2_max = *q2_set.rbegin();
-    for (double thr : thresholds) {
-        double q2_thr = thr * thr;
-        if (q2_thr > q2_min && q2_thr < q2_max) q2_set.insert(q2_thr);
-    }
-    return std::vector<double>(q2_set.begin(), q2_set.end());
-}
-
 // ================================================================
 int main() {
     std::cout << "=== Grid vs APFEL++ comparison test ===" << std::endl;
@@ -161,7 +132,6 @@ int main() {
         static_cast<double>(tabp.n_steps),
         tabp.interp_degree};
 
-    auto   q2_nodes  = derive_q2_nodes(grid_def.bins, theory.quark_thresholds);
     bool   timelike  = (grid_def.process == pineapfel::ProcessType::SIA);
 
     int    failures  = 0;
@@ -198,21 +168,21 @@ int main() {
                                         grid_def.bins[ibin].upper.back());
             double ref      = 0;
 
-            for (double q2 : q2_nodes) {
-                double Q       = std::sqrt(q2);
-                int    nf      = apfel::NF(Q, theory.quark_thresholds);
-                auto   charges = apfel::ElectroWeakCharges(Q, timelike);
-                auto   FObjQ   = sf_init(Q, charges);
-                if (FObjQ.C0.count(1) == 0) continue;
+            // Pointwise: evaluate at the geometric Q² bin centre
+            double q2       = std::sqrt(
+                grid_def.bins[ibin].lower[0] * grid_def.bins[ibin].upper[0]);
+            double Q       = std::sqrt(q2);
+            int    nf      = apfel::NF(Q, theory.quark_thresholds);
+            auto   charges = apfel::ElectroWeakCharges(Q, timelike);
+            auto   FObjQ   = sf_init(Q, charges);
+            if (FObjQ.C0.count(1)) {
                 auto ops = FObjQ.C0.at(1).GetObjects();
-
                 for (std::size_t ich = 0; ich < nchan; ich++) {
                     apfel::Operator C_ch =
                         build_channel_operator(grid_def.channels[ich],
                             ops,
                             charges,
                             nf);
-
                     const auto         &ch = grid_def.channels[ich];
                     apfel::Distribution pdf_ch(g,
                         [&](double const &z) -> double {
@@ -227,7 +197,6 @@ int main() {
                             }
                             return z * sum;
                         });
-
                     ref += (C_ch * pdf_ch).Evaluate(x_center);
                 }
             }
@@ -277,66 +246,67 @@ int main() {
                                         grid_def.bins[ibin].upper.back());
             double ref      = 0;
 
-            for (double q2 : q2_nodes) {
-                double Q       = std::sqrt(q2);
-                int    nf      = apfel::NF(Q, theory.quark_thresholds);
-                auto   charges = apfel::ElectroWeakCharges(Q, timelike);
-                auto   FObjQ   = sf_init(Q, charges);
-                double as_val  = as_tab.Evaluate(Q);
+            // Pointwise: evaluate at the geometric Q² bin centre
+            double q2       = std::sqrt(
+                grid_def.bins[ibin].lower[0] * grid_def.bins[ibin].upper[0]);
+            double Q       = std::sqrt(q2);
+            int    nf      = apfel::NF(Q, theory.quark_thresholds);
+            auto   charges = apfel::ElectroWeakCharges(Q, timelike);
+            auto   FObjQ   = sf_init(Q, charges);
+            double as_val  = as_tab.Evaluate(Q);
 
-                // LO contribution
-                if (FObjQ.C0.count(1)) {
-                    auto ops0 = FObjQ.C0.at(1).GetObjects();
-                    for (std::size_t ich = 0; ich < nchan; ich++) {
-                        apfel::Operator C_ch =
-                            build_channel_operator(grid_def.channels[ich],
-                                ops0,
-                                charges,
-                                nf);
-                        const auto         &ch = grid_def.channels[ich];
-                        apfel::Distribution pdf_ch(g,
-                            [&](double const &z) -> double {
-                                double sum = 0;
-                                for (std::size_t ic = 0;
-                                     ic < ch.pid_combinations.size();
-                                     ic++) {
-                                    double f_val = 1.0;
-                                    for (int pid : ch.pid_combinations[ic])
-                                        f_val *= toy_f(pid, z);
-                                    sum += ch.factors[ic] * f_val;
-                                }
-                                return z * sum; // xf convention
-                            });
-                        ref += (C_ch * pdf_ch).Evaluate(x_center);
-                    }
+            // LO contribution
+            if (FObjQ.C0.count(1)) {
+                auto ops0 = FObjQ.C0.at(1).GetObjects();
+                for (std::size_t ich = 0; ich < nchan; ich++) {
+                    apfel::Operator C_ch =
+                        build_channel_operator(grid_def.channels[ich],
+                            ops0,
+                            charges,
+                            nf);
+                    const auto         &ch = grid_def.channels[ich];
+                    apfel::Distribution pdf_ch(g,
+                        [&](double const &z) -> double {
+                            double sum = 0;
+                            for (std::size_t ic = 0;
+                                 ic < ch.pid_combinations.size();
+                                 ic++) {
+                                double f_val = 1.0;
+                                for (int pid : ch.pid_combinations[ic])
+                                    f_val *= toy_f(pid, z);
+                                sum += ch.factors[ic] * f_val;
+                            }
+                            return z * sum; // xf convention
+                        });
+                    ref += (C_ch * pdf_ch).Evaluate(x_center);
                 }
+            }
 
-                // NLO contribution (multiplied by alpha_s)
-                if (FObjQ.C1.count(1)) {
-                    auto ops1 = FObjQ.C1.at(1).GetObjects();
-                    for (std::size_t ich = 0; ich < nchan; ich++) {
-                        apfel::Operator C_ch =
-                            build_channel_operator(grid_def.channels[ich],
-                                ops1,
-                                charges,
-                                nf);
-                        const auto         &ch = grid_def.channels[ich];
-                        apfel::Distribution pdf_ch(g,
-                            [&](double const &z) -> double {
-                                double sum = 0;
-                                for (std::size_t ic = 0;
-                                     ic < ch.pid_combinations.size();
-                                     ic++) {
-                                    double f_val = 1.0;
-                                    for (int pid : ch.pid_combinations[ic])
-                                        f_val *= toy_f(pid, z);
-                                    sum += ch.factors[ic] * f_val;
-                                }
-                                return z * sum;
-                            });
-                        ref += (as_val / apfel::FourPi) *
-                               (C_ch * pdf_ch).Evaluate(x_center);
-                    }
+            // NLO contribution (multiplied by alpha_s)
+            if (FObjQ.C1.count(1)) {
+                auto ops1 = FObjQ.C1.at(1).GetObjects();
+                for (std::size_t ich = 0; ich < nchan; ich++) {
+                    apfel::Operator C_ch =
+                        build_channel_operator(grid_def.channels[ich],
+                            ops1,
+                            charges,
+                            nf);
+                    const auto         &ch = grid_def.channels[ich];
+                    apfel::Distribution pdf_ch(g,
+                        [&](double const &z) -> double {
+                            double sum = 0;
+                            for (std::size_t ic = 0;
+                                 ic < ch.pid_combinations.size();
+                                 ic++) {
+                                double f_val = 1.0;
+                                for (int pid : ch.pid_combinations[ic])
+                                    f_val *= toy_f(pid, z);
+                                sum += ch.factors[ic] * f_val;
+                            }
+                            return z * sum;
+                        });
+                    ref += (as_val / apfel::FourPi) *
+                           (C_ch * pdf_ch).Evaluate(x_center);
                 }
             }
 
@@ -380,55 +350,48 @@ int main() {
                                         grid_def.bins[ibin].upper.back());
             double ref      = 0;
 
-            for (double q2 : q2_nodes) {
-                double Q       = std::sqrt(q2);
-                int    nf      = apfel::NF(Q, theory.quark_thresholds);
-                auto   charges = apfel::ElectroWeakCharges(Q, timelike);
-                auto   FObjQ   = sf_init(Q, charges);
-                double as_val  = as_tab.Evaluate(Q);
+            // Pointwise: evaluate at the geometric Q² bin centre
+            double q2       = std::sqrt(
+                grid_def.bins[ibin].lower[0] * grid_def.bins[ibin].upper[0]);
+            double Q       = std::sqrt(q2);
+            int    nf      = apfel::NF(Q, theory.quark_thresholds);
+            auto   charges = apfel::ElectroWeakCharges(Q, timelike);
+            auto   FObjQ   = sf_init(Q, charges);
+            double as_val  = as_tab.Evaluate(Q);
 
-                // Order 0 (LO), 1 (NLO), 2 (NNLO) with alpha_s^n factors
-                struct {
-                    int                                         order;
-                    double                                      factor;
-                    std::map<int, apfel::Set<apfel::Operator>> *Cn;
-                } order_info[3];
+            for (int iord = 0; iord < 3; iord++) {
+                double as_power = std::pow(as_val / apfel::FourPi, iord);
+                std::map<int, apfel::Operator> ops_map;
 
-                // We need to handle the maps carefully
-                for (int iord = 0; iord < 3; iord++) {
-                    double as_power = std::pow(as_val / apfel::FourPi, iord);
-                    std::map<int, apfel::Operator> ops_map;
+                if (iord == 0 && FObjQ.C0.count(1))
+                    ops_map = FObjQ.C0.at(1).GetObjects();
+                else if (iord == 1 && FObjQ.C1.count(1))
+                    ops_map = FObjQ.C1.at(1).GetObjects();
+                else if (iord == 2 && FObjQ.C2.count(1))
+                    ops_map = FObjQ.C2.at(1).GetObjects();
+                else continue;
 
-                    if (iord == 0 && FObjQ.C0.count(1))
-                        ops_map = FObjQ.C0.at(1).GetObjects();
-                    else if (iord == 1 && FObjQ.C1.count(1))
-                        ops_map = FObjQ.C1.at(1).GetObjects();
-                    else if (iord == 2 && FObjQ.C2.count(1))
-                        ops_map = FObjQ.C2.at(1).GetObjects();
-                    else continue;
-
-                    for (std::size_t ich = 0; ich < nchan; ich++) {
-                        apfel::Operator C_ch =
-                            build_channel_operator(grid_def.channels[ich],
-                                ops_map,
-                                charges,
-                                nf);
-                        const auto         &ch = grid_def.channels[ich];
-                        apfel::Distribution pdf_ch(g,
-                            [&](double const &z) -> double {
-                                double sum = 0;
-                                for (std::size_t ic = 0;
-                                     ic < ch.pid_combinations.size();
-                                     ic++) {
-                                    double f_val = 1.0;
-                                    for (int pid : ch.pid_combinations[ic])
-                                        f_val *= toy_f(pid, z);
-                                    sum += ch.factors[ic] * f_val;
-                                }
-                                return z * sum;
-                            });
-                        ref += as_power * (C_ch * pdf_ch).Evaluate(x_center);
-                    }
+                for (std::size_t ich = 0; ich < nchan; ich++) {
+                    apfel::Operator C_ch =
+                        build_channel_operator(grid_def.channels[ich],
+                            ops_map,
+                            charges,
+                            nf);
+                    const auto         &ch = grid_def.channels[ich];
+                    apfel::Distribution pdf_ch(g,
+                        [&](double const &z) -> double {
+                            double sum = 0;
+                            for (std::size_t ic = 0;
+                                 ic < ch.pid_combinations.size();
+                                 ic++) {
+                                double f_val = 1.0;
+                                for (int pid : ch.pid_combinations[ic])
+                                    f_val *= toy_f(pid, z);
+                                sum += ch.factors[ic] * f_val;
+                            }
+                            return z * sum;
+                        });
+                    ref += as_power * (C_ch * pdf_ch).Evaluate(x_center);
                 }
             }
 
@@ -512,12 +475,12 @@ int main() {
         for (std::size_t ibin = 0; ibin < nbins; ibin++) {
             double x_center = std::sqrt(grid_def.bins[ibin].lower.back() *
                                         grid_def.bins[ibin].upper.back());
-            double ref      = 0;
 
-            for (double q2 : q2_nodes) {
-                double Q  = std::sqrt(q2);
-                ref      += F2_total.Evaluate(x_center, Q);
-            }
+            // Pointwise: evaluate BSF at the geometric Q² bin centre
+            double q2       = std::sqrt(
+                grid_def.bins[ibin].lower[0] * grid_def.bins[ibin].upper[0]);
+            double Q   = std::sqrt(q2);
+            double ref = F2_total.Evaluate(x_center, Q);
 
             double rel_diff =
                 std::abs(ref) > 1e-30
@@ -601,9 +564,6 @@ int main() {
                     nfm);
         }
 
-        auto cc_q2_nodes =
-            derive_q2_nodes(cc_grid_def.bins, cc_theory.quark_thresholds);
-
         std::vector<double> pineappl_cc(cc_nbins, 0.0);
         pineappl_grid_convolve_with_one(cc_grid,
             2212,
@@ -619,12 +579,12 @@ int main() {
         for (std::size_t ibin = 0; ibin < cc_nbins; ibin++) {
             double x_center = std::sqrt(cc_grid_def.bins[ibin].lower.back() *
                                         cc_grid_def.bins[ibin].upper.back());
-            double ref      = 0;
 
-            for (double q2 : cc_q2_nodes) {
-                double Q  = std::sqrt(q2);
-                ref      += F2CC_total.Evaluate(x_center, Q);
-            }
+            // Pointwise: evaluate BSF at the geometric Q² bin centre
+            double q2       = std::sqrt(cc_grid_def.bins[ibin].lower[0] *
+                                  cc_grid_def.bins[ibin].upper[0]);
+            double Q        = std::sqrt(q2);
+            double ref      = F2CC_total.Evaluate(x_center, Q);
 
             double rel_diff =
                 std::abs(ref) > 1e-30
@@ -684,10 +644,12 @@ int main() {
 
         pineappl_grid *sidis_grid =
             pineapfel::build_grid(sidis_grid_def, sidis_theory, sidis_op_card);
-        std::size_t sidis_nbins = pineappl_grid_bin_count(sidis_grid);
+        std::size_t         sidis_nbins = pineappl_grid_bin_count(sidis_grid);
 
-        auto        sidis_q2_nodes =
-            derive_q2_nodes(sidis_grid_def.bins, sidis_theory.quark_thresholds);
+        // Pointwise: one Q² per bin
+        std::vector<double> sidis_bin_q2;
+        for (const auto &bin : sidis_grid_def.bins)
+            sidis_bin_q2.push_back(std::sqrt(bin.lower[0] * bin.upper[0]));
 
         // PineAPPL convolution with 2 convolution functions (PDF and FF).
         // Both use the same toy_f functional form.
@@ -720,7 +682,7 @@ int main() {
         auto ref_vals = compute_sidis_reference(sidis_g,
             sidis_sobj,
             sidis_theory.quark_thresholds,
-            sidis_q2_nodes,
+            sidis_bin_q2,
             bin_x_bounds,
             bin_z_bounds,
             {},
@@ -817,18 +779,15 @@ int main() {
             nullptr, // mu_scales
             pineappl_pol.data());
 
-        auto pol_q2_nodes =
-            derive_q2_nodes(pol_grid_def.bins, pol_theory.quark_thresholds);
-
         for (std::size_t ibin = 0; ibin < pol_nbins; ibin++) {
             double x_center = std::sqrt(pol_grid_def.bins[ibin].lower.back() *
                                         pol_grid_def.bins[ibin].upper.back());
-            double ref      = 0;
 
-            for (double q2 : pol_q2_nodes) {
-                double Q  = std::sqrt(q2);
-                ref      += g1_total.Evaluate(x_center, Q);
-            }
+            // Pointwise: evaluate BSF at the geometric Q² bin centre
+            double q2       = std::sqrt(pol_grid_def.bins[ibin].lower[0] *
+                                  pol_grid_def.bins[ibin].upper[0]);
+            double Q        = std::sqrt(q2);
+            double ref      = g1_total.Evaluate(x_center, Q);
 
             double rel_diff =
                 std::abs(ref) > 1e-30
@@ -872,8 +831,10 @@ int main() {
                 sidis_op_card);
         std::size_t pol_sidis_nbins = pineappl_grid_bin_count(pol_sidis_grid);
 
-        auto pol_sidis_q2_nodes     = derive_q2_nodes(pol_sidis_grid_def.bins,
-            pol_sidis_theory.quark_thresholds);
+        // Pointwise: one Q² per bin
+        std::vector<double> pol_sidis_bin_q2;
+        for (const auto &bin : pol_sidis_grid_def.bins)
+            pol_sidis_bin_q2.push_back(bin.lower[0]);
 
         // PineAPPL convolution with 2 convolution functions (POL_PDF ⊗
         // UNPOL_FF)
@@ -906,7 +867,7 @@ int main() {
         auto pol_ref_vals = compute_sidis_pol_reference(sidis_g,
             sidis_sobj,
             pol_sidis_theory.quark_thresholds,
-            pol_sidis_q2_nodes,
+            pol_sidis_bin_q2,
             pol_bin_x_bounds,
             pol_bin_z_bounds,
             1, // max_alpha_s = 1 (LO + NLO)
@@ -993,17 +954,15 @@ int main() {
             nullptr,
             pineappl_ffn.data());
 
-        auto ffn_q2_nodes =
-            derive_q2_nodes(ffn_grid_def.bins, ffn_theory.quark_thresholds);
-
         for (std::size_t ibin = 0; ibin < ffn_nbins; ibin++) {
             double x_center = std::sqrt(ffn_grid_def.bins[ibin].lower.back() *
                                         ffn_grid_def.bins[ibin].upper.back());
-            double ref      = 0;
-            for (double q2 : ffn_q2_nodes) {
-                double Q  = std::sqrt(q2);
-                ref      += F2FFN_total.Evaluate(x_center, Q);
-            }
+
+            // Pointwise: evaluate BSF at the geometric Q² bin centre
+            double q2       = std::sqrt(ffn_grid_def.bins[ibin].lower[0] *
+                                  ffn_grid_def.bins[ibin].upper[0]);
+            double Q        = std::sqrt(q2);
+            double ref      = F2FFN_total.Evaluate(x_center, Q);
             double rel_diff =
                 std::abs(ref) > 1e-30
                     ? std::abs(pineappl_ffn[ibin] - ref) / std::abs(ref)
@@ -1081,17 +1040,15 @@ int main() {
             nullptr,
             pineappl_mz.data());
 
-        auto mz_q2_nodes =
-            derive_q2_nodes(mz_grid_def.bins, mz_theory.quark_thresholds);
-
         for (std::size_t ibin = 0; ibin < mz_nbins; ibin++) {
             double x_center = std::sqrt(mz_grid_def.bins[ibin].lower.back() *
                                         mz_grid_def.bins[ibin].upper.back());
-            double ref      = 0;
-            for (double q2 : mz_q2_nodes) {
-                double Q  = std::sqrt(q2);
-                ref      += F2MZ_total.Evaluate(x_center, Q);
-            }
+
+            // Pointwise: evaluate BSF at the geometric Q² bin centre
+            double q2       = std::sqrt(mz_grid_def.bins[ibin].lower[0] *
+                                  mz_grid_def.bins[ibin].upper[0]);
+            double Q        = std::sqrt(q2);
+            double ref      = F2MZ_total.Evaluate(x_center, Q);
             double rel_diff =
                 std::abs(ref) > 1e-30
                     ? std::abs(pineappl_mz[ibin] - ref) / std::abs(ref)
@@ -1187,20 +1144,18 @@ int main() {
             nullptr,
             pineappl_fonll.data());
 
-        auto fonll_q2_nodes =
-            derive_q2_nodes(fonll_grid_def.bins, fonll_theory.quark_thresholds);
-
         for (std::size_t ibin = 0; ibin < fonll_nbins; ibin++) {
             double x_center = std::sqrt(fonll_grid_def.bins[ibin].lower.back() *
                                         fonll_grid_def.bins[ibin].upper.back());
-            double ref      = 0;
-            for (double q2 : fonll_q2_nodes) {
-                double Q  = std::sqrt(q2);
-                // F_FONLL = F_ZM + F_FFN - F_MZ
-                ref      += F2ZM_tot.Evaluate(x_center, Q) +
-                       F2FFN_tot.Evaluate(x_center, Q) -
-                       F2MZ_tot.Evaluate(x_center, Q);
-            }
+
+            // Pointwise: evaluate BSF at the geometric Q² bin centre
+            double q2       = std::sqrt(fonll_grid_def.bins[ibin].lower[0] *
+                                  fonll_grid_def.bins[ibin].upper[0]);
+            double Q        = std::sqrt(q2);
+            // F_FONLL = F_ZM + F_FFN - F_MZ
+            double ref      = F2ZM_tot.Evaluate(x_center, Q) +
+                         F2FFN_tot.Evaluate(x_center, Q) -
+                         F2MZ_tot.Evaluate(x_center, Q);
             double rel_diff =
                 std::abs(ref) > 1e-30
                     ? std::abs(pineappl_fonll[ibin] - ref) / std::abs(ref)
@@ -1248,11 +1203,13 @@ int main() {
         // keeps all SIDIS tests on the same 20+10-node grid.
         pineappl_grid *nnlo_grid =
             pineapfel::build_grid(nnlo_grid_def, nnlo_theory, sidis_op_card);
-        std::size_t nnlo_nbins = pineappl_grid_bin_count(nnlo_grid);
-        std::size_t nnlo_nords = pineappl_grid_order_count(nnlo_grid);
+        std::size_t         nnlo_nbins = pineappl_grid_bin_count(nnlo_grid);
+        std::size_t         nnlo_nords = pineappl_grid_order_count(nnlo_grid);
 
-        auto        nnlo_q2_nodes =
-            derive_q2_nodes(nnlo_grid_def.bins, nnlo_theory.quark_thresholds);
+        // Pointwise: one Q² per bin
+        std::vector<double> nnlo_q2_nodes;
+        for (const auto &bin : nnlo_grid_def.bins)
+            nnlo_q2_nodes.push_back(bin.lower[0]);
 
         // PineAPPL convolution — NNLO order only (index 2).
         auto nnlo_mask = std::make_unique<bool[]>(nnlo_nords);

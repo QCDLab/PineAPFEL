@@ -18,10 +18,7 @@ Channels:
   - pids: [[21]]
     factors: [1.0]
 
-Bins:
-  - lower: [10.0, 0.2]
-    upper: [100.0, 0.4]
-  - lower: [100.0, 0.4]
-    upper: [1000.0, 0.6]
-
-Normalizations: [1.0, 1.0]
+# Points: [Q2, z]
+Points:
+  - [31.62278, 2.828427e-1]
+  - [316.2278, 4.898979e-1]
