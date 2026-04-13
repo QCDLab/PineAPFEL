@@ -1,0 +1,1 @@
+{"type":"convention","content":"check_evolution plot_grid_vs_fk_rel_diff*.py: infer DIS vs SIA from convolution time_like; SIA uses --ff (default TestFFSet) and xfxs=[xfx]*n_conv; DIS uses --pdf (TestPDFSet); --process auto|dis|sia; 2D uses z-label and FF title for SIA.","classification":"tactical","recorded_at":"2026-04-13T14:48:06.348Z","id":"mx-e720d1"}
