@@ -17,6 +17,19 @@ namespace pineapfel {
 
 // ---- Internal helpers (not exposed) ----
 
+static bool convolution_is_pdf(pineappl_conv_type conv) {
+    return conv == PINEAPPL_CONV_TYPE_UNPOL_PDF ||
+           conv == PINEAPPL_CONV_TYPE_POL_PDF;
+}
+
+static double process_scale2_at(std::size_t j,
+    pineappl_conv_type                      conv,
+    const std::vector<double>              &fac1,
+    const std::vector<double>              &frg1) {
+    if (convolution_is_pdf(conv)) { return fac1.at(j); }
+    return frg1.at(j);
+}
+
 static std::vector<std::size_t> unravel_index(std::size_t flat_index,
     const std::vector<std::size_t>                       &shape) {
     std::size_t              ndim = shape.size();
@@ -258,6 +271,11 @@ pineappl_grid *evolve(pineappl_grid *grid,
         x_in.data(),
         ren1.data());
 
+    const std::size_t n_op_scales = std::max(fac1.size(), frg1.size());
+    assert(
+        n_op_scales > 0 &&
+        "pineapfel::evolve: grid has no factorization or fragmentation scales");
+
     // Build APFEL++ x-space grid
     std::vector<apfel::SubGrid> subgrids;
     for (const auto &sg : op_card.xgrid) {
@@ -279,19 +297,18 @@ pineappl_grid *evolve(pineappl_grid *grid,
                 pids_out.size(),
                 x_out.size()};
 
-    // Construct operator info slices
     std::vector<pineappl_conv_type>     convtypes(unique_convs.size());
     std::vector<pineappl_operator_info> opinfo_slices(
-        unique_convs.size() * fac1.size());
+        unique_convs.size() * n_op_scales);
     for (std::size_t i = 0; i != unique_convs.size(); i++) {
-        for (std::size_t j = 0; j != fac1.size(); j++) {
+        for (std::size_t j = 0; j != n_op_scales; j++) {
             pineappl_operator_info opinfo = {
                 std::pow(theory.mu0, 2),
-                fac1[j],
+                process_scale2_at(j, unique_convs[i], fac1, frg1),
                 pid_basis,
                 unique_convs[i],
             };
-            opinfo_slices[i * fac1.size() + j] = opinfo;
+            opinfo_slices[i * n_op_scales + j] = opinfo;
         }
         convtypes[i] = unique_convs[i];
     }
@@ -421,6 +438,20 @@ pineappl_grid *evolve(pineappl_grid *grid,
 
         delete op_params;
     }
+
+    // Ensure run cards metadata is present on the FK table.
+    auto copy_key = [&](const char *k) {
+        if (auto *v = pineappl_grid_metadata(grid, k)) {
+            pineappl_grid_set_metadata(fktable, k, v);
+            pineappl_string_delete(v);
+        }
+    };
+    copy_key("pineapfel:run_card:grid");
+    copy_key("pineapfel:run_card:theory");
+    copy_key("pineapfel:run_card:operator");
+    copy_key("pineapfel:run_card:grid_path");
+    copy_key("pineapfel:run_card:theory_path");
+    copy_key("pineapfel:run_card:operator_path");
 
     return fktable;
 }
