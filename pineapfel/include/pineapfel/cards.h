@@ -19,6 +19,8 @@ struct TabulationParams {
 };
 
 struct TheoryCard {
+    std::string         source_path;
+    std::string         raw_yaml;
     double              mu0;
     int                 pert_ord;
     double              q_ref;
@@ -41,6 +43,8 @@ struct TheoryCard {
 };
 
 struct OperatorCard {
+    std::string             source_path;
+    std::string             raw_yaml;
     std::vector<SubGridDef> xgrid;
     // Optional z-grid for SIDIS. If omitted, xgrid is reused for z.
     std::vector<SubGridDef> zgrid;

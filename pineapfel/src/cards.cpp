@@ -2,11 +2,24 @@
 #include <stdexcept>
 #include <yaml-cpp/yaml.h>
 
+#include <fstream>
+#include <sstream>
+
 namespace pineapfel {
+
+static std::string slurp_file(const std::string &path) {
+    std::ifstream in(path);
+    if (!in) throw std::runtime_error("Failed to open card file: " + path);
+    std::ostringstream ss;
+    ss << in.rdbuf();
+    return ss.str();
+}
 
 TheoryCard load_theory_card(const std::string &path) {
     YAML::Node config = YAML::LoadFile(path);
     TheoryCard tc;
+    tc.source_path      = path;
+    tc.raw_yaml         = slurp_file(path);
 
     tc.mu0              = config["mu0"].as<double>();
     tc.pert_ord         = config["PerturbativeOrder"].as<int>();
@@ -58,6 +71,8 @@ TheoryCard load_theory_card(const std::string &path) {
 OperatorCard load_operator_card(const std::string &path) {
     YAML::Node   config = YAML::LoadFile(path);
     OperatorCard oc;
+    oc.source_path = path;
+    oc.raw_yaml    = slurp_file(path);
 
     for (const auto &sg : config["xgrid"]) {
         SubGridDef def;

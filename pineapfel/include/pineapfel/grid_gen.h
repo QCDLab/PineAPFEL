@@ -30,6 +30,8 @@ struct BinDef {
 };
 
 struct GridDef {
+    std::string                     source_path;
+    std::string                     raw_yaml;
     ProcessType                     process;
     Observable                      observable  = Observable::F2;
     Current                         current     = Current::NC;

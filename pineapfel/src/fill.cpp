@@ -16,6 +16,32 @@
 
 namespace pineapfel {
 
+static void dump_run_cards_metadata(pineappl_grid *grid,
+    const GridDef                                 &grid_def,
+    const TheoryCard                              &theory,
+    const OperatorCard                            &op_card) {
+    if (!grid) return;
+    // Keep keys stable and explicit for downstream tooling.
+    pineappl_grid_set_metadata(grid,
+        "pineapfel:run_card:grid",
+        grid_def.raw_yaml.c_str());
+    pineappl_grid_set_metadata(grid,
+        "pineapfel:run_card:theory",
+        theory.raw_yaml.c_str());
+    pineappl_grid_set_metadata(grid,
+        "pineapfel:run_card:operator",
+        op_card.raw_yaml.c_str());
+    pineappl_grid_set_metadata(grid,
+        "pineapfel:run_card:grid_path",
+        grid_def.source_path.c_str());
+    pineappl_grid_set_metadata(grid,
+        "pineapfel:run_card:theory_path",
+        theory.source_path.c_str());
+    pineappl_grid_set_metadata(grid,
+        "pineapfel:run_card:operator_path",
+        op_card.source_path.c_str());
+}
+
 using SFInitFn = std::function<apfel::StructureFunctionObjects(double const &,
     std::vector<double> const &)>;
 
@@ -583,7 +609,8 @@ static pineappl_grid *build_grid_sidis(const GridDef &grid_def_in,
     };
 
     // 3. Create empty PineAPPL grid
-    pineappl_grid           *grid             = create_grid(grid_def);
+    pineappl_grid *grid = create_grid(grid_def);
+    dump_run_cards_metadata(grid, grid_def_in, theory, op_card);
 
     // 4. Determine grid nodes
     //
@@ -1002,7 +1029,7 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
         !grid_def.convolution_types.empty() &&
         (grid_def.convolution_types[0] == PINEAPPL_CONV_TYPE_POL_PDF ||
             grid_def.convolution_types[0] == PINEAPPL_CONV_TYPE_POL_FF);
-    auto                weighted_inits = select_initializers(grid_def.process,
+    auto           weighted_inits = select_initializers(grid_def.process,
         grid_def.observable,
         grid_def.current,
         grid_def.cc_sign,
@@ -1012,13 +1039,14 @@ pineappl_grid *build_grid(const GridDef &grid_def_in,
         theory);
 
     // 3. Create empty PineAPPL grid
-    pineappl_grid      *grid           = create_grid(grid_def);
+    pineappl_grid *grid           = create_grid(grid_def);
+    dump_run_cards_metadata(grid, grid_def_in, theory, op_card);
 
     // 4. Determine grid nodes — filter out APFL++ Lagrange extension nodes
     //    beyond x = 1 (same rationale as in build_grid_sidis).
-    const auto         &joint_grid_vec = g.GetJointGrid().GetGrid();
-    const std::size_t   nx_full        = joint_grid_vec.size();
-    std::vector<double> x_nodes;
+    const auto              &joint_grid_vec = g.GetJointGrid().GetGrid();
+    const std::size_t        nx_full        = joint_grid_vec.size();
+    std::vector<double>      x_nodes;
     std::vector<std::size_t> phys_x_indices;
     x_nodes.reserve(nx_full);
     phys_x_indices.reserve(nx_full);

@@ -1,7 +1,9 @@
 #include <pineapfel/grid_gen.h>
 #include <yaml-cpp/yaml.h>
 
+#include <fstream>
 #include <numeric>
+#include <sstream>
 #include <stdexcept>
 
 namespace pineapfel {
@@ -166,8 +168,17 @@ std::vector<ChannelDef> derive_channels(ProcessType process,
 }
 
 GridDef load_grid_def(const std::string &path) {
-    YAML::Node  config = YAML::LoadFile(path);
-    GridDef     def;
+    YAML::Node config = YAML::LoadFile(path);
+    GridDef    def;
+    def.source_path = path;
+    {
+        std::ifstream in(path);
+        if (!in)
+            throw std::runtime_error("Failed to open grid card file: " + path);
+        std::ostringstream ss;
+        ss << in.rdbuf();
+        def.raw_yaml = ss.str();
+    }
 
     // Process type
     std::string proc = config["Process"].as<std::string>();
@@ -385,15 +396,18 @@ pineappl_grid *create_grid(const GridDef &def) {
         }
     }
 
-    // 7. Build scales: {ren=Scale(0), fac=Scale(0), frg=Scale(0)|NoScale}
+    // 7. Build scales: {ren=Scale(0), fac=Scale(0)|NoScale,
+    // frg=Scale(0)|NoScale}
     pineappl_scale_func_form scales[3] = {};
     // ren = Scale(0)
     scales[0].tag                      = PINEAPPL_SCALE_FUNC_FORM_SCALE;
     scales[0].scale                    = 0;
-    // fac = Scale(0)
-    scales[1].tag                      = PINEAPPL_SCALE_FUNC_FORM_SCALE;
-    scales[1].scale                    = 0;
-    // frg: Scale(0) for SIDIS and SIA, NoScale for DIS
+    if (def.process == ProcessType::SIA) {
+        scales[1].tag = PINEAPPL_SCALE_FUNC_FORM_NO_SCALE;
+    } else {
+        scales[1].tag   = PINEAPPL_SCALE_FUNC_FORM_SCALE;
+        scales[1].scale = 0;
+    }
     if (def.process == ProcessType::DIS) {
         scales[2].tag = PINEAPPL_SCALE_FUNC_FORM_NO_SCALE;
     } else {
