@@ -56,6 +56,7 @@ int main(int argc, char *argv[]) {
     auto         op_card  = pineapfel::load_operator_card(op_path);
 
     auto        *grid     = pineapfel::build_grid(grid_def, theory, op_card);
+    pineappl_grid_optimize(grid);
     pineappl_grid_write(grid, output_path.c_str());
     std::cout << "Grid written to: " << output_path << std::endl;
 

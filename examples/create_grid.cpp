@@ -23,6 +23,7 @@ int main() {
 
     // Write the filled grid to disk
     const char *output = "dis_test.pineappl.lz4";
+    pineappl_grid_optimize(grid);
     pineappl_grid_write(grid, output);
     std::cout << "Grid written to: " << output << std::endl;
 
