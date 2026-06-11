@@ -29,6 +29,17 @@ struct BinDef {
     std::vector<double> upper;
 };
 
+// Specifies that one convolution slot should be folded in with a given PDF set.
+// Applied in order after the grid is built; each entry reduces the convolution
+// count by one. The `index` refers to the convolution slot *before* any
+// preceding fix steps are applied.
+struct FixConvolutionDef {
+    std::size_t index;            // convolution index to fix (0-based)
+    std::string pdf_set;          // NeoPDF set name
+    int         pdf_member = 0;   // NeoPDF member index
+    double      xi         = 1.0; // scale variation factor passed to PineAPPL
+};
+
 struct GridDef {
     std::string                     source_path;
     std::string                     raw_yaml;
@@ -42,8 +53,9 @@ struct GridDef {
     std::vector<pineappl_conv_type> convolution_types;
     std::vector<OrderDef>           orders;
     std::vector<ChannelDef>         channels;
-    std::vector<BinDef>             bins;           // one BinDef per bin
-    std::vector<double>             normalizations; // one per bin
+    std::vector<BinDef>             bins;            // one BinDef per bin
+    std::vector<double>             normalizations;  // one per bin
+    std::vector<FixConvolutionDef> fix_convolutions; // optional post-build step
 };
 
 GridDef                 load_grid_def(const std::string &path);

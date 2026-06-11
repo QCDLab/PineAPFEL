@@ -299,6 +299,19 @@ GridDef load_grid_def(const std::string &path) {
         def.normalizations = config["Normalizations"].as<std::vector<double>>();
     else def.normalizations.assign(def.bins.size(), 1.0);
 
+    // FixConvolutions (optional) — fold in a PDF/FF set after the grid is built
+    if (config["FixConvolutions"]) {
+        for (const auto &fc : config["FixConvolutions"]) {
+            FixConvolutionDef fcdef;
+            fcdef.index   = fc["index"].as<std::size_t>();
+            fcdef.pdf_set = fc["pdf_set"].as<std::string>();
+            fcdef.pdf_member =
+                fc["pdf_member"] ? fc["pdf_member"].as<int>() : 0;
+            fcdef.xi = fc["xi"] ? fc["xi"].as<double>() : 1.0;
+            def.fix_convolutions.push_back(std::move(fcdef));
+        }
+    }
+
     return def;
 }
 

@@ -165,6 +165,28 @@ PYBIND11_MODULE(_pineapfel, m) {
         .def_readwrite("sidis_int_eps",
             &pineapfel::OperatorCard::sidis_int_eps);
 
+    py::class_<pineapfel::FixConvolutionDef>(m, "FixConvolutionDef")
+        .def(py::init<>())
+        .def(py::init([](std::size_t         index,
+                          const std::string &pdf_set,
+                          int                pdf_member,
+                          double             xi) {
+            pineapfel::FixConvolutionDef fc;
+            fc.index      = index;
+            fc.pdf_set    = pdf_set;
+            fc.pdf_member = pdf_member;
+            fc.xi         = xi;
+            return fc;
+        }),
+            py::arg("index"),
+            py::arg("pdf_set"),
+            py::arg("pdf_member") = 0,
+            py::arg("xi")         = 1.0)
+        .def_readwrite("index", &pineapfel::FixConvolutionDef::index)
+        .def_readwrite("pdf_set", &pineapfel::FixConvolutionDef::pdf_set)
+        .def_readwrite("pdf_member", &pineapfel::FixConvolutionDef::pdf_member)
+        .def_readwrite("xi", &pineapfel::FixConvolutionDef::xi);
+
     py::class_<pineapfel::GridDef>(m, "GridDef")
         .def(py::init<>())
         .def_readwrite("process", &pineapfel::GridDef::process)
@@ -179,7 +201,9 @@ PYBIND11_MODULE(_pineapfel, m) {
         .def_readwrite("orders", &pineapfel::GridDef::orders)
         .def_readwrite("channels", &pineapfel::GridDef::channels)
         .def_readwrite("bins", &pineapfel::GridDef::bins)
-        .def_readwrite("normalizations", &pineapfel::GridDef::normalizations);
+        .def_readwrite("normalizations", &pineapfel::GridDef::normalizations)
+        .def_readwrite("fix_convolutions",
+            &pineapfel::GridDef::fix_convolutions);
 
     py::class_<PyGrid>(m, "Grid")
         .def_static("read", &PyGrid::read, py::arg("path"))
@@ -222,4 +246,33 @@ PYBIND11_MODULE(_pineapfel, m) {
         py::arg("grid"),
         py::arg("theory"),
         py::arg("op_card"));
+
+    // Fix one convolution slot by folding in a user-supplied xfx callable.
+    // xfx(pid: int, x: float, q2: float) -> float  (must return x*f(x,Q²))
+    m.def(
+        "fix_convolution",
+        [](const PyGrid &g, std::size_t conv_idx, py::object xfx_py, double xi)
+            -> PyGrid {
+            struct State {
+                py::object xfx;
+            };
+            State state{xfx_py};
+
+            auto  cb = [](int32_t pid, double x, double q2, void *s) -> double {
+                auto                  *st = static_cast<State *>(s);
+                py::gil_scoped_acquire acq;
+                return st->xfx(pid, x, q2).cast<double>();
+            };
+
+            pineappl_grid *result = pineappl_grid_fix_convolution(g.get(),
+                conv_idx,
+                cb,
+                static_cast<void *>(&state),
+                xi);
+            return PyGrid(result);
+        },
+        py::arg("grid"),
+        py::arg("conv_idx"),
+        py::arg("xfx"),
+        py::arg("xi") = 1.0);
 }

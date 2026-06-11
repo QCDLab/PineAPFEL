@@ -45,6 +45,15 @@ apfelxx_dep = declare_dependency(
   link_args : apfelxx_link_args,
 )
 
+# Optional NeoPDF dependencies. Needed only by `pineappl-build`
+# to evaluate `FixConvolutions` entires at grid-build time.
+neopdf_dep = dependency('neopdf_capi', required : false)
+if neopdf_dep.found()
+  message('NeoPDF found: FixConvolutions support enabled in pineapfel-build')
+else
+  message('NeoPDF not found: pineapfel-build will not support FixConvolutions')
+endif
+
 pineapfel_lib = static_library('pineapfel',
   'pineapfel/src/cards.cpp',
   'pineapfel/src/evolution.cpp',
@@ -70,7 +79,7 @@ executable('pineapfel-evolve',
 
 executable('pineapfel-build',
   'pineapfel_cli/build.cpp',
-  dependencies : pineapfel_dep,
+  dependencies : [pineapfel_dep, neopdf_dep],
   install : true,
 )
 
@@ -87,7 +96,7 @@ test_grid_vs_apfelxx_exe = executable('test_grid_vs_apfelxx',
 )
 
 test('grid_vs_apfelxx', test_grid_vs_apfelxx_exe,
-  workdir : meson.source_root(),
+  workdir : meson.project_source_root(),
 )
 
 executable('xscan_zm',
@@ -111,7 +120,7 @@ install_headers(
   subdir : 'pineapfel',
 )
 
-# ── Python bindings (optional) ────────────────────────────────────────────────
+# Python bindings (optional)
 py_mod = import('python')
 py     = py_mod.find_installation('python3', required : false)
 
