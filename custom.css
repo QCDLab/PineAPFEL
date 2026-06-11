@@ -1,0 +1,274 @@
+/* Informal Systems-inspired: clean, technical light documentation style */
+
+body {
+  font-size: 0.62rem;
+  font-weight: 400;
+  background-color: #FFFFFF !important;
+}
+
+.md-content__inner {
+  max-width: 80ch;
+}
+
+/* Justify all paragraphs and list items globally */
+.md-content__inner p,
+.md-content__inner li {
+  text-align: justify;
+}
+
+/* Clean typography - section titles bold and Informal Blue (#3b5596) */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700 !important;
+  letter-spacing: -0.02em;
+  color: #3b5596 !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.2rem !important;
+}
+
+h1 { font-size: 1.2rem; margin-top: 0 !important; }
+h2 { font-size: 0.98rem; border-bottom: 1px solid rgba(59, 85, 150, 0.12); }
+h3 { font-size: 0.85rem; }
+
+/* Links - Informal Systems cyan (#3b5596) */
+a {
+  color: #3b5596;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+a:hover {
+  opacity: 0.8;
+}
+
+/* Feature grid - clean cards with subtle borders */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin: 2rem 0;
+}
+
+.feature-card {
+  border: 1px solid rgba(0, 43, 54, 0.12);
+  border-radius: 8px;
+  padding: 1.25rem;
+  height: 100%;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  background: #FFFFFF;
+}
+
+.feature-card:hover {
+  border-color: #3b5596;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* Alternative: Simple flexbox approach */
+.feature-grid-simple {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.feature-grid-simple .feature-card {
+  flex: 1 1 300px;
+  border: 1px solid rgba(0, 43, 54, 0.12);
+  border-radius: 8px;
+  padding: 1.25rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: #FFFFFF;
+}
+
+.feature-grid-simple .feature-card:hover {
+  border-color: #3b5596;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* TOC: grey until selected, highlight when active */
+.md-nav__link {
+  color: #586E75 !important; /* Solarized base01 */
+  font-weight: 400 !important;
+}
+.md-nav__link:hover {
+  color: #3b5596 !important;
+}
+.md-nav__link--active {
+  color: #3b5596 !important;
+  font-weight: 600 !important;
+}
+
+/* Same for right-side TOC (page toc) */
+.md-nav--secondary .md-nav__link {
+  color: #586E75 !important;
+  font-weight: 400 !important;
+}
+.md-nav--secondary .md-nav__link--active {
+  color: #3b5596 !important;
+  font-weight: 600 !important;
+}
+
+/* Navigation section titles - grey, non-bold */
+.md-nav__title {
+  font-weight: 400 !important;
+  color: #586E75 !important;
+}
+
+.md-nav__list .md-nav__item > .md-nav__link:not(.md-nav__link--active),
+.md-nav__list > .md-nav__item > .md-nav__link:not(.md-nav__link--active) {
+  font-weight: 400 !important;
+  color: #586E75 !important;
+}
+
+/* Make top-level HOME, GETTING STARTED, and USAGE permanently bold */
+.md-nav--primary > .md-nav__list > .md-nav__item:nth-child(1) > .md-nav__link,
+.md-nav--primary > .md-nav__list > .md-nav__item:nth-child(2) > .md-nav__link,
+.md-nav--primary > .md-nav__list > .md-nav__item:nth-child(3) > .md-nav__link {
+  font-weight: 700 !important;
+  color: #3b5596 !important;
+}
+
+/* Hide the automatic H1 ("Home") on the homepage when followed by the centered logo */
+.md-content__inner > h1:has(+ .home-page-logo) {
+  display: none;
+}
+
+/* Hide Jupyter input/output prompts in mkdocs-jupyter */
+.jp-InputPrompt, .jp-OutputPrompt, .prompt, .nbinput .prompt, .nboutput .prompt {
+    display: none !important;
+}
+
+/* Code snippet font size - slightly reduced */
+div.nbinput .input_area pre,
+div.input_area pre,
+div.jp-InputArea-editor,
+div.jp-CodeCell .jp-InputArea-editor,
+div.highlight pre,
+pre {
+    font-size: 0.85rem !important;
+}
+
+.center-medium {
+    display: block;
+    margin: 0 auto;
+    width: 75%;
+    height: auto;
+}
+
+/* Header bar - Informal Blue (#3b5596) */
+.md-header {
+  background-color: #3b5596 !important;
+  color: #FFFFFF !important;
+}
+
+/* Ensure header icons and search are visible on blue background */
+.md-header .md-icon {
+  color: #FFFFFF !important;
+}
+
+.md-header__title {
+  color: #FFFFFF !important;
+}
+
+.md-header__social .md-social__link svg {
+  color: rgba(255, 255, 255, 0.8);
+}
+.md-header__social .md-social__link:hover svg {
+  color: #FFFFFF;
+}
+
+/* Footer bar - Informal Blue (#3b5596) */
+.md-footer {
+  background-color: #3b5596 !important;
+  color: #FFFFFF !important;
+}
+
+.md-footer__link {
+  color: #FFFFFF !important;
+}
+
+.md-footer__direction {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.md-footer__title {
+  color: #FFFFFF !important;
+}
+
+.md-footer-meta {
+  background-color: #3b5596 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.md-footer-meta__inner {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Header social icons - next to search, proportional size */
+.md-header__social {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.25rem;
+}
+
+.md-header__social .md-social {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.md-header__social .md-social__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  opacity: 0.9;
+  transition: opacity 0.15s ease;
+}
+
+.md-header__social .md-social__link:hover {
+  opacity: 1;
+}
+
+.md-header__social .md-social__link svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+/* Header logo: increase size and hide site name next to it */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  height: 2.2rem;
+  width: auto;
+}
+
+.md-header__title .md-header__topic {
+  display: none;
+}
+
+.md-header__title {
+  color: #FFFFFF !important;
+}
+
+/* Code blocks - clean styling */
+.highlight {
+  border-radius: 6px;
+  background-color: #F8F9FA !important;
+}
+.md-typeset .highlight pre {
+  border: none !important;
+}
+
+/* Tables - clean borders */
+.md-typeset table:not([class]) {
+  border-radius: 6px;
+  border: 1px solid rgba(0, 43, 54, 0.12);
+}
+
+/* Admonitions - subtle */
+.md-typeset .admonition {
+  border-radius: 6px;
+  border-left-width: 4px;
+}
