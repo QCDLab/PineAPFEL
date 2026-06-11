@@ -77,3 +77,23 @@ pineapfel-evolve sidis_f2.pineappl.lz4 runcards/theory.yaml runcards/operator.ya
 
 The resulting FK table can be convoluted with PDFs (and FFs for SIDIS) using the
 `pineappl` CLI or any PineAPPL-compatible tool.
+
+### SIDIS with a fixed PDF convolution
+
+SIDIS grids carry two convolution slots (PDF ⊗ FF). Adding a `FixConvolutions` section
+to the grid card instructs `pineapfel-build` to fold in a NeoPDF set immediately after
+filling, writing a single-convolution (FF-only) grid to disk. That grid is then evolved
+exactly like a standard SIA grid:
+
+```bash
+# Step 1 — build and fold: PDF slot is fixed with NNPDF40;
+#           output has one convolution (UNPOL_FF only)
+pineapfel-build runcards/grid_sidis_fixed_pdf.yaml runcards/theory.yaml runcards/operator.yaml -o sidis_ff_only.pineappl.lz4
+
+# Step 2 — evolve the FF-only grid into an FK table
+pineapfel-evolve sidis_ff_only.pineappl.lz4 runcards/theory.yaml runcards/operator.yaml -o sidis_ff_only.fk.pineappl.lz4
+```
+
+The relevant grid card key is `FixConvolutions` — see
+[Grid creation — Fixing a convolution](grid-creation.md#fix-convolutions) for the full
+field reference and card format.

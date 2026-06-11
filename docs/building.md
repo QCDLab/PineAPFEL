@@ -1,9 +1,10 @@
 The following provides detailed instructions for building and installing `PineAPFEL`
 and its APIs and tools. `PineAPFEL` depends on the following **libraries**:
 [PineAPPL](https://github.com/NNPDF/pineappl) for producing and reading fast interpolation
-grids, [APFEL++](https://github.com/vbertone/apfelxx) for the DGLAP evolution kernels
-and [YAML-CPP](https://github.com/jbeder/yaml-cpp) for parsing the theory and operator
-YAML cards.
+grids, [APFEL++](https://github.com/vbertone/apfelxx) for the DGLAP evolution kernels,
+[YAML-CPP](https://github.com/jbeder/yaml-cpp) for parsing the theory and operator
+YAML cards, and [NeoPDF](https://github.com/QCDLab/neopdf) for evaluating PDF/FF sets
+when fixing convolution slots (see [`FixConvolutions`](grid-creation.md#fix-convolutions)).
 
 ## C++ library and CLI
 

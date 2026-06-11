@@ -3,7 +3,9 @@
 PineAPFEL uses YAML configuration files to specify all physics and numerical parameters.
 The **theory card** and **operator card** are required for both grid creation and evolution.
 An additional **grid card** is needed when creating grids with `build_grid()` or
-`pineapfel-build` (see [Grid creation](grid-creation.md) for the full grid card reference).
+`pineapfel-build` (see [Grid creation](grid-creation.md) for the full grid card reference,
+including the optional [`FixConvolutions`](grid-creation.md#fix-convolutions) key for
+folding a PDF/FF set into a SIDIS grid at build time).
 
 ### Theory card
 

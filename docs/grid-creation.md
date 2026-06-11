@@ -407,6 +407,31 @@ Points:
 # Bins:
 #   - lower: [10.0, 0.001]
 #     upper: [100.0, 0.01]
+
+# ── FixConvolutions (optional, SIDIS only) ──────────────────────────────────
+#
+# Fold one or more convolution slots into the grid at build time by evaluating
+# a NeoPDF set at each node.  Each entry reduces the number of convolutions in
+# the output grid by one; entries are applied in the order listed.
+#
+# Fields:
+#   index      — 0-based index of the convolution slot to fix.  For a SIDIS
+#                grid [UNPOL_PDF, UNPOL_FF] use 0 to fix the PDF or 1 to fix
+#                the FF.
+#   pdf_set    — NeoPDF set name (same identifier used by neopdf_pdf_load).
+#   pdf_member — member index within the set (default 0).
+#   xi         — factorization-scale variation factor forwarded to PineAPPL
+#                (default 1.0 = central scale).
+#
+# After all fix steps the output grid has (N − k) convolutions, where k is the
+# number of entries.  It can then be evolved with pineapfel-evolve like any
+# single-convolution grid.
+#
+# FixConvolutions:
+#   - index: 0
+#     pdf_set: NNPDF40_nnlo_as_01180
+#     pdf_member: 0    # optional
+#     xi: 1.0          # optional
 ```
 
 #### DIS example
@@ -510,6 +535,47 @@ Points:
     resummation). The exact implementation covers all nine partonic channels for both
     the unpolarised \(F_T\)/\(F_L\) (arXiv:2401.16281) and the polarised \(G_1\)
     (arXiv:2404.08597).
+
+#### Fixing a convolution with a PDF/FF set {#fix-convolutions}
+
+The optional `FixConvolutions` key in the grid card instructs `pineapfel-build` to fold
+one or more convolution slots into the grid immediately after filling it with coefficient
+functions, and **before** the grid is written to disk.
+
+This is primarily useful for SIDIS, which naturally produces a two-convolution grid
+(PDF ⊗ FF). Fixing the PDF slot yields a single-convolution grid that depends only on
+the FF; the result can be evolved with `pineapfel-evolve` in the same way as any DIS or
+SIA single-convolution grid.
+
+**Grid card with `FixConvolutions`:**
+
+```yaml
+Process: SIDIS
+Observable: F2
+Current: NC
+PidBasis: PDG
+HadronPids: [2212, 211]
+ConvolutionTypes: [UNPOL_PDF, UNPOL_FF]
+
+Orders:
+  - [0, 0, 0, 0, 0]   # LO
+  - [1, 0, 0, 0, 0]   # NLO
+
+Points:
+  - [10.0,   0.001, 0.2, 0.4]
+  - [1000.0, 0.1,   0.4, 0.6]
+
+# Fix convolution slot 0 (UNPOL_PDF) with a NeoPDF set.
+# The written grid has a single convolution (UNPOL_FF only).
+FixConvolutions:
+  - index: 0
+    pdf_set: NNPDF40_nnlo_as_01180
+    pdf_member: 0   # optional, default 0
+    xi: 1.0         # optional, default 1.0
+```
+
+The `FixConvolutions` list is ordered: if two entries are given the second entry's
+`index` refers to the convolution numbering **after** the first fix has been applied.
 
 #### Polarized DIS example
 
@@ -730,6 +796,24 @@ pineapfel-build runcards/grid_dis.yaml runcards/theory.yaml runcards/operator.ya
 pineapfel-build runcards/grid_sia.yaml runcards/theory.yaml runcards/operator.yaml \
     -o sia_f2.pineappl.lz4
 ```
+
+#### SIDIS with a fixed PDF convolution {#fix-convolutions-cli}
+
+When the grid card contains `FixConvolutions`, `pineapfel-build` automatically evaluates
+the specified NeoPDF set and folds it into the grid before writing, producing a
+single-convolution output (FF only in this example). The resulting grid can be fed
+directly to `pineapfel-evolve`:
+
+```bash
+# Build the SIDIS grid and fix the PDF slot in one step
+pineapfel-build runcards/grid_sidis_fixed_pdf.yaml runcards/theory.yaml runcards/operator.yaml -o sidis_ff_only.pineappl.lz4
+
+# Evolve the FF-only grid into an FK table (single-convolution, FF evolution)
+pineapfel-evolve sidis_ff_only.pineappl.lz4 runcards/theory.yaml runcards/operator.yaml -o sidis_ff_only.fk.pineappl.lz4
+```
+
+Without `FixConvolutions` the two-convolution SIDIS grid is written as-is and requires
+both a PDF and an FF when convolving:
 
 ### Using the library
 

@@ -56,6 +56,72 @@ fonll_grid.write("dis_f2_fonll.pineappl.lz4")
 
 ---
 
+### Fixing a convolution
+
+`pineapfel.fix_convolution` folds one convolution slot of a grid into a PDF/FF
+evaluation, returning a new grid with one fewer convolution. This mirrors the
+`FixConvolutions` YAML key available in the CLI workflow, but accepts **any Python
+callable** as the PDF evaluator — a NeoPDF wrapper, a `lhapdf`-python object, or a
+custom function.
+
+```python
+import pineapfel
+
+theory  = pineapfel.load_theory_card("runcards/theory.yaml")
+op_card = pineapfel.load_operator_card("runcards/operator.yaml")
+sidis_def = pineapfel.load_grid_def("runcards/grid_sidis.yaml")
+
+# Build the two-convolution SIDIS grid (PDF ⊗ FF)
+sidis_grid = pineapfel.build_grid(sidis_def, theory, op_card)
+
+# Define an xfx callable — here using a NeoPDF set via its Python interface
+from neopdf.pdf import PDF as NeoPDF # NeoPDF Python bindings
+pdf = NeoPDF.mkPDF("NNPDF40_nnlo_as_01180", member=0)
+
+def xfx(pid: int, x: float, q2: float) -> float:
+    return pdf.xfxQ2(pid, x, q2)  # must return x * f(x, Q²)
+
+# Fix convolution slot 0 (UNPOL_PDF); result has one convolution (UNPOL_FF)
+ff_grid = pineapfel.fix_convolution(sidis_grid, conv_idx=0, xfx=xfx, xi=1.0)
+
+# Write the FF-only grid; can be evolved like any single-convolution grid
+ff_grid.write("sidis_ff_only.pineappl.lz4")
+```
+
+The function signature is:
+
+```python
+pineapfel.fix_convolution(
+    grid,        # Grid — source grid (not modified)
+    conv_idx,    # int  — 0-based convolution slot to fix
+    xfx,         # callable(pid: int, x: float, q2: float) -> float
+    xi = 1.0,    # float — factorization-scale variation factor (default 1.0)
+) -> Grid
+```
+
+The `FixConvolutionDef` data class is also exposed for use with programmatic
+`GridDef` construction:
+
+```python
+fc = pineapfel.FixConvolutionDef(
+    index=0,
+    pdf_set="NNPDF40_nnlo_as_01180",
+    pdf_member=0,   # optional, default 0
+    xi=1.0,         # optional, default 1.0
+)
+
+gdef = pineapfel.load_grid_def("runcards/grid_sidis.yaml")
+gdef.fix_convolutions = [fc]
+```
+
+!!! note
+    `build_grid()` does not apply `fix_convolutions` entries from the `GridDef` —
+    that step is the responsibility of the caller (or of `pineapfel-build` in the CLI
+    workflow). This keeps the build step pure and lets you inspect the full
+    two-convolution grid before folding.
+
+---
+
 ### Evolution
 
 Evolve an existing grid into an FK table:

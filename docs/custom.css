@@ -1,7 +1,7 @@
 /* Informal Systems-inspired: clean, technical light documentation style */
 
 body {
-  font-size: 0.8rem;
+  font-size: 0.62rem;
   font-weight: 400;
   background-color: #FFFFFF !important;
 }
@@ -25,9 +25,9 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: 0.2rem !important;
 }
 
-h1 { font-size: 1.5rem; margin-top: 0 !important; }
-h2 { font-size: 1.2rem; border-bottom: 1px solid rgba(59, 85, 150, 0.12); }
-h3 { font-size: 1.05rem; }
+h1 { font-size: 1.2rem; margin-top: 0 !important; }
+h2 { font-size: 0.98rem; border-bottom: 1px solid rgba(59, 85, 150, 0.12); }
+h3 { font-size: 0.85rem; }
 
 /* Links - Informal Systems cyan (#3b5596) */
 a {
@@ -145,7 +145,7 @@ div.jp-InputArea-editor,
 div.jp-CodeCell .jp-InputArea-editor,
 div.highlight pre,
 pre {
-    font-size: 0.82rem !important;
+    font-size: 0.85rem !important;
 }
 
 .center-medium {
