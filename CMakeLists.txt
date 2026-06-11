@@ -13,14 +13,8 @@ pkg_check_modules(PINEAPPL REQUIRED pineappl_capi)
 find_package(yaml-cpp REQUIRED)
 find_package(apfelxx REQUIRED)
 
-# Optional NeoPDF dependencies. Needed only by `pineappl-build`
-# to evaluate `FixConvolutions` entires at grid-build time.
-pkg_check_modules(NEOPDF neopdf_capi)
-if(NEOPDF_FOUND)
-    message(STATUS "NeoPDF ${NEOPDF_VERSION} found: FixConvolutions support enabled")
-else()
-    message(STATUS "NeoPDF not found: pineapfel-build will not support FixConvolutions")
-endif()
+pkg_check_modules(NEOPDF REQUIRED neopdf_capi)
+message(STATUS "NeoPDF ${NEOPDF_VERSION} found")
 
 # Library
 add_library(pineapfel SHARED
@@ -53,14 +47,9 @@ target_link_libraries(pineapfel-evolve PRIVATE pineapfel)
 target_compile_options(pineapfel-evolve PRIVATE -Wall -Wextra -O3)
 
 add_executable(pineapfel-build pineapfel_cli/build.cpp)
-target_link_libraries(pineapfel-build PRIVATE pineapfel)
-target_compile_options(pineapfel-build PRIVATE -Wall -Wextra -O3)
-
-if(NEOPDF_FOUND)
-    target_include_directories(pineapfel-build PRIVATE ${NEOPDF_INCLUDE_DIRS})
-    target_link_libraries(pineapfel-build PRIVATE ${NEOPDF_LINK_LIBRARIES})
-    target_compile_options(pineapfel-build PRIVATE ${NEOPDF_CFLAGS_OTHER})
-endif()
+target_link_libraries(pineapfel-build PRIVATE pineapfel ${NEOPDF_LINK_LIBRARIES})
+target_include_directories(pineapfel-build PRIVATE ${NEOPDF_INCLUDE_DIRS})
+target_compile_options(pineapfel-build PRIVATE -Wall -Wextra -O3 ${NEOPDF_CFLAGS_OTHER})
 
 # Tests
 enable_testing()

@@ -10,6 +10,7 @@ jobs:
     env:
       PINEAPPL_VERSION: 1.4.0-alpha1
       APFELXX_BRANCH: QED
+      NEOPDF_VERSION: 0.3.3
 
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +21,7 @@ jobs:
           sudo apt-get install -y build-essential cmake pkg-config libyaml-cpp-dev
 
       # ---- Cache local installs (.local) ----
-      - name: Cache PineAPPL and APFEL++
+      - name: Cache PineAPPL, APFEL++ and NeoPDF
         id: cache-local
         uses: actions/cache@v4
         with:
@@ -29,7 +30,8 @@ jobs:
             ${{ runner.os }}-local-
             pineappl-${{ env.PINEAPPL_VERSION }}-
             apfelxx-${{ env.APFELXX_BRANCH }}-
-            ${{ hashFiles('.github/workflows/ci.yml') }}
+            neopdf-${{ env.NEOPDF_VERSION }}-
+            ${{ hashFiles('.github/workflows/ci-test.yml') }}
 
       # ---- Install PineAPPL C API (if not cached) ----
       - name: Install PineAPPL C API
@@ -48,6 +50,14 @@ jobs:
           cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/.local
           make -j$(nproc)
           make install
+
+      # ---- Install NeoPDF C API (if not cached) ----
+      - name: Install NeoPDF C API
+        if: steps.cache-local.outputs.cache-hit != 'true'
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf \
+            https://raw.githubusercontent.com/QCDLab/neopdf/refs/heads/master/install-capi.sh \
+            | sh -s -- --prefix "$HOME/.local" --version $NEOPDF_VERSION
 
       - name: Export local paths
         run: |

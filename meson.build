@@ -45,14 +45,7 @@ apfelxx_dep = declare_dependency(
   link_args : apfelxx_link_args,
 )
 
-# Optional NeoPDF dependencies. Needed only by `pineappl-build`
-# to evaluate `FixConvolutions` entires at grid-build time.
-neopdf_dep = dependency('neopdf_capi', required : false)
-if neopdf_dep.found()
-  message('NeoPDF found: FixConvolutions support enabled in pineapfel-build')
-else
-  message('NeoPDF not found: pineapfel-build will not support FixConvolutions')
-endif
+neopdf_dep = dependency('neopdf_capi', required : true)
 
 pineapfel_lib = static_library('pineapfel',
   'pineapfel/src/cards.cpp',
